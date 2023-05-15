@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+
+<html ng-app="DashPlayer" lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+
+		<title>Multi-Processing Streaming Platform</title>
+
+		<!-- Import css files -->
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap.min.css">
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-theme.css">
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-glyphicons.css">
+		<link rel="stylesheet" href="app/css/main.css">
+		<link rel="stylesheet" href="app/contrib/akamai/controlbar/controlbar.css">
+
+		<!-- Import src files -->
+		<script src="app/lib/jquery/jquery-3.1.1.min.js"></script>
+		<script src="app/lib/angular/angular.min.js"></script>
+		<script src="app/lib/angular/angular-resource.min.js"></script>
+		<script src="app/lib/angular/angular-flot.js"></script>
+		<script src="app/lib/bootstrap/js/bootstrap.min.js"></script>
+		<script src="app/lib/flot/jquery.flot.min.js"></script>
+		<script src="app/lib/flot/jquery.flot.resize.min.js"></script>
+		<script src="app/lib/flot/jquery.flot.axislabels.js"></script>
+		<script src="app/contrib/cast_sender.js"></script>
+		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
+		<script src="./dash.js/dist/dash.all.debug.js"></script>
+		<script src="app/main.js"></script>
+
+		<!-- Import ABR rules -->
+		<script src="HighestBitrateRule.js"></script>
+		<script src="LowestBitrateRule.js"></script>
+		<script src="MyThroughputRule.js"></script>
+		<script src="GlobalSwitchRule.js"></script>
+		<script src="MultiPathRule.js"></script>
+		<script src="FOVRule.js"></script>
+
+		<style>
+			body {
+				background-color: #ececec;
+				min-width: 1065px;
+				overflow-x: hidden;
+			}
+		</style>
+		
+	</head>
+	
+    <body ng-controller="DashController" style="overflow: scroll;">
+
+		<div class="container">
+
+			<!-- Page title -->
+			<div class="row title-header">
+				<div class="branding">
+					<span>Multi-Processing Streaming Platform</span>
+				</div>
+			</div>
+
+			<!-- Source URLs -->
+			<div class="row" id="desktop-streams-0">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 1 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 0)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[0]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-1">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 2 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 1)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[1]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-2">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 3 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 2)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[2]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-3">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 4 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 3)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[3]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-4">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 5 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 4)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[4]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-5">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Video 6 <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 5)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="videoURLs[5]" ng-change ="">
+				</div>
+			</div>
+			<div class="row" id="desktop-streams-audio" style="display: none;">
+				<div class="input-group">
+					<div class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for Audio <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 6)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="audioURL" ng-change ="">
+				</div>
+			</div>
+
+			<!-- Control buttons -->
+			<div class="row">
+				<div class="input-group">
+					<span class="input-group-btn">
+
+						<!-- URL change list -->
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for All Streams <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 7)">{{item.name}}</a></li>
+						</ul>
+						
+						<!-- Option show/hide button -->
+						<button class="btn btn-default" ng-click="showoption()" style="width: 120px;" ng-cloak>{{optionButton}}</button>
+						
+						<!-- Reset button -->
+						<button class="btn btn-default" type="button" style="width: 70px;" onclick="location.reload();">Reset</button>
+						
+						<!-- Load button -->
+						<button id="Load" class="btn btn-primary" type="button" style="width: 70px;" ng-click="loadStream();">Load</button>
+						
+						<!-- Reload button -->
+						<button id="Reload" class="btn btn-primary" type="button" style="width: 70px; display: none;" ng-click="reloadStream();">Reload</button>
+						
+						<!-- Option panel -->
+						<div id="option" class="row" style="display: none;">
+
+							<!-- Streaming mode -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">Streaming Mode</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="modes" id="MultiPathMode" type="radio" autocomplete="off" ng-click="changeMode('Multi-Path')" checked="true">
+											Multi-Path
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="modes" id="VRMode" type="radio" autocomplete="off" ng-click="changeMode('VR')">
+											VR
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Video path settings -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">Number of Video Path(s)</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_1" type="radio" autocomplete="off" ng-click="changeVideoNumber(1)">
+											1
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_2" type="radio" autocomplete="off" ng-click="changeVideoNumber(2)">
+											2
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_3" type="radio" autocomplete="off" ng-click="changeVideoNumber(3)">
+											3
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_4" type="radio" autocomplete="off" ng-click="changeVideoNumber(4)">
+											4
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_5" type="radio" autocomplete="off" ng-click="changeVideoNumber(5)">
+											5
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="video_num" id="video_num_6" type="radio" autocomplete="off" ng-click="changeVideoNumber(6)" checked="true">
+											6
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Audio path settings -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">Number of Audio Path(s)</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="audio_num" id="audio_num_0" type="radio" autocomplete="off" ng-click="changeAudioNumber(0)" checked="true">
+											0
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="audio_num" id="audio_num_1" type="radio" autocomplete="off" ng-click="changeAudioNumber(1)">
+											1
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- ABR strategies -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">ABR Strategies</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="DefaultRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('DefaultRule')">
+											DefaultRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('MyThroughputRule')">
+											MyThroughputRule
+										</label>
+										
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="MultiPathRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('MultiPathRule')" checked="true">
+											MultiPathRule
+										</label>
+
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="abr-multipath-rules" id="Keep-highest-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;">
+												Keep highest
+											</label>
+
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="abr-multipath-rules" id="Buffer-besed-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" checked="true">
+												Buffer-besed
+											</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('HighestBitrateRule')">
+											HighestBitrateRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('LowestBitrateRule')">
+											LowestBitrateRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('GlobalSwitchRule')">
+											GlobalSwitchRule
+										</label>
+											<label data-toggle="tooltip" data-placement="right" id="label-preferred-quality-seleceted-video" style="margin-left: 10px;">
+												Quality for the video
+												<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="preferred-quality-selected-video" ng-model="preferredQualitySelected" disabled="true">
+											</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="FOVRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('FOVRule')" disabled>
+											FOVRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled">
+											Life signal enabled
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Path switching strategies -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">Path Switching Strategies</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="path_select" id="path_select_0" type="radio" autocomplete="off" ng-click="changePathStrategy(0)">
+											Manual switches
+										</label>
+											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
+												Preferred path ID
+												<input style="width: 40px;" value="1" min="1" max="6" type="number" id="preferred-path-id" ng-model="preferredPathID" disabled="true">
+											</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="path_select" id="path_select_1" type="radio" autocomplete="off" ng-click="changePathStrategy(1)">
+											Downloading quality based
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="path_select" id="path_select_2" type="radio" autocomplete="off" ng-click="changePathStrategy(2)">
+											Playback quality based
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="path_select" id="path_select_3" type="radio" autocomplete="off" ng-click="changePathStrategy(3)" checked="true">
+											Buffer & sync & quality
+										</label>
+											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
+												Preferred sync delay (sec)
+												<input style="width: 200px;" value="0.5" min="0" max="5" step="0.01" type="number" id="preferred-sync-delay" ng-model="preferredSyncDelay">
+											</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="path_select" id="path_select_4" type="radio" autocomplete="off" ng-click="changePathStrategy(4)" disabled>
+											VR
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Catchup settings -->
+							<div style="float: left; border: 3px solid #136bfb; margin: 0px; background-color: #ececec; width: 261px; height: 335px;">
+								<div class="options-item-title">Catchup Settings</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											Scheduling Timeout (ms)
+											<input style="width: 200px;" value="500" step="10" min="0" type="number" id="scheduling-timeout" ng-model="schedulingTimeout">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Target latency (sec)
+											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Minimal drift (sec)
+											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Maximal drift (sec)
+											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Catch-up playback rate (%)
+											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Live catchup latency threshold (sec)
+											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold">
+										</label>
+									</form>
+								</div>
+							</div>
+
+						</div>
+
+					</span>
+				</div>
+			</div>
+
+			<!-- Player and status -->
+			<div class="row">
+
+				<!-- Video container -->
+				<div class="">
+
+					<!-- VR -->
+					<div id="videoContainerVR=" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left; display: none;">
+						<iframe frameborder="0" scrolling="no" id="frame" style="display: flex; width:100%; height:530px; margin: 0;"></iframe>
+						<div id="videoControllerVR" class="video-controller unselectable" style="display: block;">
+							<div id="playPauseBtnVR" class="btn-play-pause" title="Play/Pause">
+								<span id="iconPlayPauseVR" class="icon-play"></span>
+							</div>
+							<span id="videoTimeVR" class="time-display">00:00:00</span>
+							<div id="fullscreenBtnVR" class="btn-fullscreen control-icon-layout" title="Fullscreen" style="display: none;">
+								<span class="icon-fullscreen-enter"></span>
+							</div>
+							<div id="bitrateListBtnVR" class="control-icon-layout" title="Bitrate List">
+								<span class="icon-bitrate"></span>
+							</div>
+							<input type="range" id="volumebarVR" class="volumebar" value="1" min="0" max="1" step=".01">
+							<div id="muteBtnVR" class="btn-mute control-icon-layout" title="Mute">
+								<span id="iconMuteVR" class="icon-mute-off"></span>
+							</div>
+							<div id="trackSwitchBtnVR" class="control-icon-layout" title="A/V Tracks">
+								<span class="icon-tracks"></span>
+							</div>
+							<div id="captionBtnVR" class="btn-caption control-icon-layout" title="Closed Caption">
+								<span class="icon-caption"></span>
+							</div>
+							<span id="videoDurationVR" class="duration-display">00:00:00</span>
+							<div class="seekContainer">
+								<div id="seekbarVR" class="seekbar seekbar-complete">
+									<div id="seekbar-bufferVR" class="seekbar seekbar-buffer"></div>
+									<div id="seekbar-playVR" class="seekbar seekbar-play"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Flat -->
+					<div id="videoContainer=" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left;">
+						<video id="video_0" style="display: flex; width:100%; height:530px;"></video>
+						<video id="video_1" style="display: none; width:100%; height:530px;"></video>
+						<video id="video_2" style="display: none; width:100%; height:530px;"></video>
+						<video id="video_3" style="display: none; width:100%; height:530px;"></video>
+						<video id="video_4" style="display: none; width:100%; height:530px;"></video>
+						<video id="video_5" style="display: none; width:100%; height:530px;"></video>
+						<audio id="audio"></audio>
+						<div id="videoController" class="video-controller unselectable" style="display: block;">
+							<div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">
+								<span id="iconPlayPause" class="icon-play"></span>
+							</div>
+							<span id="videoTime" class="time-display">00:00:00</span>
+							<div id="fullscreenBtn" class="btn-fullscreen control-icon-layout" title="Fullscreen" style="display: none;">
+								<span class="icon-fullscreen-enter"></span>
+							</div>
+							<div id="bitrateListBtn" class="control-icon-layout" title="Bitrate List">
+								<span class="icon-bitrate"></span>
+							</div>
+							<input type="range" id="volumebar" class="volumebar" value="1" min="0" max="1" step=".01">
+							<div id="muteBtn" class="btn-mute control-icon-layout" title="Mute">
+								<span id="iconMute" class="icon-mute-off"></span>
+							</div>
+							<div id="trackSwitchBtn" class="control-icon-layout" title="A/V Tracks">
+								<span class="icon-tracks"></span>
+							</div>
+							<div id="captionBtn" class="btn-caption control-icon-layout" title="Closed Caption">
+								<span class="icon-caption"></span>
+							</div>
+							<span id="videoDuration" class="duration-display">00:00:00</span>
+							<div class="seekContainer">
+								<div id="seekbar" class="seekbar seekbar-complete">
+									<div id="seekbar-buffer" class="seekbar seekbar-buffer"></div>
+									<div id="seekbar-play" class="seekbar seekbar-play"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+
+				<!-- Tab panes -->
+				<div class="tabs-section" style="width:300px; height:565px; float:left; margin-left:20px;">
+					<div class="tab-content">
+							<div class="panel-body panel-stats" style="height: 565px;" ng-cloak>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">UTC Time : </label> {{UTCTime}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time : </label> {{startupTimeFormatted}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Total Throughput : </label> {{totalThroughput ? totalThroughput >= 8000000 ? (totalThroughput / 8000000).toFixed(2) : (totalThroughput / 8000).toFixed(0) : ""}} {{totalThroughput ? totalThroughput >= 8000000 ? " MB/s" : " kB/s" : ""}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Total QOE : </label> {{totalQOE.toFixed(2)}}
+								</div>
+								<div class="text-success" id="currentPathIDDisplay">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Path ID : </label> {{currentPathID ? currentPathID : ""}}
+								</div>
+								<div class="text-success" id="currentPathQualityDisplay">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Path Quality : </label> {{playerPlaybackQuality[currentPathID - 1]}}
+								</div>
+								<div class="text-success" id="currentLongitude" style="display: none;">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Longitude : </label> {{lon.toFixed(2)}} {{lon != null? "°" : ""}}
+								</div>
+								<div class="text-success" id="currentLatitude" style="display: none;">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Latitude : </label> {{lat.toFixed(2)}} {{lat != null? "°" : ""}}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+			</div>
+
+			<!-- Captures -->
+			<div class="row" style="background-color: #ffffff">
+				<div class="tabs-section" style="margin: 15px;">
+					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
+						<thhead><tr>
+							<th style="text-align: center;">video 1</th>
+							<th style="text-align: center;">video 2</th>
+							<th style="text-align: center;">video 3</th>
+							<th style="text-align: center;">video 4</th>
+							<th style="text-align: center;">video 5</th>
+							<th style="text-align: center;">video 6</th>
+						</tr></thhead>
+						<tbody>
+						<tr>
+							<td><canvas id="capture_0" width="150px"></canvas></td>
+							<td><canvas id="capture_1" width="150px"></canvas></td>
+							<td><canvas id="capture_2" width="150px"></canvas></td>
+							<td><canvas id="capture_3" width="150px"></canvas></td>
+							<td><canvas id="capture_4" width="150px"></canvas></td>
+							<td><canvas id="capture_5" width="150px"></canvas></td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Status of all paths -->
+			<div class="row" style="background-color: #ffffff">
+				<div id="statstable" class="table-striped" style="margin: 15px;">
+					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
+						<thead>
+						<tr>
+							<th style="text-align: center;">Player ID</th>
+							<th style="text-align: center;">Player RTT</th>
+							<th style="text-align: center;">Downloading Quality</th>
+							<th style="text-align: center;">Playback Quality</th>
+							<th style="text-align: center;">Buffer Level</th>
+							<th style="text-align: center;">Playback Timeline</th>
+							<th style="text-align: center;">Loaded Time</th>
+							<th style="text-align: center;">Total Time</th>
+							<th style="text-align: center;">Average Throughput</th>
+							<th style="text-align: center;">Catchup State</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr ng-repeat="item in stats">
+							<td>{{item.playerid}}</td>
+							<td>{{item.playerRTT}}</td>
+							<td>{{item.downloadingQuality}}</td>
+							<td>{{item.playbackQuality}}</td>
+							<td>{{item.bufferlevel}}</td>
+							<td>{{item.time}}</td>
+							<td>{{item.loadedtime}}</td>
+							<td>{{item.totaltime}}</td>
+							<td>{{item.throughput}}</td>
+							<td>{{item.playerCatchUp}}</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Charting -->
+			<div class="chart-panel">
+
+				<!-- Chart controllers and legends -->
+				<div class="chart-controls" style="height: 50px;">
+					<div class="btn-group">
+						<button id="disable-chart-btn" class="btn btn-primary" ng-click="clearchartData()" ng-cloak>Clear
+						</button>
+					</div>
+					<div id="legend-wrapper" class="legend-row">
+					</div>
+				</div>
+
+				<!-- Charts -->
+				<div id="chart-wrapper">
+					<span style="text-align: center; display: block; margin-top: 20px;">Player RTT</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_RTT" options="chartOptions_RTT"></flot>
+					</div>
+					<span style="text-align: center; display: block; margin-top: 20px;">Downloading Quality</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_downloadingQuality" options="chartOptions_downloadingQuality"></flot>
+					</div>
+					<span style="text-align: center; display: block; margin-top: 20px;">Playback Quality</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_playbackQuality" options="chartOptions_playbackQuality"></flot>
+					</div>
+					<span style="text-align: center; display: block; margin-top: 20px;">Buffer</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_buffer" options="chartOptions_buffer"></flot>
+					</div>
+					<span style="text-align: center; display: block; margin-top: 20px;">Average Throughput</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_throughput" options="chartOptions_throughput"></flot>
+					</div>
+					<span style="text-align: center; display: block; margin-top: 20px;">Requests</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_requests" options="chartOptions_requests"></flot>
+					</div>
+				</div>
+
+			</div>
+
+		</div>
+
+	</body>
+	
+</html>

@@ -1,0 +1,16 @@
+Base version {
+
+    aframe v1.1.0; 
+
+}
+
+Modifications {
+
+    Change: [loadingScreen.js] module.exports.setup = function setup (el, getCanvasSize) {
+                                   var backgroundColor = loaderAttribute && loaderAttribute.backgroundColor || '#000000';  // #24CAFF
+                               }
+    Change: [aframe-master.js] module.exports.setup = function setup (el, getCanvasSize) {
+                                   var backgroundColor = loaderAttribute && loaderAttribute.backgroundColor || '#000000';  // #24CAFF
+                               }
+
+}
