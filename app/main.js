@@ -6,6 +6,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
 /////////////////////////////////////////////////////////////////////////////////////
     $scope.mediaSource = NaN;  // Container for the MediaSource object
+    $scope.videoElement = NaN;  // Container for video element in HTML page
     $scope.videoNum = 6;  // Number of paths for fetching videos
     $scope.audioNum = 0;  // Number of paths for fetching audios
 /////////////////////////////////////////////////////////////////////////////////////
@@ -181,8 +182,6 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     //// Global variables (public: adjust by users)
 
-    $scope.playerNum = 6;  // Number of players
-    $scope.isAudio = false;  // Audio avaliable or not
     $scope.optionButton = "Show Options";  // Save the state of option button
     $scope.selectedRule = "MultiPathRule";  // Save the selected ABR strategy
     $scope.selectedMode = 'Multi-Path';  // Save the selected mode
@@ -206,7 +205,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
         "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
     ];
-    $scope.audioURL = "http://localhost:8080/CMPVP907/face0/output/stream.mpd";  // Save the selected media source
+    $scope.audioURLs = [  // Save the selected media source
+        "http://localhost:8080/CMPVP907/face0/output/stream.mpd"
+    ];
 
 
     //// Global variables (stat & chart related)
@@ -548,13 +549,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             case 5:
                 $scope.videoURLs[num] = item.url ? item.url : item.urls[num];
             case 6:
-                $scope.audioURL = item.url ? item.url : item.urls[num];
+                $scope.audioURLs[0] = item.url ? item.url : item.urls[num];
                 break;
             case 7:
                 if (item.name == "COPY") {
-                    for (let i = 0; i < $scope.playerNum; i++) {
+                    for (let i = 0; i < $scope.videoNum; i++) {
                         if ($scope.videoURLs[i] != "") {
-                            for (let j = 0; j < $scope.playerNum; j++) {
+                            for (let j = 0; j < $scope.videoNum; j++) {
                                 if (i != j) {
                                     $scope.videoURLs[j] = $scope.videoURLs[i];
                                 }
@@ -570,7 +571,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                         $scope.videoURLs[3] = "";
                         $scope.videoURLs[4] = "";
                         $scope.videoURLs[5] = "";
-                        $scope.audioURL = "";
+                        $scope.audioURLs[0] = "";
                     } else {
                         if (item.url) {
                             $scope.videoURLs[0] = item.url;
@@ -579,7 +580,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             $scope.videoURLs[3] = item.url;
                             $scope.videoURLs[4] = item.url;
                             $scope.videoURLs[5] = item.url;
-                            $scope.audioURL = item.url;
+                            $scope.audioURLs[0] = item.url;
                         } else {
                             $scope.videoURLs[0] = item.urls[0];
                             $scope.videoURLs[1] = item.urls[1];
@@ -587,7 +588,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             $scope.videoURLs[3] = item.urls[3];
                             $scope.videoURLs[4] = item.urls[4];
                             $scope.videoURLs[5] = item.urls[5];
-                            $scope.audioURL = item.urls[6];
+                            $scope.audioURLs[0] = item.urls[6];
                         }
                     }
                 }
@@ -674,7 +675,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Changing number of video paths
     $scope.changeVideoNumber = function (num) {
-        $scope.playerNum = num;
+        $scope.videoNum = num;
         switch (num) {
             case 1:
                 document.getElementById('desktop-streams-0').style = "display: block";
@@ -731,14 +732,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Changing number of audio paths
     $scope.changeAudioNumber = function (num) {
+        $scope.audioNum = num;
         switch (num) {
             case 0:
                 document.getElementById('desktop-streams-audio').style = "display: none";
-                $scope.isAudio = false;
                 break;
             case 1:
                 document.getElementById('desktop-streams-audio').style = "display: block";
-                $scope.isAudio = true;
                 break;
             default:
                 break;
@@ -999,28 +999,64 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Initializing streams with MediaSource
     $scope.mse_init = function() {
-        const supportMediaSource = 'MediaSource' in window
-        if (supportMediaSource) {
-            $scope.mediaSource = new MediaSource()
-            let video = document.getElementById('video')
-            if (video) {
-                video.src = URL.createObjectURL($scope.mediaSource)
-                $scope.mediaSource.addEventListener('sourceopen', sourceOpen)
-            } else {
-                window.alert("There is no video element in window!")
-            }
-        } else {
-            window.alert("MediaSource is not supported in window!")
+
+        // Check if MediaSource is supported in window
+        const supportMediaSource = 'MediaSource' in window;
+        if (!supportMediaSource) {
+            window.alert("MediaSource is not supported in window!");
+            return;
         }
+
+        // Check if paths of videos/audios are non-null
+        if (!$scope.checkPaths()) {
+            return;
+        }
+
+        // Attach view & source
+        $scope.videoElement = document.getElementById('video');
+        if (!$scope.videoElement) {
+            window.alert("There is no video element in window!");
+            return;
+        }
+        $scope.mediaSource = new MediaSource();
+        if (!$scope.mediaSource) {
+            window.alert("There is no MediaSource object generated!");
+            return;
+        }
+        $scope.videoElement.src = URL.createObjectURL($scope.mediaSource);
+        $scope.mediaSource.addEventListener('sourceopen', sourceOpen);
+
+    }
+
+    // Checking paths of videos/audios
+    $scope.checkPaths = function() {
+
+        if (!($scope.videoNum || $scope.audioNum)) {
+            window.alert("Wrong videoNum/audioNum: At least one path for fetching media!");
+            return false;
+        }
+
+        for (let i = 0; i < $scope.videoNum; i++) {
+            if (!$scope.videoURLs[i] || $scope.videoURLs[i] == "") {
+                window.alert("Empty URL(s) in paths of videos!");
+                return false;
+            }
+        }
+
+        for (let i = 0; i < $scope.audioNum; i++) {
+            if (!$scope.audioURLs[i] || $scope.audioURLs[i] == "") {
+                window.alert("Empty URL(s) in paths of audios!");
+                return false;
+            }
+        }
+
+        return true;
+
     }
 
     // Triggered when mediaSoure is ready to open sources
     $scope.sourceOpen = function() {
-        if ($scope.videoNum || $scope.audioNum) {
-            
-        } else {
-            window.alert("Wrong videoNum/audioNum: At least one path for fetching media!")
-        }
+
     }
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -1194,10 +1230,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
 
         // Audio part
-        if ($scope.isAudio && $scope.audioURL != "") {
+        if ($scope.isAudio && $scope.audioURLs[0] != "") {
             var audio = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "audio" ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "audio") : NaN;
             $scope.players[$scope.playerNum] = new dashjs.MediaPlayer().create();
-            url = $scope.audioURL;
+            url = $scope.audioURLs[0];
             $scope.buffer_empty_flag[$scope.playerNum] = true;
 
             $scope.players[$scope.playerNum].updateSettings({
@@ -1396,7 +1432,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 $scope.players[i].attachSource($scope.videoURLs[i]);
             }
         }
-        if ($scope.players[$scope.playerNum] && $scope.audioURLs) {
+        if ($scope.players[$scope.playerNum] && $scope.audioURLs[0]) {
             $scope.buffer_empty_flag[$scope.playerNum] = true;
             $scope.playerBufferLength[$scope.playerNum] = 0;
             $scope.playerAverageThroughput[$scope.playerNum] = 0;
@@ -1409,7 +1445,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.playerRTT[$scope.playerNum] = Infinity;
             $scope.playerBitrateList[$scope.playerNum] = [];
             $scope.playerLastBitrateList[$scope.playerNum] = [];
-            $scope.players[$scope.playerNum].attachSource($scope.audioURLs);
+            $scope.players[$scope.playerNum].attachSource($scope.audioURLs[0]);
         }
     };
 
