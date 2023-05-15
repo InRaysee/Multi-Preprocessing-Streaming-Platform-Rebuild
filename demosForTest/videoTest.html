@@ -9,42 +9,65 @@
     <body>
         <div>
             <video id="video" style="height: 450px; width: 800px;" controls></video>
-            <button id="0" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/init-stream_0.m4s')">0</button>
-            <button id="1" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00001.m4s')">1</button>
-            <button id="2" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00002.m4s')">2</button>
-            <button id="3" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00003.m4s')">3</button>
-            <button id="4" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00004.m4s')">4</button>
-            <button id="5" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00005.m4s')">5</button>
-            <button id="6" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00006.m4s')">6</button>
-            <button id="7" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00007.m4s')">7</button>
-            <button id="8" type="button" onclick="segmentAppend('http://222.20.126.109:8080/ffz/Tokyo/v7/chunk-stream_0-00008.m4s')">8</button>
-            <!-- <button id="1" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_0.mp4')">1</button>
-            <button id="2" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_24576.mp4')">2</button>
-            <button id="3" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_49152.mp4')">3</button>
-            <button id="4" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_73728.mp4')">4</button>
-            <button id="5" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_98304.mp4')">5</button>
-            <button id="6" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_122880.mp4')">6</button>
-            <button id="7" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_147456.mp4')">7</button>
-            <button id="8" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_172032.mp4')">8</button>
-            <button id="9" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_196608.mp4')">9</button> -->
+        </div>
+        <div>
+            <button id="video_0" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/init-stream_0.m4s')">video_0</button>
+            <button id="video_1" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00001.m4s')">video_1</button>
+            <button id="video_2" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00002.m4s')">video_2</button>
+            <button id="video_3" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00003.m4s')">video_3</button>
+            <button id="video_4" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00004.m4s')">video_4</button>
+            <button id="video_5" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00005.m4s')">video_5</button>
+            <button id="video_6" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00006.m4s')">video_6</button>
+            <button id="video_7" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00007.m4s')">video_7</button>
+            <button id="video_8" type="button" onclick="segmentAppend1('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_0-00008.m4s')">video_8</button>
+            <button id="audio_0" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/init-stream_4.m4s')">audio_0</button>
+            <button id="audio_1" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00001.m4s')">audio_1</button>
+            <button id="audio_2" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00002.m4s')">audio_2</button>
+            <button id="audio_3" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00003.m4s')">audio_3</button>
+            <button id="audio_4" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00004.m4s')">audio_4</button>
+            <button id="audio_5" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00005.m4s')">audio_5</button>
+            <button id="audio_6" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00006.m4s')">audio_6</button>
+            <button id="audio_7" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00007.m4s')">audio_7</button>
+            <button id="audio_8" type="button" onclick="segmentAppend2('http://222.20.126.109:8080/ffz/Tokyo/v8/chunk-stream_4-00008.m4s')">audio_8</button>
+            <!-- <button id="video_1" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_0.mp4')">1</button>
+            <button id="video_2" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_24576.mp4')">2</button>
+            <button id="video_3" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_49152.mp4')">3</button>
+            <button id="video_4" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_73728.mp4')">4</button>
+            <button id="video_5" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_98304.mp4')">5</button>
+            <button id="video_6" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_122880.mp4')">6</button>
+            <button id="video_7" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_147456.mp4')">7</button>
+            <button id="video_8" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_172032.mp4')">8</button>
+            <button id="video_9" type="button" onclick="segmentAppend('https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/ED_1280_4M_MPEG2_video_196608.mp4')">9</button> -->
         </div>
 
         <script>
-            var sourceBuffer
+            var sourceBuffer1
+            var sourceBuffer2
 
-            function segmentAppend (url) {
+            function segmentAppend1 (url) {
                 fetchBuffer(url, buffer => {
-                        sourceBuffer.appendBuffer(buffer)
+                        sourceBuffer1.appendBuffer(buffer)
+                })
+            }
+
+            function segmentAppend2 (url) {
+                fetchBuffer(url, buffer => {
+                        sourceBuffer2.appendBuffer(buffer)
                 })
             }
 
             function sourceOpen () {
-                var mime = 'video/mp4; codecs="avc1.640033"'
-                sourceBuffer = sourceBuffer ? sourceBuffer : mediaSource.addSourceBuffer(mime)
-                mediaSource.duration = mediaSource.duration ? mediaSource.duration : 100
+                var mime1 = 'video/mp4; codecs="avc1.640028"'
+                var mime2 = 'audio/mp4; codecs="mp4a.40.2"'
+                sourceBuffer1 = mediaSource.addSourceBuffer(mime1)
+                sourceBuffer2 = mediaSource.addSourceBuffer(mime2)
+                // mediaSource.duration = mediaSource.duration ? mediaSource.duration : 100
 
-                fetchBuffer('http://222.20.126.109:8080/ffz/Tokyo/v7/init-stream_0.m4s', buffer => {
-                        sourceBuffer.appendBuffer(buffer)
+                fetchBuffer('http://222.20.126.109:8080/ffz/Tokyo/v8/init-stream_0.m4s', buffer => {
+                        sourceBuffer1.appendBuffer(buffer)
+                })
+                fetchBuffer('http://222.20.126.109:8080/ffz/Tokyo/v8/init-stream_4.m4s', buffer => {
+                        sourceBuffer2.appendBuffer(buffer)
                 })
             }
             

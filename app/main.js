@@ -4,6 +4,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     $interval(function () {}, 1);
 
+/////////////////////////////////////////////////////////////////////////////////////
+    $scope.mediaSource = NaN;  // Container for the MediaSource object
+    $scope.videoNum = 6;  // Number of paths for fetching videos
+    $scope.audioNum = 0;  // Number of paths for fetching audios
+/////////////////////////////////////////////////////////////////////////////////////
 
     //// Global variables (containers: cannot adjust mannually)
 
@@ -958,6 +963,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     //// Functions: media players
 
+/////////////////////////////////////////////////////////////////////////////////////
     // Loading streams
     $scope.loadStream = function() {
         // ABR strategies, number of video and audio paths, scheduling timeout cannot change after initialization
@@ -981,7 +987,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         document.getElementById( "life_signal" ).disabled = "true";
         switch ($scope.selectedMode) {
             case 'Multi-Path':
-                $scope.initial();
+                $scope.mse_init();
                 break;
             case 'VR':
                 $scope.aframe_init();
@@ -990,6 +996,33 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 break;
         }
     };
+
+    // Initializing streams with MediaSource
+    $scope.mse_init = function() {
+        const supportMediaSource = 'MediaSource' in window
+        if (supportMediaSource) {
+            $scope.mediaSource = new MediaSource()
+            let video = document.getElementById('video')
+            if (video) {
+                video.src = URL.createObjectURL($scope.mediaSource)
+                $scope.mediaSource.addEventListener('sourceopen', sourceOpen)
+            } else {
+                window.alert("There is no video element in window!")
+            }
+        } else {
+            window.alert("MediaSource is not supported in window!")
+        }
+    }
+
+    // Triggered when mediaSoure is ready to open sources
+    $scope.sourceOpen = function() {
+        if ($scope.videoNum || $scope.audioNum) {
+            
+        } else {
+            window.alert("Wrong videoNum/audioNum: At least one path for fetching media!")
+        }
+    }
+/////////////////////////////////////////////////////////////////////////////////////
 
     // Initializing the aframe page
     $scope.aframe_init = function() {
