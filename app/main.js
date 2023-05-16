@@ -5,26 +5,47 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $interval(function () {}, 1);
 
 /////////////////////////////////////////////////////////////////////////////////////
-    $scope.mediaSource = NaN;  // Container for the MediaSource object
-    $scope.videoElement = NaN;  // Container for video element in HTML page
+    $scope.mediaSource = null;  // Container for the MediaSource object
+    $scope.videoElement = null;  // Container for video element in HTML page
+    $scope.videoSourceBuffer = null;  // Container for SourceBuffer of the video
+    $scope.audioSourceBuffer = null;  // Container for SourceBuffer of the audio
     $scope.videoNum = 6;  // Number of paths for fetching videos
-    $scope.audioNum = 0;  // Number of paths for fetching audios
+    $scope.audioNum = 1;  // Number of paths for fetching audios
+    $scope.videoMpds = [];  // Container for videos' MPD
+    $scope.audioMpds = [];  // Container for audios' MPD
+    $scope.videoMime = NaN;  // Container for videos' MIME
+    $scope.audioMime = NaN;  // Container for audios' MIME
+
+    $scope.matchers = [
+        new DurationMatcher(),
+        new DateTimeMatcher(),
+        new NumericMatcher(),
+        new StringMatcher()
+    ];
+
+    $scope.DOMNodeTypes = {
+        ELEMENT_NODE 	   : 1,
+        TEXT_NODE    	   : 3,
+        CDATA_SECTION_NODE : 4,
+        COMMENT_NODE	   : 8,
+        DOCUMENT_NODE 	   : 9
+    };
 /////////////////////////////////////////////////////////////////////////////////////
 
     //// Global variables (containers: cannot adjust mannually)
 
     $scope.players = [];  // Container for DASH players
-    $scope.controllBars = NaN;  // Container for controllbars
+    $scope.controllBars = null;  // Container for controllbars
     $scope.buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not
     $scope.forcedPause = false;  // Flag for player to identify whether stop mannually or not
-    $scope.lon = null, $scope.lat = null;  // Longitude and latitude in spherical coordinates
+    $scope.lon = NaN, $scope.lat = NaN;  // Longitude and latitude in spherical coordinates
     $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
-    $scope.totalQOE = null;  // Compute the QoE considering all players (TODO)
+    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
     $scope.startupTime = 0;  // Startup time of streaming
     $scope.startupTimeFormatted = null;  // Formatted startup time of streaming
-    $scope.normalizedTime = null;  // Set the fastest mediaplayer's timeline as the normalized time
-    $scope.totalThroughput = null;  // Compute the total throughput considering all players
-    $scope.currentPathID = null;  // Current path ID
+    $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
+    $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
+    $scope.currentPathID = NaN;  // Current path ID
     $scope.playerBufferLength = [];  // Data from monitor
     $scope.playerAverageThroughput = [];  // Data from monitor
     $scope.playerTime = [];  // Data from monitor
@@ -86,37 +107,145 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         {
             name:"VOD (Local CMPVP907)",
             urls:[
-                "http://localhost:8080/CMPVP907/face0/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face1/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face2/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face3/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face4/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face5/output/stream.mpd",
-                "http://localhost:8080/CMPVP907/face6/output/stream.mpd"
+                "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd",
+                "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Local Tokyo)",
+            urls:[
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
+                "http://localhost:8080/datasets/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (File BBB)",
+            urls:[
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (File Tokyo)",
+            urls:[
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:8080/ffz/Tokyo/audio/stream.mpd"
             ]
         },
         {
             name:"VOD (File Docker BBB)",
             urls:[
-                "http://10.12.159.73:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.73:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (File Docker Tokyo)",
+            urls:[
+                "http://222.20.126.108:6001/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6003/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6005/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6007/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6009/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6011/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.108:6001/ffz/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Edge BBB)",
+            urls:[
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (Edge Tokyo)",
+            urls:[
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:8080/ffz/Tokyo/audio/stream.mpd"
             ]
         },
         {
             name:"VOD (Edge Docker BBB)",
             urls:[
-                "http://10.12.159.74:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://10.12.159.74:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (Edge Docker Tokyo)",
+            urls:[
+                "http://222.20.126.109:6001/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6003/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6005/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6007/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6009/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6011/ffz/Tokyo/v7/stream.mpd",
+                "http://222.20.126.109:6001/ffz/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier File BBB)",
+            urls:[
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier File Tokyo)",
+            urls:[
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:8080/ffz/Tokyo/audio/stream.mpd"
             ]
         },
         {
@@ -132,6 +261,42 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
+            name:"VOD (Zerotier File Docker Tokyo)",
+            urls:[
+                "http://172.28.0.53:6001/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6003/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6005/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6007/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6009/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6011/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.53:6001/ffz/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier Edge BBB)",
+            urls:[
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier Edge Tokyo)",
+            urls:[
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:8080/ffz/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
             name:"VOD (Zerotier Edge Docker BBB)",
             urls:[
                 "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
@@ -144,6 +309,18 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
+            name:"VOD (Zerotier Edge Docker Tokyo)",
+            urls:[
+                "http://172.28.0.54:6001/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6003/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6005/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6007/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6009/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6011/ffz/Tokyo/v7/stream.mpd",
+                "http://172.28.0.54:6001/ffz/Tokyo/audio/stream.mpd"
+            ]
+        },
+        {
             name:"LIVE (Livesim Single Rate)",
             url:"https://livesim.dashif.org/livesim/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd"
         },
@@ -153,22 +330,22 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         },
         {
             name:"LIVE (FileServer)",
-            url:"http://10.12.159.73:8000/dash/stream.mpd"
+            url:"http://222.20.126.108:8000/dash/stream.mpd"
         },
         {
             name:"LIVE (EdgeServer)",
-            url:"http://10.12.159.74:8000/dash/stream.mpd"
+            url:"http://222.20.126.109:8000/dash/stream.mpd"
         },
         {
             name:"LIVE (FS & ES)",
             urls:[
-                "http://10.12.159.73:8000/face0/stream.mpd",
-                "http://10.12.159.73:8000/face1/stream.mpd",
-                "http://10.12.159.73:8000/face2/stream.mpd",
-                "http://10.12.159.74:8000/face3/stream.mpd",
-                "http://10.12.159.74:8000/face4/stream.mpd",
-                "http://10.12.159.74:8000/face5/stream.mpd",
-                "http://10.12.159.73:8000/face0/stream.mpd"
+                "http://222.20.126.108:8000/face0/stream.mpd",
+                "http://222.20.126.108:8000/face1/stream.mpd",
+                "http://222.20.126.108:8000/face2/stream.mpd",
+                "http://222.20.126.109:8000/face3/stream.mpd",
+                "http://222.20.126.109:8000/face4/stream.mpd",
+                "http://222.20.126.109:8000/face5/stream.mpd",
+                "http://222.20.126.108:8000/face0/stream.mpd"
             ]
         },
         {
@@ -197,16 +374,16 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.preferredQualitySelected = 0;  // Switch the quality by manual switching ABR strategy and multipath ABR strategy
     $scope.lifeSignalEnabled = false;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
-        "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-        "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
+        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd"
     ];
     $scope.audioURLs = [  // Save the selected media source
-        "http://localhost:8080/CMPVP907/face0/output/stream.mpd"
+        "http://222.20.126.109:8080/ffz/Tokyo/audio/stream.mpd"
     ];
 
 
@@ -548,6 +725,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             case 4:
             case 5:
                 $scope.videoURLs[num] = item.url ? item.url : item.urls[num];
+                break;
             case 6:
                 $scope.audioURLs[0] = item.url ? item.url : item.urls[num];
                 break;
@@ -601,7 +779,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // Showing/hiding options
     $scope.showoption = function () {
         if($scope.optionButton == "Show Options"){
-            document.getElementById('option').style = "margin-top: 7px; z-index: 1000; position: block; width: 100%;";
+            document.getElementById('option').style = "border: 3px solid #136bfb; margin-top: 7px; z-index: 1000; position: block; width: 100%;";
             $scope.optionButton = "Hide Options";
         }else{
             document.getElementById('option').style = "display: none;";
@@ -678,52 +856,52 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.videoNum = num;
         switch (num) {
             case 1:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: none";
-                document.getElementById('desktop-streams-2').style = "display: none";
-                document.getElementById('desktop-streams-3').style = "display: none";
-                document.getElementById('desktop-streams-4').style = "display: none";
-                document.getElementById('desktop-streams-5').style = "display: none";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: none";
+                document.getElementById('videoSource_2').style = "display: none";
+                document.getElementById('videoSource_3').style = "display: none";
+                document.getElementById('videoSource_4').style = "display: none";
+                document.getElementById('videoSource_5').style = "display: none";
                 break;
             case 2:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: block";
-                document.getElementById('desktop-streams-2').style = "display: none";
-                document.getElementById('desktop-streams-3').style = "display: none";
-                document.getElementById('desktop-streams-4').style = "display: none";
-                document.getElementById('desktop-streams-5').style = "display: none";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: block";
+                document.getElementById('videoSource_2').style = "display: none";
+                document.getElementById('videoSource_3').style = "display: none";
+                document.getElementById('videoSource_4').style = "display: none";
+                document.getElementById('videoSource_5').style = "display: none";
                 break;
             case 3:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: block";
-                document.getElementById('desktop-streams-2').style = "display: block";
-                document.getElementById('desktop-streams-3').style = "display: none";
-                document.getElementById('desktop-streams-4').style = "display: none";
-                document.getElementById('desktop-streams-5').style = "display: none";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: block";
+                document.getElementById('videoSource_2').style = "display: block";
+                document.getElementById('videoSource_3').style = "display: none";
+                document.getElementById('videoSource_4').style = "display: none";
+                document.getElementById('videoSource_5').style = "display: none";
                 break;
             case 4:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: block";
-                document.getElementById('desktop-streams-2').style = "display: block";
-                document.getElementById('desktop-streams-3').style = "display: block";
-                document.getElementById('desktop-streams-4').style = "display: none";
-                document.getElementById('desktop-streams-5').style = "display: none";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: block";
+                document.getElementById('videoSource_2').style = "display: block";
+                document.getElementById('videoSource_3').style = "display: block";
+                document.getElementById('videoSource_4').style = "display: none";
+                document.getElementById('videoSource_5').style = "display: none";
                 break;
             case 5:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: block";
-                document.getElementById('desktop-streams-2').style = "display: block";
-                document.getElementById('desktop-streams-3').style = "display: block";
-                document.getElementById('desktop-streams-4').style = "display: block";
-                document.getElementById('desktop-streams-5').style = "display: none";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: block";
+                document.getElementById('videoSource_2').style = "display: block";
+                document.getElementById('videoSource_3').style = "display: block";
+                document.getElementById('videoSource_4').style = "display: block";
+                document.getElementById('videoSource_5').style = "display: none";
                 break;
             case 6:
-                document.getElementById('desktop-streams-0').style = "display: block";
-                document.getElementById('desktop-streams-1').style = "display: block";
-                document.getElementById('desktop-streams-2').style = "display: block";
-                document.getElementById('desktop-streams-3').style = "display: block";
-                document.getElementById('desktop-streams-4').style = "display: block";
-                document.getElementById('desktop-streams-5').style = "display: block";
+                document.getElementById('videoSource_0').style = "display: block";
+                document.getElementById('videoSource_1').style = "display: block";
+                document.getElementById('videoSource_2').style = "display: block";
+                document.getElementById('videoSource_3').style = "display: block";
+                document.getElementById('videoSource_4').style = "display: block";
+                document.getElementById('videoSource_5').style = "display: block";
                 break;
             default:
                 break;
@@ -735,10 +913,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.audioNum = num;
         switch (num) {
             case 0:
-                document.getElementById('desktop-streams-audio').style = "display: none";
+                document.getElementById('audioSource_0').style = "display: none";
                 break;
             case 1:
-                document.getElementById('desktop-streams-audio').style = "display: block";
+                document.getElementById('audioSource_0').style = "display: block";
                 break;
             default:
                 break;
@@ -1024,7 +1202,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             return;
         }
         $scope.videoElement.src = URL.createObjectURL($scope.mediaSource);
-        $scope.mediaSource.addEventListener('sourceopen', sourceOpen);
+
+        // Load MPDs
+        $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen);
 
     }
 
@@ -1038,14 +1218,22 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
         for (let i = 0; i < $scope.videoNum; i++) {
             if (!$scope.videoURLs[i] || $scope.videoURLs[i] == "") {
-                window.alert("Empty URL(s) in paths of videos!");
+                window.alert("Wrong videoURLs[" + i + "]: Empty URL in a path of video!");
+                return false;
+            }
+            if (!$scope.videoURLs[i] || $scope.videoURLs[i].slice(-4) !== ".mpd") {
+                window.alert("Wrong videoURLs[" + i + "]: Not a .mpd URL in a path of video!");
                 return false;
             }
         }
 
         for (let i = 0; i < $scope.audioNum; i++) {
             if (!$scope.audioURLs[i] || $scope.audioURLs[i] == "") {
-                window.alert("Empty URL(s) in paths of audios!");
+                window.alert("Wrong audioURLs[" + i + "]: Empty URL in a path of audio!");
+                return false;
+            }
+            if (!$scope.audioURLs[i] || $scope.audioURLs[i].slice(-4) !== ".mpd") {
+                window.alert("Wrong audioURLs[" + i + "]: Not a .mpd URL in a path of audio!");
                 return false;
             }
         }
@@ -1057,7 +1245,192 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // Triggered when mediaSoure is ready to open sources
     $scope.sourceOpen = function() {
 
+        for (let i = 0; i < $scope.videoNum; i++) {
+            $scope.fetchMpd($scope.videoURLs[i], (response) => {
+                $scope.loadMpd(response, "video", i);
+            });
+        }
+
+        for (let i = 0; i < $scope.audioNum; i++) {
+            $scope.fetchMpd($scope.audioURLs[i], (response) => {
+                $scope.loadMpd(response, "audio", i);
+            });
+        }
+
     }
+
+    $scope.fetchMpd = function(url, callback) {
+
+        if (url == "") {
+            window.alert("Empty URL when fetching MPD!");
+            return;
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('get', url, true);
+        xhr.responseType = 'text';
+        xhr.onload = function () {
+            callback(xhr.response);
+        };
+
+        xhr.send();
+
+    }
+
+    $scope.loadMpd = function(response, type, i) {
+
+        var parser = new DOMParser();
+        var xmlData = parser.parseFromString(response, "text/xml");
+        var manifest = $scope.parseDOMChildren(xmlData);
+        
+        if (!manifest.MPD) {
+            window.alert("Wrong manifest of " + type + "URLs[" + i + "]: No children node MPD in the manifest!");
+            return;
+        }
+        manifest = manifest.MPD;
+
+        manifest.baseUrl = type == "video" ? $scope.videoURLs[i].slice(0, $scope.videoURLs[i].lastIndexOf("/") + 1) : type == "audio" ? $scope.audioURLs[i].slice(0, $scope.audioURLs[i].lastIndexOf("/") + 1) : undefined;
+        if (!manifest.baseUrl || manifest.baseUrl == "") {
+            window.alert("Wrong manifest of " + type + "URLs[" + i + "]: No base URL available in the manifest!");
+            return;
+        }
+
+        switch (type) {
+            case "video":
+                if (!$scope.videoMime) {
+                    $scope.videoMpds[i] = manifest;
+                    console.log(type + "Mpds[" + i + "] is loaded!");
+                    $scope.register($scope.videoMpds[i], type);
+                } else {
+                    
+                }
+                break;
+            
+            case "audio":
+
+                break;
+        
+            default:
+                break;
+        }
+
+    }
+
+    // Extract MPD nodes from XML data (rebuilt from dash.js)
+    $scope.parseDOMChildren = function(node, path) {
+        if (node.nodeType == $scope.DOMNodeTypes.DOCUMENT_NODE) {  // Read the root node and its children nodes
+            var result = new Object;
+            var nodeChildren = node.childNodes;
+            for (let i = 0; i < nodeChildren.length; i++) {
+                var child = nodeChildren[i];
+                if (child.nodeType == $scope.DOMNodeTypes.ELEMENT_NODE) {
+                    result = {};
+                    result[child.localName] = $scope.parseDOMChildren(child);
+                }
+            }
+            return result;
+        } else if (node.nodeType == $scope.DOMNodeTypes.ELEMENT_NODE) {  // Read the element nodes and their children nodes
+            var result = new Object;
+            result.__cnt = 0;
+            var nodeChildren = node.childNodes;
+            
+            // Extract children nodes
+            for (let i = 0; i < nodeChildren.length; i++) {
+                var child = nodeChildren[i];
+                var childName = child.localName;
+                if (child.nodeType != $scope.DOMNodeTypes.COMMENT_NODE) {
+                    var childPath = path + "." + childName;
+                    result.__cnt++;
+                    if (result[childName] == null) {
+                        var c = $scope.parseDOMChildren(child, childPath);
+                        if (c != "") {
+                            result[childName] = c;
+                        }
+                    } else {
+                        if( !(result[childName] instanceof Array)) {
+                            result[childName] = [result[childName]];
+                        }
+                        var c = $scope.parseDOMChildren(child, childPath);
+                        if (c != "") {
+                            (result[childName])[result[childName].length] = c;
+                        }
+                    }
+                }
+            }
+
+            // Extract attributes
+            var nodeLocalName = node.localName;
+            for (let i = 0; i < node.attributes.length; i++) {
+                var attr = node.attributes[i];
+                result.__cnt++;
+                var value2 = attr.value;
+                for (let j = 0; j < $scope.matchers.length; j++) {
+                    var matchObj = $scope.matchers[j];  /////////////////////////////////
+                    if (matchObj.test(attr, nodeLocalName)) {
+                        value2 = matchObj.converter(attr.value);
+                    }
+                }
+                result[attr.name] = value2;
+            }
+
+            // Extract node namespace prefix
+            var nodePrefix = node.prefix;
+            if (nodePrefix != null && nodePrefix != "") {
+                result.__cnt++;
+                result.__prefix = nodePrefix;
+            }
+
+            // Dealing with "#text" & "#cdata-section"
+            if (result["#text"] != null) {
+                result.__text = result["#text"];
+                if(result.__text instanceof Array) {
+                    result.__text = result.__text.join("\n");
+                }
+                delete result["#text"];
+            }
+            if (result["#cdata-section"] != null) {
+                result.__cdata = result["#cdata-section"];
+                delete result["#cdata-section"];
+            }
+            if (result.__cnt == 0) {
+                result = '';
+            } else if (result.__cnt == 1 && result.__text != null) {
+                result = result.__text;
+            } else if (result.__cnt == 1 && result.__cdata != null) {
+                result = result.__cdata;
+            } else if (result.__cnt > 1 && result.__text != null) {
+                if (result.__text == "" || result.__text.trim() == "") {
+                    delete result.__text;
+                }
+            }
+            delete result.__cnt;
+
+            return result;
+        } else if (node.nodeType == $scope.DOMNodeTypes.TEXT_NODE || node.nodeType == $scope.DOMNodeTypes.CDATA_SECTION_NODE) {  // Read the text and cdata_section nodes
+            return node.nodeValue.trim();
+        }
+    }
+
+    $scope.register = function(manifest, type) {  //////////////////////////////
+        var mimeFromMpd = manifest.querySelectorAll("mimeType");
+        var codecsFromMpd = manifest.querySelectorAll("codecs");
+        $scope.videoMime = mimeFromMpd + "; codecs=\"" + codecsFromMpd + "\"";
+        $scope.videoSourceBuffer = $scope.mediaSource.addSourceBuffer($scope.videoMime);
+    }
+
+    $scope.fetchBuffer = function(url, callback) {
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('get', url);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function () {
+            callback(xhr.response);
+        };
+        xhr.send();
+
+    }
+
+
 /////////////////////////////////////////////////////////////////////////////////////
 
     // Initializing the aframe page
@@ -1079,7 +1452,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
         // Video part
         for (let i = 0; i < $scope.playerNum; i++) {
-            video = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : NaN;
+            video = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : null;
             $scope.players[i] = new dashjs.MediaPlayer().create();
             url = $scope.videoURLs[i];
             $scope.buffer_empty_flag[i] = true;
@@ -1231,7 +1604,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
         // Audio part
         if ($scope.isAudio && $scope.audioURLs[0] != "") {
-            var audio = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "audio" ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "audio") : NaN;
+            var audio = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "audio" ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "audio") : null;
             $scope.players[$scope.playerNum] = new dashjs.MediaPlayer().create();
             url = $scope.audioURLs[0];
             $scope.buffer_empty_flag[$scope.playerNum] = true;
@@ -1557,7 +1930,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.capturePictures = function() {
         for (let i = 0; i < $scope.playerNum; i++) {
             if ($scope.players[i]) {
-                document.getElementById("capture_" + i).getContext('2d').drawImage($scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : NaN, 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
+                document.getElementById("capture_" + i).getContext('2d').drawImage($scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : null, 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
                 document.getElementById("capture_" + i).style = "width: 150px; height: " + (150 * ($scope.playerBitrateList[i][0] ? ($scope.playerBitrateList[i][0].height / $scope.playerBitrateList[i][0].width) : 150)) + "px";
                 // img.src = canvas.toDataURL("image/png");
             }

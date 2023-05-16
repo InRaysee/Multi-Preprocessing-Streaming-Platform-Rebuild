@@ -109,7 +109,7 @@ a:hover {
 .options-item-title {
     background-color: #136bfb;
     height: 20px;
-    width: 255px;
+    width: 100%;
     padding-top: .2rem;
     text-align: center;
     color: #ffffff;

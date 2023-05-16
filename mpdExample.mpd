@@ -1,0 +1,100 @@
+{
+    "ProgramInformation": {},
+    "ServiceDescription": {
+        "id": 0
+    },
+    "Period": {
+        "AdaptationSet": {
+            "Representation": [
+                {
+                    "SegmentTemplate": {
+                        "timescale": 1000000,
+                        "duration": 2000000,
+                        "availabilityTimeOffset": 1.958,
+                        "initialization": "init-stream_$RepresentationID$.m4s",
+                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                        "startNumber": 1
+                    },
+                    "id": 0,
+                    "mimeType": "video/mp4",
+                    "codecs": "avc1.640028",
+                    "bandwidth": 20000000,
+                    "width": 1920,
+                    "height": 1080,
+                    "sar": "1:1"
+                },
+                {
+                    "SegmentTemplate": {
+                        "timescale": 1000000,
+                        "duration": 2000000,
+                        "availabilityTimeOffset": 1.958,
+                        "initialization": "init-stream_$RepresentationID$.m4s",
+                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                        "startNumber": 1
+                    },
+                    "id": 1,
+                    "mimeType": "video/mp4",
+                    "codecs": "avc1.640028",
+                    "bandwidth": 10000000,
+                    "width": 1920,
+                    "height": 1080,
+                    "sar": "1:1"
+                },
+                {
+                    "SegmentTemplate": {
+                        "timescale": 1000000,
+                        "duration": 2000000,
+                        "availabilityTimeOffset": 1.958,
+                        "initialization": "init-stream_$RepresentationID$.m4s",
+                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                        "startNumber": 1
+                    },
+                    "id": 2,
+                    "mimeType": "video/mp4",
+                    "codecs": "avc1.640028",
+                    "bandwidth": 5000000,
+                    "width": 1920,
+                    "height": 1080,
+                    "sar": "1:1"
+                },
+                {
+                    "SegmentTemplate": {
+                        "timescale": 1000000,
+                        "duration": 2000000,
+                        "availabilityTimeOffset": 1.958,
+                        "initialization": "init-stream_$RepresentationID$.m4s",
+                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                        "startNumber": 1
+                    },
+                    "id": 3,
+                    "mimeType": "video/mp4",
+                    "codecs": "avc1.640028",
+                    "bandwidth": 1000,
+                    "width": 1920,
+                    "height": 1080,
+                    "sar": "1:1"
+                }
+            ],
+            "id": 0,
+            "contentType": "video",
+            "startWithSAP": 1,
+            "segmentAlignment": "true",
+            "bitstreamSwitching": "true",
+            "frameRate": "24/1",
+            "maxWidth": 1920,
+            "maxHeight": 1080,
+            "par": "16:9"
+        },
+        "id": 0,
+        "start": "PT0.0S"
+    },
+    "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "xmlns": "urn:mpeg:dash:schema:mpd:2011",
+    "xmlns:xlink": "http://www.w3.org/1999/xlink",
+    "xsi:schemaLocation": "urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd",
+    "profiles": "urn:mpeg:dash:profile:isoff-live:2011",
+    "type": "static",
+    "mediaPresentationDuration": "PT3M43.2S",
+    "maxSegmentDuration": "PT2.0S",
+    "minBufferTime": "PT4.0S"
+}
