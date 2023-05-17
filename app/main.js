@@ -6,24 +6,50 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
 /////////////////////////////////////////////////////////////////////////////////////
     $scope.mediaSource = null;  // Container for the MediaSource object
-    $scope.videoElement = null;  // Container for video element in HTML page
-    $scope.videoSourceBuffer = null;  // Container for SourceBuffer of the video
-    $scope.audioSourceBuffer = null;  // Container for SourceBuffer of the audio
-    $scope.videoNum = 6;  // Number of paths for fetching videos
-    $scope.audioNum = 1;  // Number of paths for fetching audios
-    $scope.videoMpds = [];  // Container for videos' MPD
-    $scope.audioMpds = [];  // Container for audios' MPD
-    $scope.videoMime = NaN;  // Container for videos' MIME
-    $scope.audioMime = NaN;  // Container for audios' MIME
-
-    $scope.matchers = [
+    $scope.streamElement = null;  // Container for video element in HTML page
+    $scope.streamSourceBuffer = {  // Containers for SourceBuffers
+        video: null,
+        audio: null
+    }
+    $scope.streamNum = {  // Number of paths for fetching streams
+        video: 6,
+        audio: 1
+    }
+    $scope.streamMpds = {  // Arrays of MPDs
+        video: [],
+        audio: []
+    };
+    $scope.streamBitrateLists = {  // Arrays of bitrate lists
+        video: [],
+        audio: []
+    }
+    $scope.streamMimeCodecs = {  // MIME types and codecs of streams
+        video: NaN,
+        audio: NaN
+    }
+    $scope.streamInfo = {  // Information of streams selected
+        video: {
+            pathIndex: NaN,
+            periodIndex: NaN,
+            adaptationSetIndex: NaN,
+            representationIndex: NaN,
+            segmentIndex: NaN
+        },
+        audio: {
+            pathIndex: NaN,
+            periodIndex: NaN,
+            adaptationSetIndex: NaN,
+            representationIndex: NaN,
+            segmentIndex: NaN
+        }
+    };
+    $scope.matchers = [  // Matchers for data adjustments (dash.js)
         new DurationMatcher(),
         new DateTimeMatcher(),
         new NumericMatcher(),
         new StringMatcher()
     ];
-
-    $scope.DOMNodeTypes = {
+    $scope.DOMNodeTypes = {  // Node types for parsers
         ELEMENT_NODE 	   : 1,
         TEXT_NODE    	   : 3,
         CDATA_SECTION_NODE : 4,
@@ -80,8 +106,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.IntervalOfUpdateMultiPathQualities = 1000;  // [For setting interval] Set up the qualities when using MultiPathRule
     $scope.GET_SAMPLE_WINDOW_SIZE_FOR_RTT = 5;  // Set up the window size for calculating RTT
     $scope.drawmycanvas = {  // Set the width and height of the capture pictures
-        "width":"150",
-        "height":"150"
+        "width": "150",
+        "height": "150"
     };
     // $scope.mycanvas = {  // Set the width and height of the canvases
     //     "width":"150px",
@@ -117,15 +143,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Local Tokyo)",
+            name:"VOD (Local tokyo)",
             urls:[
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/v7/stream.mpd",
-                "http://localhost:8080/datasets/Tokyo/audio/stream.mpd"
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
+                "http://localhost:8080/datasets/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Local apple)",
+            urls:[
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd",
+                "http://localhost:8080/datasets/apple/v9/stream.mpd"
             ]
         },
         {
@@ -141,15 +179,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (File Tokyo)",
+            name:"VOD (File tokyo)",
             urls:[
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:8080/ffz/Tokyo/audio/stream.mpd"
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (File apple)",
+            urls:[
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -165,15 +215,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (File Docker Tokyo)",
+            name:"VOD (File Docker tokyo)",
             urls:[
-                "http://222.20.126.108:6001/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6003/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6005/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6007/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6009/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6011/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.108:6001/ffz/Tokyo/audio/stream.mpd"
+                "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6003/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6005/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6007/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6009/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6011/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (File Docker apple)",
+            urls:[
+                "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6003/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6005/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6007/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6009/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6011/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -189,15 +251,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Edge Tokyo)",
+            name:"VOD (Edge tokyo)",
             urls:[
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:8080/ffz/Tokyo/audio/stream.mpd"
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Edge apple)",
+            urls:[
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -213,15 +287,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Edge Docker Tokyo)",
+            name:"VOD (Edge Docker tokyo)",
             urls:[
-                "http://222.20.126.109:6001/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6003/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6005/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6007/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6009/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6011/ffz/Tokyo/v7/stream.mpd",
-                "http://222.20.126.109:6001/ffz/Tokyo/audio/stream.mpd"
+                "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6003/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6005/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6007/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6009/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6011/ffz/tokyo/v9/stream.mpd",
+                "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Edge Docker apple)",
+            urls:[
+                "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6003/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6005/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6007/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6009/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6011/ffz/apple/v9/stream.mpd",
+                "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -237,15 +323,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Zerotier File Tokyo)",
+            name:"VOD (Zerotier File tokyo)",
             urls:[
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:8080/ffz/Tokyo/audio/stream.mpd"
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier File apple)",
+            urls:[
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -261,15 +359,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Zerotier File Docker Tokyo)",
+            name:"VOD (Zerotier File Docker tokyo)",
             urls:[
-                "http://172.28.0.53:6001/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6003/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6005/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6007/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6009/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6011/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.53:6001/ffz/Tokyo/audio/stream.mpd"
+                "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6003/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6005/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6007/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6009/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6011/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier File Docker apple)",
+            urls:[
+                "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6003/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6005/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6007/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6009/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6011/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -285,15 +395,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Zerotier Edge Tokyo)",
+            name:"VOD (Zerotier Edge tokyo)",
             urls:[
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:8080/ffz/Tokyo/audio/stream.mpd"
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier Edge apple)",
+            urls:[
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -309,15 +431,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             ]
         },
         {
-            name:"VOD (Zerotier Edge Docker Tokyo)",
+            name:"VOD (Zerotier Edge Docker tokyo)",
             urls:[
-                "http://172.28.0.54:6001/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6003/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6005/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6007/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6009/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6011/ffz/Tokyo/v7/stream.mpd",
-                "http://172.28.0.54:6001/ffz/Tokyo/audio/stream.mpd"
+                "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6003/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6005/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6007/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6009/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6011/ffz/tokyo/v9/stream.mpd",
+                "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd"
+            ]
+        },
+        {
+            name:"VOD (Zerotier Edge Docker apple)",
+            urls:[
+                "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6003/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6005/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6007/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6009/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6011/ffz/apple/v9/stream.mpd",
+                "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd"
             ]
         },
         {
@@ -374,16 +508,16 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.preferredQualitySelected = 0;  // Switch the quality by manual switching ABR strategy and multipath ABR strategy
     $scope.lifeSignalEnabled = false;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd",
-        "http://222.20.126.109:8080/ffz/Tokyo/v7/stream.mpd"
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
     ];
     $scope.audioURLs = [  // Save the selected media source
-        "http://222.20.126.109:8080/ffz/Tokyo/audio/stream.mpd"
+        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
     ];
 
 
@@ -731,9 +865,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 break;
             case 7:
                 if (item.name == "COPY") {
-                    for (let i = 0; i < $scope.videoNum; i++) {
+                    for (let i = 0; i < $scope.streamNum.video; i++) {
                         if ($scope.videoURLs[i] != "") {
-                            for (let j = 0; j < $scope.videoNum; j++) {
+                            for (let j = 0; j < $scope.streamNum.video; j++) {
                                 if (i != j) {
                                     $scope.videoURLs[j] = $scope.videoURLs[i];
                                 }
@@ -853,7 +987,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Changing number of video paths
     $scope.changeVideoNumber = function (num) {
-        $scope.videoNum = num;
+        $scope.streamNum.video = num;
         switch (num) {
             case 1:
                 document.getElementById('videoSource_0').style = "display: block";
@@ -910,7 +1044,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Changing number of audio paths
     $scope.changeAudioNumber = function (num) {
-        $scope.audioNum = num;
+        $scope.streamNum.audio = num;
         switch (num) {
             case 0:
                 document.getElementById('audioSource_0').style = "display: none";
@@ -1191,8 +1325,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
 
         // Attach view & source
-        $scope.videoElement = document.getElementById('video');
-        if (!$scope.videoElement) {
+        $scope.streamElement = document.getElementById('video');
+        if (!$scope.streamElement) {
             window.alert("There is no video element in window!");
             return;
         }
@@ -1201,22 +1335,22 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             window.alert("There is no MediaSource object generated!");
             return;
         }
-        $scope.videoElement.src = URL.createObjectURL($scope.mediaSource);
+        $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
 
         // Load MPDs
         $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen);
 
-    }
+    };
 
     // Checking paths of videos/audios
     $scope.checkPaths = function() {
 
-        if (!($scope.videoNum || $scope.audioNum)) {
-            window.alert("Wrong videoNum/audioNum: At least one path for fetching media!");
+        if (!($scope.streamNum.video || $scope.streamNum.audio)) {
+            window.alert("Wrong streamNum.video/streamNum.audio: At least one path for fetching media!");
             return false;
         }
 
-        for (let i = 0; i < $scope.videoNum; i++) {
+        for (let i = 0; i < $scope.streamNum.video; i++) {
             if (!$scope.videoURLs[i] || $scope.videoURLs[i] == "") {
                 window.alert("Wrong videoURLs[" + i + "]: Empty URL in a path of video!");
                 return false;
@@ -1227,7 +1361,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             }
         }
 
-        for (let i = 0; i < $scope.audioNum; i++) {
+        for (let i = 0; i < $scope.streamNum.audio; i++) {
             if (!$scope.audioURLs[i] || $scope.audioURLs[i] == "") {
                 window.alert("Wrong audioURLs[" + i + "]: Empty URL in a path of audio!");
                 return false;
@@ -1240,25 +1374,26 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
         return true;
 
-    }
+    };
 
     // Triggered when mediaSoure is ready to open sources
     $scope.sourceOpen = function() {
 
-        for (let i = 0; i < $scope.videoNum; i++) {
+        for (let i = 0; i < $scope.streamNum.video; i++) {
             $scope.fetchMpd($scope.videoURLs[i], (response) => {
                 $scope.loadMpd(response, "video", i);
             });
         }
 
-        for (let i = 0; i < $scope.audioNum; i++) {
+        for (let i = 0; i < $scope.streamNum.audio; i++) {
             $scope.fetchMpd($scope.audioURLs[i], (response) => {
                 $scope.loadMpd(response, "audio", i);
             });
         }
 
-    }
+    };
 
+    // Fetch MPDs with XMLHttpRequests
     $scope.fetchMpd = function(url, callback) {
 
         if (url == "") {
@@ -1275,13 +1410,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
         xhr.send();
 
-    }
+    };
 
+    // Load MPDs from responses and initialize
     $scope.loadMpd = function(response, type, i) {
 
         var parser = new DOMParser();
         var xmlData = parser.parseFromString(response, "text/xml");
-        var manifest = $scope.parseDOMChildren(xmlData);
+        var manifest = $scope.parseManifest(xmlData);
         
         if (!manifest.MPD) {
             window.alert("Wrong manifest of " + type + "URLs[" + i + "]: No children node MPD in the manifest!");
@@ -1295,29 +1431,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             return;
         }
 
-        switch (type) {
-            case "video":
-                if (!$scope.videoMime) {
-                    $scope.videoMpds[i] = manifest;
-                    console.log(type + "Mpds[" + i + "] is loaded!");
-                    $scope.register($scope.videoMpds[i], type);
-                } else {
-                    
-                }
-                break;
-            
-            case "audio":
+        $scope.streamMpds[type][i] = manifest;
+        console.log("StreamMpds." + type + "[" + i + "] is loaded!");
+        $scope.register($scope.streamMpds[type][i], type, i);
 
-                break;
-        
-            default:
-                break;
-        }
+    };
 
-    }
+    // Extract MPD nodes from XML data
+    $scope.parseManifest = function(node, path) {
 
-    // Extract MPD nodes from XML data (rebuilt from dash.js)
-    $scope.parseDOMChildren = function(node, path) {
         if (node.nodeType == $scope.DOMNodeTypes.DOCUMENT_NODE) {  // Read the root node and its children nodes
             var result = new Object;
             var nodeChildren = node.childNodes;
@@ -1325,7 +1447,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 var child = nodeChildren[i];
                 if (child.nodeType == $scope.DOMNodeTypes.ELEMENT_NODE) {
                     result = {};
-                    result[child.localName] = $scope.parseDOMChildren(child);
+                    result[child.localName] = $scope.parseManifest(child);
                 }
             }
             return result;
@@ -1342,15 +1464,16 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     var childPath = path + "." + childName;
                     result.__cnt++;
                     if (result[childName] == null) {
-                        var c = $scope.parseDOMChildren(child, childPath);
+                        var c = $scope.parseManifest(child, childPath);
                         if (c != "") {
                             result[childName] = c;
+                            result[childName] = [result[childName]];
                         }
                     } else {
                         if( !(result[childName] instanceof Array)) {
                             result[childName] = [result[childName]];
                         }
-                        var c = $scope.parseDOMChildren(child, childPath);
+                        var c = $scope.parseManifest(child, childPath);
                         if (c != "") {
                             (result[childName])[result[childName].length] = c;
                         }
@@ -1409,14 +1532,153 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         } else if (node.nodeType == $scope.DOMNodeTypes.TEXT_NODE || node.nodeType == $scope.DOMNodeTypes.CDATA_SECTION_NODE) {  // Read the text and cdata_section nodes
             return node.nodeValue.trim();
         }
-    }
 
-    $scope.register = function(manifest, type) {  //////////////////////////////
-        var mimeFromMpd = manifest.querySelectorAll("mimeType");
-        var codecsFromMpd = manifest.querySelectorAll("codecs");
-        $scope.videoMime = mimeFromMpd + "; codecs=\"" + codecsFromMpd + "\"";
-        $scope.videoSourceBuffer = $scope.mediaSource.addSourceBuffer($scope.videoMime);
-    }
+    };
+
+    // Executed when MPDs are loaded
+    $scope.register = function(manifest, type, i) {  //////////////////////////////
+
+        try {
+            // Register bitrate lists
+            let registerBitrateListsResult = $scope.registerBitrateLists(manifest, type, i);
+            if (registerBitrateListsResult != "SUCCESS") {
+                throw registerBitrateListsResult;
+            }
+
+            // Register stream information and create SourceBuffer
+            if (!$scope.streamSourceBuffer[type]) {
+                // Register stream information
+                let registerStreamInfoResult = $scope.registerStreamInfo(manifest, type, i, registerBitrateListsResult);
+                if (registerStreamInfoResult != "SUCCESS") {
+                    throw registerStreamInfoResult;
+                }
+            }
+        } catch (e) {
+            window.alert("Error when registerring " + type + " " + i + (e == "" ? e : ": " + e));
+        }
+    
+    };
+
+    // Register bitrate lists
+    $scope.registerBitrateLists = function(manifest, type, i) {
+        
+        try {
+            $scope.streamBitrateLists[type][i] = [];
+            if (!manifest.Period || manifest.Period.length == 0) {
+                throw "No period is available in path " + i + "!";
+            }
+            for (let j = 0; j < manifest.Period.length; j++) {
+                $scope.streamBitrateLists[type][i][j] = [];
+                if (!manifest.Period[j].AdaptationSet || manifest.Period[j].AdaptationSet.length == 0) {
+                    throw "No adaptation set is available in path " + i + ", period " + j + "!";
+                }
+                for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
+                    if (manifest.Period[j].AdaptationSet[jj].contentType == type) {
+                        $scope.streamBitrateLists[type][i][j][jj] = [];
+                        if (!manifest.Period[j].AdaptationSet[jj].Representation || manifest.Period[j].AdaptationSet[jj].Representation.length == 0) {
+                            throw "No representation is available in path " + i + ", period " + j + ", adaptation set " + jj + "!";
+                        }
+                        for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
+                            $scope.streamBitrateLists[type][i][j][jj][jjj] = manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth;
+                        }
+                    }
+                }
+            }
+            return "SUCCESS";
+        } catch (e) {
+            return "registerBitrateLists: " + e;
+        }
+
+    };
+
+    // Register stream information
+    $scope.registerStreamInfo = function(manifest, type, i, registerBitrateListsResult) {
+
+        try {
+            // Check bitrate lists
+            if (registerBitrateListsResult != "SUCCESS") {
+                throw "Bitrate lists of path " + i + " is not registered!";
+            }
+            var tempStreamInfo = {};
+            // pathIndex
+            tempStreamInfo.pathIndex = i;
+            // periodIndex
+            if (!manifest.Period || manifest.Period.length == 0) {
+                throw "No period is available in path " + i + "!";
+            }
+            for (let j = 0; j < manifest.Period.length; j++) {
+                if (manifest.Period[j].start == 0) {
+                    tempStreamInfo.periodIndex = j;
+                    // adaptationSetIndex
+                    if (!manifest.Period[j].AdaptationSet || manifest.Period[j].AdaptationSet.length == 0) {
+                        throw "No adaptation set is available in path " + i + ", period " + j + "!";
+                    }
+                    for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
+                        if (manifest.Period[j].AdaptationSet[jj].contentType == type && manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation.length > ($scope.lifeSignalEnabled ? 1 : 0)) {
+                            tempStreamInfo.adaptationSetIndex = jj;
+                            // representationIndex
+                            let firstsmall, secondsmall;
+                            for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
+                                if ($scope.streamBitrateLists[type] && $scope.streamBitrateLists[type][i] && $scope.streamBitrateLists[type][i][j] && $scope.streamBitrateLists[type][i][j][jj] && $scope.streamBitrateLists[type][i][j][jj][jjj]) {
+                                    if (!firstsmall) {
+                                        firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                    } else if (firstsmall && !secondsmall) {
+                                        if ($scope.streamBitrateLists[type][i][j][jj][jjj] < firstsmall.value) {
+                                            secondsmall = firstsmall;
+                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                        } else {
+                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                        }
+                                    } else if (!firstsmall && secondsmall) {
+                                        throw "Error when selecting representation";
+                                    } else {
+                                        if ($scope.streamBitrateLists[type][i][j][jj][jjj] < firstsmall.value) {
+                                            secondsmall = firstsmall;
+                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                        } else if ($scope.streamBitrateLists[type][i][j][jj][jjj] < secondsmall) {
+                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                        }
+                                    }
+                                }
+                            }
+                            if ((!$scope.lifeSignalEnabled) && firstsmall) {
+                                tempStreamInfo.representationIndex = firstsmall.key;
+                                break;
+                            }
+                            if ($scope.lifeSignalEnabled && secondsmall) {
+                                tempStreamInfo.representationIndex = firstsmall.key;
+                                break;
+                            }
+                        }
+                        if (jj == manifest.Period[j].AdaptationSet.length - 1) {
+                            throw "No adaptation set is suitable for the type!";
+                        }
+                    }
+                    break;
+                }
+                if (j == manifest.Period.length - 1) {
+                    throw "No period starts at 0!";
+                }
+            }
+            // segmentIndex
+            tempStreamInfo.segmentIndex = 0;  //////////////////////
+
+            // Create SourceBuffer with MIME and codecs
+            if (!$scope.streamSourceBuffer[type]) {
+                $scope.streamInfo[type] = tempStreamInfo;
+                var mimeFromMpd = manifest.Period[$scope.streamInfo[type].periodIndex].AdaptationSet[$scope.streamInfo[type].adaptationSetIndex].Representation[$scope.streamInfo[type].representationIndex].mimeType;
+                var codecsFromMpd = manifest.Period[$scope.streamInfo[type].periodIndex].AdaptationSet[$scope.streamInfo[type].adaptationSetIndex].Representation[$scope.streamInfo[type].representationIndex].codecs;
+                $scope.streamMimeCodecs[type] = mimeFromMpd + "; codecs=\"" + codecsFromMpd + "\"";
+                $scope.streamSourceBuffer[type] = $scope.mediaSource.addSourceBuffer($scope.streamMimeCodecs[type]);
+                return "SUCCESS";
+            } else {
+                throw "The registeration of path " + i + " is aborted!";
+            }
+        } catch (e) {
+            return "registerStreamInfo: " + e;
+        }
+
+    };
 
     $scope.fetchBuffer = function(url, callback) {
 
@@ -1428,9 +1690,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         };
         xhr.send();
 
-    }
-
-
+    };
 /////////////////////////////////////////////////////////////////////////////////////
 
     // Initializing the aframe page

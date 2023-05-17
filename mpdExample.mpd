@@ -1,100 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="urn:mpeg:dash:schema:mpd:2011"
+	xmlns:xlink="http://www.w3.org/1999/xlink"
+	xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+	profiles="urn:mpeg:dash:profile:isoff-live:2011"
+	type="static"
+	mediaPresentationDuration="PT3M43.2S"
+	maxSegmentDuration="PT2.0S"
+	minBufferTime="PT4.0S">
+	<ProgramInformation>
+	</ProgramInformation>
+	<ServiceDescription id="0">
+	</ServiceDescription>
+	<Period id="0" start="PT0.0S">
+		<AdaptationSet id="0" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="1920" maxHeight="1080" par="16:9">
+			<Representation id="0" mimeType="video/mp4" codecs="avc1.640028" bandwidth="20000000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+			<Representation id="1" mimeType="video/mp4" codecs="avc1.640028" bandwidth="10000000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+			<Representation id="2" mimeType="video/mp4" codecs="avc1.640028" bandwidth="5000000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+			<Representation id="3" mimeType="video/mp4" codecs="avc1.640028" bandwidth="1000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+		</AdaptationSet>
+		<AdaptationSet id="1" contentType="video" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" frameRate="24/1" maxWidth="1920" maxHeight="1080" par="16:9">
+			<Representation id="4" mimeType="video/mp4" codecs="avc1.640028" bandwidth="15000000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+			<Representation id="5" mimeType="video/mp4" codecs="avc1.640028" bandwidth="1000" width="1920" height="1080" sar="1:1">
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.958" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+		</AdaptationSet>
+		<AdaptationSet id="2" contentType="audio" startWithSAP="1" segmentAlignment="true" bitstreamSwitching="true" lang="eng">
+			<Representation id="6" mimeType="audio/mp4" codecs="mp4a.40.2" bandwidth="96000" audioSamplingRate="48000">
+				<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+				<SegmentTemplate timescale="1000000" duration="2000000" availabilityTimeOffset="1.979" initialization="init-stream_$RepresentationID$.m4s" media="chunk-stream_$RepresentationID$-$Number%05d$.m4s" startNumber="1">
+				</SegmentTemplate>
+			</Representation>
+		</AdaptationSet>
+	</Period>
+</MPD>
+
 {
-    "ProgramInformation": {},
-    "ServiceDescription": {
-        "id": 0
-    },
-    "Period": {
-        "AdaptationSet": {
-            "Representation": [
+    "ProgramInformation": [
+        {}
+    ],
+    "ServiceDescription": [
+        {
+            "id": 0
+        }
+    ],
+    "Period": [
+        {
+            "AdaptationSet": [
                 {
-                    "SegmentTemplate": {
-                        "timescale": 1000000,
-                        "duration": 2000000,
-                        "availabilityTimeOffset": 1.958,
-                        "initialization": "init-stream_$RepresentationID$.m4s",
-                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
-                        "startNumber": 1
-                    },
+                    "Representation": [
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 0,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 20000000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        },
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 1,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 10000000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        },
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 2,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 5000000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        },
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 3,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 1000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        }
+                    ],
                     "id": 0,
-                    "mimeType": "video/mp4",
-                    "codecs": "avc1.640028",
-                    "bandwidth": 20000000,
-                    "width": 1920,
-                    "height": 1080,
-                    "sar": "1:1"
+                    "contentType": "video",
+                    "startWithSAP": 1,
+                    "segmentAlignment": "true",
+                    "bitstreamSwitching": "true",
+                    "frameRate": "24/1",
+                    "maxWidth": 1920,
+                    "maxHeight": 1080,
+                    "par": "16:9"
                 },
                 {
-                    "SegmentTemplate": {
-                        "timescale": 1000000,
-                        "duration": 2000000,
-                        "availabilityTimeOffset": 1.958,
-                        "initialization": "init-stream_$RepresentationID$.m4s",
-                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
-                        "startNumber": 1
-                    },
+                    "Representation": [
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 4,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 15000000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        },
+                        {
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.958,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 5,
+                            "mimeType": "video/mp4",
+                            "codecs": "avc1.640028",
+                            "bandwidth": 1000,
+                            "width": 1920,
+                            "height": 1080,
+                            "sar": "1:1"
+                        }
+                    ],
                     "id": 1,
-                    "mimeType": "video/mp4",
-                    "codecs": "avc1.640028",
-                    "bandwidth": 10000000,
-                    "width": 1920,
-                    "height": 1080,
-                    "sar": "1:1"
+                    "contentType": "video",
+                    "startWithSAP": 1,
+                    "segmentAlignment": "true",
+                    "bitstreamSwitching": "true",
+                    "frameRate": "24/1",
+                    "maxWidth": 1920,
+                    "maxHeight": 1080,
+                    "par": "16:9"
                 },
                 {
-                    "SegmentTemplate": {
-                        "timescale": 1000000,
-                        "duration": 2000000,
-                        "availabilityTimeOffset": 1.958,
-                        "initialization": "init-stream_$RepresentationID$.m4s",
-                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
-                        "startNumber": 1
-                    },
+                    "Representation": [
+                        {
+                            "AudioChannelConfiguration": [
+                                {
+                                    "schemeIdUri": "urn:mpeg:dash:23003:3:audio_channel_configuration:2011",
+                                    "value": 2
+                                }
+                            ],
+                            "SegmentTemplate": [
+                                {
+                                    "timescale": 1000000,
+                                    "duration": 2000000,
+                                    "availabilityTimeOffset": 1.979,
+                                    "initialization": "init-stream_$RepresentationID$.m4s",
+                                    "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
+                                    "startNumber": 1
+                                }
+                            ],
+                            "id": 6,
+                            "mimeType": "audio/mp4",
+                            "codecs": "mp4a.40.2",
+                            "bandwidth": 96000,
+                            "audioSamplingRate": 48000
+                        }
+                    ],
                     "id": 2,
-                    "mimeType": "video/mp4",
-                    "codecs": "avc1.640028",
-                    "bandwidth": 5000000,
-                    "width": 1920,
-                    "height": 1080,
-                    "sar": "1:1"
-                },
-                {
-                    "SegmentTemplate": {
-                        "timescale": 1000000,
-                        "duration": 2000000,
-                        "availabilityTimeOffset": 1.958,
-                        "initialization": "init-stream_$RepresentationID$.m4s",
-                        "media": "chunk-stream_$RepresentationID$-$Number%05d$.m4s",
-                        "startNumber": 1
-                    },
-                    "id": 3,
-                    "mimeType": "video/mp4",
-                    "codecs": "avc1.640028",
-                    "bandwidth": 1000,
-                    "width": 1920,
-                    "height": 1080,
-                    "sar": "1:1"
+                    "contentType": "audio",
+                    "startWithSAP": 1,
+                    "segmentAlignment": "true",
+                    "bitstreamSwitching": "true",
+                    "lang": "eng"
                 }
             ],
             "id": 0,
-            "contentType": "video",
-            "startWithSAP": 1,
-            "segmentAlignment": "true",
-            "bitstreamSwitching": "true",
-            "frameRate": "24/1",
-            "maxWidth": 1920,
-            "maxHeight": 1080,
-            "par": "16:9"
-        },
-        "id": 0,
-        "start": "PT0.0S"
-    },
+            "start": 0
+        }
+    ],
     "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
     "xmlns": "urn:mpeg:dash:schema:mpd:2011",
     "xmlns:xlink": "http://www.w3.org/1999/xlink",
     "xsi:schemaLocation": "urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd",
     "profiles": "urn:mpeg:dash:profile:isoff-live:2011",
     "type": "static",
-    "mediaPresentationDuration": "PT3M43.2S",
-    "maxSegmentDuration": "PT2.0S",
-    "minBufferTime": "PT4.0S"
+    "mediaPresentationDuration": 223.2,
+    "maxSegmentDuration": 2,
+    "minBufferTime": 4,
+    "baseUrl": "http://222.20.126.109:8080/ffz/Tokyo/v9/"
 }
