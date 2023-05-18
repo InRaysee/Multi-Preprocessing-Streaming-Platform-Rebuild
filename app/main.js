@@ -23,24 +23,29 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         video: [],
         audio: []
     }
-    $scope.streamMimeCodecs = {  // MIME types and codecs of streams
-        video: NaN,
-        audio: NaN
+    $scope.initCache = {  // Cache of init segments loaded
+        video: [],
+        audio: []
     }
+    $scope.streamDuration = NaN;  // Total duration of the stream
     $scope.streamInfo = {  // Information of streams selected
         video: {
             pathIndex: NaN,
             periodIndex: NaN,
             adaptationSetIndex: NaN,
             representationIndex: NaN,
-            segmentIndex: NaN
+            segmentIndex: NaN,
+            baseUrl: NaN,
+            mimeCodecs: NaN
         },
         audio: {
             pathIndex: NaN,
             periodIndex: NaN,
             adaptationSetIndex: NaN,
             representationIndex: NaN,
-            segmentIndex: NaN
+            segmentIndex: NaN,
+            baseUrl: NaN,
+            mimeCodecs: NaN
         }
     };
     $scope.matchers = [  // Matchers for data adjustments (dash.js)
@@ -61,7 +66,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     //// Global variables (containers: cannot adjust mannually)
 
     $scope.players = [];  // Container for DASH players
-    $scope.controllBars = null;  // Container for controllbars
+    $scope.controllBar = null;  // Container for controllbars
     $scope.buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not
     $scope.forcedPause = false;  // Flag for player to identify whether stop mannually or not
     $scope.lon = NaN, $scope.lat = NaN;  // Longitude and latitude in spherical coordinates
@@ -1391,49 +1396,46 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             });
         }
 
+        if (!$scope.streamSourceBuffer) {
+            window.alert("All sources are unavaliable, please reload!")
+        }
+
     };
 
-    // Fetch MPDs with XMLHttpRequests
+    // Fetch MPDs by a request
     $scope.fetchMpd = function(url, callback) {
 
         if (url == "") {
             window.alert("Empty URL when fetching MPD!");
             return;
         }
-
-        var xhr = new XMLHttpRequest();
-        xhr.open('get', url, true);
-        xhr.responseType = 'text';
-        xhr.onload = function () {
-            callback(xhr.response);
-        };
-
-        xhr.send();
+        $scope.fetchBuffer($scope.resolveUrl("MPD", url), 'text', callback);
 
     };
 
     // Load MPDs from responses and initialize
-    $scope.loadMpd = function(response, type, i) {
+    $scope.loadMpd = function(response, contentType, i) {
 
         var parser = new DOMParser();
         var xmlData = parser.parseFromString(response, "text/xml");
         var manifest = $scope.parseManifest(xmlData);
         
         if (!manifest.MPD) {
-            window.alert("Wrong manifest of " + type + "URLs[" + i + "]: No children node MPD in the manifest!");
+            window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No children node MPD in the manifest!");
             return;
         }
         manifest = manifest.MPD;
 
-        manifest.baseUrl = type == "video" ? $scope.videoURLs[i].slice(0, $scope.videoURLs[i].lastIndexOf("/") + 1) : type == "audio" ? $scope.audioURLs[i].slice(0, $scope.audioURLs[i].lastIndexOf("/") + 1) : undefined;
+        var baseUrl = contentType == "video" ? $scope.resolveUrl("MPD", $scope.videoURLs[i]) : contentType == "audio" ? $scope.resolveUrl("MPD", $scope.audioURLs[i]) : NaN;
+        manifest.baseUrl = baseUrl ? baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1) : NaN;
         if (!manifest.baseUrl || manifest.baseUrl == "") {
-            window.alert("Wrong manifest of " + type + "URLs[" + i + "]: No base URL available in the manifest!");
+            window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No base URL available in the manifest!");
             return;
         }
 
-        $scope.streamMpds[type][i] = manifest;
-        console.log("StreamMpds." + type + "[" + i + "] is loaded!");
-        $scope.register($scope.streamMpds[type][i], type, i);
+        $scope.streamMpds[contentType][i] = manifest;
+        console.log("StreamMpds." + contentType + "[" + i + "] is loaded!");
+        $scope.register($scope.streamMpds[contentType][i], contentType, i);
 
     };
 
@@ -1536,50 +1538,73 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     };
 
     // Executed when MPDs are loaded
-    $scope.register = function(manifest, type, i) {  //////////////////////////////
+    $scope.register = function(manifest, contentType, i) {  //////////////////////////////
 
         try {
+            // Check if the duration is equal
+            if (!manifest.mediaPresentationDuration || ($scope.streamDuration && manifest.mediaPresentationDuration != $scope.streamDuration)) {
+                throw "Unequal duration!";
+            }
+
             // Register bitrate lists
-            let registerBitrateListsResult = $scope.registerBitrateLists(manifest, type, i);
+            let registerBitrateListsResult = $scope.registerBitrateLists(manifest, contentType, i);
             if (registerBitrateListsResult != "SUCCESS") {
                 throw registerBitrateListsResult;
             }
 
             // Register stream information and create SourceBuffer
-            if (!$scope.streamSourceBuffer[type]) {
+            if (!$scope.streamSourceBuffer[contentType]) {
                 // Register stream information
-                let registerStreamInfoResult = $scope.registerStreamInfo(manifest, type, i, registerBitrateListsResult);
+                let registerStreamInfoResult = $scope.registerFirstStreamInfo(manifest, contentType, i);
                 if (registerStreamInfoResult != "SUCCESS") {
                     throw registerStreamInfoResult;
                 }
             }
         } catch (e) {
-            window.alert("Error when registerring " + type + " " + i + (e == "" ? e : ": " + e));
+            window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
         }
     
     };
 
     // Register bitrate lists
-    $scope.registerBitrateLists = function(manifest, type, i) {
+    $scope.registerBitrateLists = function(manifest, contentType, i) {
         
         try {
-            $scope.streamBitrateLists[type][i] = [];
+            $scope.streamBitrateLists[contentType][i] = [];
+            $scope.initCache[contentType][i] = [];
             if (!manifest.Period || manifest.Period.length == 0) {
                 throw "No period is available in path " + i + "!";
             }
             for (let j = 0; j < manifest.Period.length; j++) {
-                $scope.streamBitrateLists[type][i][j] = [];
+                $scope.streamBitrateLists[contentType][i][j] = [];
+                $scope.initCache[contentType][i][j] = [];
                 if (!manifest.Period[j].AdaptationSet || manifest.Period[j].AdaptationSet.length == 0) {
                     throw "No adaptation set is available in path " + i + ", period " + j + "!";
                 }
                 for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                    if (manifest.Period[j].AdaptationSet[jj].contentType == type) {
-                        $scope.streamBitrateLists[type][i][j][jj] = [];
+                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType) {
+                        $scope.streamBitrateLists[contentType][i][j][jj] = [];
+                        $scope.initCache[contentType][i][j][jj] = [];
                         if (!manifest.Period[j].AdaptationSet[jj].Representation || manifest.Period[j].AdaptationSet[jj].Representation.length == 0) {
                             throw "No representation is available in path " + i + ", period " + j + ", adaptation set " + jj + "!";
                         }
                         for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
-                            $scope.streamBitrateLists[type][i][j][jj][jjj] = manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth;
+                            let mimeFromMpd = manifest.Period[j].AdaptationSet[jj].Representation[jjj].mimeType;
+                            let codecsFromMpd = manifest.Period[j].AdaptationSet[jj].Representation[jjj].codecs;
+                            if (mimeFromMpd && codecsFromMpd) {
+                                let mimeCodecsFromMpd = mimeFromMpd + ";codecs=\"" + codecsFromMpd + "\"";
+                                if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodecsFromMpd)) {
+                                    $scope.streamBitrateLists[contentType][i][j][jj][jjj] = {
+                                        id: manifest.Period[j].AdaptationSet[jj].Representation[jjj].id != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].id : NaN,
+                                        mimeCodecs: mimeCodecsFromMpd,
+                                        bandwidth: manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth : NaN,
+                                        duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration : NaN,
+                                        initialization: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization : NaN,
+                                        media: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].media : NaN,
+                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN
+                                    };
+                                }
+                            }
                         }
                     }
                 }
@@ -1592,14 +1617,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     };
 
     // Register stream information
-    $scope.registerStreamInfo = function(manifest, type, i, registerBitrateListsResult) {
+    $scope.registerFirstStreamInfo = function(manifest, contentType, i) {
 
         try {
-            // Check bitrate lists
-            if (registerBitrateListsResult != "SUCCESS") {
-                throw "Bitrate lists of path " + i + " is not registered!";
-            }
             var tempStreamInfo = {};
+            // baseUrl
+            if (!manifest.baseUrl) {
+                throw "No base URL in the MPD of path " + i + "!";
+            }
+            tempStreamInfo.baseUrl = manifest.baseUrl;
             // pathIndex
             tempStreamInfo.pathIndex = i;
             // periodIndex
@@ -1614,44 +1640,55 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                         throw "No adaptation set is available in path " + i + ", period " + j + "!";
                     }
                     for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                        if (manifest.Period[j].AdaptationSet[jj].contentType == type && manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation.length > ($scope.lifeSignalEnabled ? 1 : 0)) {
+                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType && manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation.length > ($scope.lifeSignalEnabled ? 1 : 0)) {
                             tempStreamInfo.adaptationSetIndex = jj;
                             // representationIndex
                             let firstsmall, secondsmall;
                             for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
-                                if ($scope.streamBitrateLists[type] && $scope.streamBitrateLists[type][i] && $scope.streamBitrateLists[type][i][j] && $scope.streamBitrateLists[type][i][j][jj] && $scope.streamBitrateLists[type][i][j][jj][jjj]) {
+                                if ($scope.streamBitrateLists[contentType] && $scope.streamBitrateLists[contentType][i] && $scope.streamBitrateLists[contentType][i][j] && $scope.streamBitrateLists[contentType][i][j][jj] && $scope.streamBitrateLists[contentType][i][j][jj][jjj] && $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth) {
                                     if (!firstsmall) {
-                                        firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                        firstsmall = { key: jjj, value: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth };
                                     } else if (firstsmall && !secondsmall) {
-                                        if ($scope.streamBitrateLists[type][i][j][jj][jjj] < firstsmall.value) {
+                                        if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < firstsmall.value) {
                                             secondsmall = firstsmall;
-                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth };
                                         } else {
-                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth };
                                         }
                                     } else if (!firstsmall && secondsmall) {
                                         throw "Error when selecting representation";
                                     } else {
-                                        if ($scope.streamBitrateLists[type][i][j][jj][jjj] < firstsmall.value) {
+                                        if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < firstsmall.value) {
                                             secondsmall = firstsmall;
-                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
-                                        } else if ($scope.streamBitrateLists[type][i][j][jj][jjj] < secondsmall) {
-                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[type][i][j][jj][jjj] };
+                                            firstsmall = { key: jjj, value: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth };
+                                        } else if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < secondsmall) {
+                                            secondsmall = { key: jjj, value: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth };
                                         }
                                     }
                                 }
                             }
                             if ((!$scope.lifeSignalEnabled) && firstsmall) {
-                                tempStreamInfo.representationIndex = firstsmall.key;
-                                break;
-                            }
-                            if ($scope.lifeSignalEnabled && secondsmall) {
-                                tempStreamInfo.representationIndex = firstsmall.key;
-                                break;
+                                if ($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber != NaN && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs) {
+                                    tempStreamInfo.representationIndex = firstsmall.key;
+                                    // segmentIndex
+                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
+                                    // mimeCodecs
+                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
+                                    break;
+                                }
+                            } else if ($scope.lifeSignalEnabled && secondsmall) {
+                                if ($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber != NaN && $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs) {
+                                    tempStreamInfo.representationIndex = secondsmall.key;
+                                    // segmentIndex
+                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber;
+                                    // mimeCodecs
+                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber;
+                                    break;
+                                }
                             }
                         }
                         if (jj == manifest.Period[j].AdaptationSet.length - 1) {
-                            throw "No adaptation set is suitable for the type!";
+                            throw "No adaptation set is suitable for the contentType!";
                         }
                     }
                     break;
@@ -1660,31 +1697,156 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     throw "No period starts at 0!";
                 }
             }
-            // segmentIndex
-            tempStreamInfo.segmentIndex = 0;  //////////////////////
 
-            // Create SourceBuffer with MIME and codecs
-            if (!$scope.streamSourceBuffer[type]) {
-                $scope.streamInfo[type] = tempStreamInfo;
-                var mimeFromMpd = manifest.Period[$scope.streamInfo[type].periodIndex].AdaptationSet[$scope.streamInfo[type].adaptationSetIndex].Representation[$scope.streamInfo[type].representationIndex].mimeType;
-                var codecsFromMpd = manifest.Period[$scope.streamInfo[type].periodIndex].AdaptationSet[$scope.streamInfo[type].adaptationSetIndex].Representation[$scope.streamInfo[type].representationIndex].codecs;
-                $scope.streamMimeCodecs[type] = mimeFromMpd + "; codecs=\"" + codecsFromMpd + "\"";
-                $scope.streamSourceBuffer[type] = $scope.mediaSource.addSourceBuffer($scope.streamMimeCodecs[type]);
-                return "SUCCESS";
-            } else {
-                throw "The registeration of path " + i + " is aborted!";
+            // Create SourceBuffer and set MediaSource's duration
+            if ($scope.streamSourceBuffer[contentType]) {
+                throw "The registeration of path " + i + " is aborted by the existing SourceBuffer!";
             }
+            if (!$scope.streamDuration) {
+                $scope.streamDuration = manifest.mediaPresentationDuration;
+            }
+            $scope.streamInfo[contentType] = tempStreamInfo;
+            $scope.streamInfo[contentType].mimeCodecs = $scope.streamBitrateLists[contentType][i][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].mimeCodecs;
+            try {
+                $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer($scope.streamInfo[contentType].mimeCodecs);
+            } catch (e) {
+                throw "SourceBuffer is not initialized!";
+            }
+            $scope.mediaSource.duration = $scope.streamDuration;
+            // $scope.controllBar = new ControlBar($scope.players);
+            // $scope.controllBar.initialize();
+            $scope.fetchFirstSegment(contentType);
+
+            return "SUCCESS";
         } catch (e) {
-            return "registerStreamInfo: " + e;
+            return "registerFirstStreamInfo: " + e;
         }
 
     };
 
-    $scope.fetchBuffer = function(url, callback) {
+    // Only run when the first stream is registerred
+    $scope.fetchFirstSegment = function(contentType) {
+
+        var curStreamInfo = {
+            pathIndex: $scope.streamInfo[contentType].pathIndex,
+            periodIndex: $scope.streamInfo[contentType].periodIndex,
+            adaptationSetIndex: $scope.streamInfo[contentType].adaptationSetIndex,
+            representationIndex: $scope.streamInfo[contentType].representationIndex,
+            segmentIndex: $scope.streamInfo[contentType].segmentIndex,
+            baseUrl: $scope.streamInfo[contentType].baseUrl,
+            mimeCodecs: $scope.streamInfo[contentType].mimeCodecs
+        };
+        var paramForResolveUrl = {
+            id: $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].id,
+            segmentIndex: curStreamInfo.segmentIndex
+        };
+        var url = curStreamInfo.baseUrl;
+        var urlExtend = $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization;
+        $scope.fetchBuffer($scope.resolveUrl("InitSegment", url, urlExtend, paramForResolveUrl), "arraybuffer", (buffer) => {
+            $scope.loadFirstSegment(buffer, contentType, curStreamInfo);
+        });
+
+    };
+
+    $scope.loadFirstSegment = function(buffer, contentType, curStreamInfo) {
+
+        $scope.streamSourceBuffer[contentType].appendBuffer(buffer);
+        $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = buffer;
+        // TODO
+
+    }
+
+    // Dealing with url with urlType
+    $scope.resolveUrl = function(urlType, url, urlExtend, paramForResolveUrl) {
+
+        switch (urlType) {
+            case "MPD":
+                var mergeUrl = NaN;
+                if (url.slice(0, 7) == "http://" || url.slice(0, 8) == "https://") {  // Absolute address with http/https prefix
+                    mergeUrl = url;
+                } else if (url.slice(0, 2) == "./" || url.slice(0, 3) == "../") {  // Relative address
+                    let baseUrl = window.location.href;
+                    let tempUrl = url;
+                    while (tempUrl.slice(0, 2) == "./" || tempUrl.slice(0, 3) == "../") {
+                        if (tempUrl.slice(0, 2) == "./") {
+                            tempUrl = tempUrl.slice(2);
+                        } else if (tempUrl.slice(0, 3) == "../") {
+                            tempUrl = tempUrl.slice(3);
+                            if (baseUrl.slice(-1) == "/") {
+                                baseUrl = baseUrl.slice(0, -1);
+                            }
+                            if (baseUrl.lastIndexOf("/") != -1 && baseUrl.lastIndexOf("/") != 0 && baseUrl[baseUrl.lastIndexOf("/") - 1] != "/") {
+                                baseUrl = baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1);
+                            } else {
+                                return "";
+                            }
+                        }
+                    }
+                    mergeUrl = baseUrl + tempUrl;
+                } else {  // Absolute address without http/https prefix
+                    mergeUrl = "http://" + url;  // Use http as default
+                }
+                return mergeUrl;
+            case "InitSegment":
+                try {
+                    if (url == "") {
+                        throw "No base URL!";
+                    }
+                    let tempUrlExtend = urlExtend;
+                    if (tempUrlExtend.indexOf("$RepresentationID$") == -1) {
+                        throw "Wrong placeholder of representation ID!";
+                    }
+                    tempUrlExtend = tempUrlExtend.replace("$RepresentationID$", paramForResolveUrl.id);  // Replace representation ID in the URL
+                    return url + tempUrlExtend;
+                } catch (e) {
+                    window.alert("Error when resolving URL of InitSegment: " + e);
+                    return "";
+                }
+            case "MediaSegment":
+                try {
+                    let numberMatcher = function (num, lenstr) {
+                        let len = parseInt(lenstr.slice(lenstr.indexOf("%") + 1, lenstr.indexOf("%") + 3));
+                        let result = num.toString();
+                        while (result.length < len) {
+                            result = "0" + result;
+                        }
+                        return result;
+                    };
+
+                    if (url == "") {
+                        throw "No base URL!";
+                    }
+                    let tempUrlExtend = urlExtend;
+                    if (tempUrlExtend.indexOf("$RepresentationID$") == -1) {
+                        throw "Wrong placeholder of representation ID!";
+                    }
+                    tempUrlExtend = tempUrlExtend.replace("$RepresentationID$", paramForResolveUrl.id);  // Replace representation ID in the URL
+                    if (tempUrlExtend.indexOf("$Number%05d$") == -1) {
+                        throw "Wrong placeholder of segment number!";
+                    }
+                    tempUrlExtend = tempUrlExtend.replace("$Number%05d$", numberMatcher(paramForResolveUrl.segmentIndex, "$Number%05d$"));  // Replace segment number in the URL
+                    return url + tempUrlExtend;
+                } catch (e) {
+                    window.alert("Error when resolving URL of MediaSegment: " + e);
+                    return "";
+                }
+            default:
+                return "";
+        }
+
+    };
+
+    // Create and load a XMLHttpRequest
+    $scope.fetchBuffer = function(url, responseType, callback) {
+
+        if (!url) {
+            window.alert("The URL is invalid: " + url);
+            return;
+        }
 
         var xhr = new XMLHttpRequest();
         xhr.open('get', url);
-        xhr.responseType = 'arraybuffer';
+        xhr.responseType = responseType;  // 'text', 'arraybuffer'
         xhr.onload = function () {
             callback(xhr.response);
         };
@@ -1939,8 +2101,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
 
         // Initializing Controllbars
-        $scope.controllBars = new ControlBar($scope.players);
-        $scope.controllBars.initialize();
+        $scope.controllBar = new ControlBar($scope.players);
+        $scope.controllBar.initialize();
 
         // Initialize charts by media types
         $scope.initChartingByMediaType('downloadingQuality');
