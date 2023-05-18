@@ -931,8 +931,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         switch (mode) {
             case 'Multi-Path':
                 $scope.selectedMode = 'Multi-Path';
-                document.getElementById( "videoContainerVR=" ).style.display = "none";
-                document.getElementById( "videoContainer=" ).style.display = "block";
+                document.getElementById( "videoContainerVR" ).style.display = "none";
+                document.getElementById( "videoContainer" ).style.display = "block";
                 document.getElementById( "FOVRule" ).disabled = "true";
                 document.getElementById( "DefaultRule" ).checked = true;
                 $scope.changeABRStrategy('DefaultRule');
@@ -957,8 +957,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 break;
             case 'VR':
                 $scope.selectedMode = 'VR';
-                document.getElementById( "videoContainerVR=" ).style.display = "block";
-                document.getElementById( "videoContainer=" ).style.display = "none";
+                document.getElementById( "videoContainerVR" ).style.display = "block";
+                document.getElementById( "videoContainer" ).style.display = "none";
                 document.getElementById( "FOVRule" ).removeAttribute("disabled");
                 document.getElementById( "FOVRule" ).checked = true;
                 $scope.changeABRStrategy('FOVRule');
