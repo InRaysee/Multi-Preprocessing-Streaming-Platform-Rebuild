@@ -7,6 +7,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 /////////////////////////////////////////////////////////////////////////////////////
     $scope.mediaSource = null;  // Container for the MediaSource object
     $scope.streamElement = null;  // Container for video element in HTML page
+    $scope.controllBar = null;  // Container for video control bar
     $scope.streamSourceBuffer = {  // Containers for SourceBuffers
         video: null,
         audio: null
@@ -28,6 +29,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         audio: []
     }
     $scope.streamDuration = NaN;  // Total duration of the stream
+    $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
     $scope.streamInfo = {  // Information of streams selected
         video: {
             pathIndex: NaN,
@@ -47,6 +49,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             baseUrl: NaN,
             mimeCodecs: NaN
         }
+    };
+    $scope.autoSwitchBitrate = {
+        video: NaN,
+        audio: NaN
     };
     $scope.matchers = [  // Matchers for data adjustments (dash.js)
         new DurationMatcher(),
@@ -513,17 +519,16 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.preferredQualitySelected = 0;  // Switch the quality by manual switching ABR strategy and multipath ABR strategy
     $scope.lifeSignalEnabled = false;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
     ];
     $scope.audioURLs = [  // Save the selected media source
-        "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
-    ];
+        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
+];
 
 
     //// Global variables (stat & chart related)
@@ -1546,6 +1551,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 throw "Unequal duration!";
             }
 
+            // Check if the type is the same
+            if (!manifest.type || ($scope.streamIsDynamic && (manifest.type == "dynamic") != $scope.streamIsDynamic)) {
+                throw "Different type of manifest!";
+            }
+
             // Register bitrate lists
             let registerBitrateListsResult = $scope.registerBitrateLists(manifest, contentType, i);
             if (registerBitrateListsResult != "SUCCESS") {
@@ -1559,6 +1569,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 if (registerStreamInfoResult != "SUCCESS") {
                     throw registerStreamInfoResult;
                 }
+                // Create and initialize control bar
+                if (!$scope.controllBar) {
+                    $scope.controllBar = new ControlBar();
+                    $scope.controllBar.initialize();
+                }
+                // Create and add track/bitrate/caption lists into control bar
+                $scope.controllBar.onStreamActivated(contentType);
+                // Fetch the first init segment and the first media segment
+                $scope.fetchFirstSegment(contentType);
             }
         } catch (e) {
             window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
@@ -1601,7 +1620,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                                         duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration : NaN,
                                         initialization: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization : NaN,
                                         media: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].media : NaN,
-                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN
+                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN,
+                                        width: manifest.Period[j].AdaptationSet[jj].Representation[jjj].width != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].width : NaN,
+                                        height: manifest.Period[j].AdaptationSet[jj].Representation[jjj].height != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].height : NaN
                                     };
                                 }
                             }
@@ -1705,6 +1726,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             if (!$scope.streamDuration) {
                 $scope.streamDuration = manifest.mediaPresentationDuration;
             }
+            if (!$scope.streamIsDynamic) {
+                $scope.streamIsDynamic = manifest.type == "static" ? false : manifest.type == "dynamic" ? true : false;
+            }
+            $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default 
             $scope.streamInfo[contentType] = tempStreamInfo;
             $scope.streamInfo[contentType].mimeCodecs = $scope.streamBitrateLists[contentType][i][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].mimeCodecs;
             try {
@@ -1713,9 +1738,6 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 throw "SourceBuffer is not initialized!";
             }
             $scope.mediaSource.duration = $scope.streamDuration;
-            // $scope.controllBar = new ControlBar($scope.players);
-            // $scope.controllBar.initialize();
-            $scope.fetchFirstSegment(contentType);
 
             return "SUCCESS";
         } catch (e) {
