@@ -152,7 +152,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var toggleMuteBtnState = function () {
-        var span = document.getElementById(getControlId('iconMute'));
+        var span = document.getElementById('iconMute');
         if (element.muted) {
             span.classList.remove('icon-mute-off');
             span.classList.add('icon-mute-on');
@@ -403,36 +403,32 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         return t;
     }
 
-    var createBitrateSwitchMenu = function () {
+    var createBitrateSwitchMenu = function (contentType) {
         var contentFunc;
         if (bitrateListBtn) {
-            destroyMenu(bitrateListMenu, bitrateListBtn, menuHandlersList.bitrate);
+            // destroyMenu(bitrateListMenu, bitrateListBtn, menuHandlersList.bitrate);
             bitrateListMenu = null;
             var availableBitrates = { menuType: 'bitrate' };
-            if ($scope.streamInfo && $scope.streamInfo.audio && !isNaN($scope.streamInfo.audio.pathIndex) && !isNaN($scope.streamInfo.audio.periodIndex) && !isNaN($scope.streamInfo.audio.adaptationSetIndex)
-                 && $scope.streamBitrateLists && $scope.streamBitrateLists.audio && $scope.streamBitrateLists.audio[$scope.streamInfo.audio.pathIndex][$scope.streamInfo.audio.periodIndex][$scope.streamInfo.audio.adaptationSetIndex]) {
-                availableBitrates.audio = $scope.streamBitrateLists.audio[$scope.streamInfo.audio.pathIndex][$scope.streamInfo.audio.periodIndex][$scope.streamInfo.audio.adaptationSetIndex];
+            if ($scope.streamInfo && $scope.streamInfo[contentType] && !isNaN($scope.streamInfo[contentType].pathIndex) && !isNaN($scope.streamInfo[contentType].periodIndex) && !isNaN($scope.streamInfo[contentType].adaptationSetIndex)
+                 && $scope.streamBitrateLists && $scope.streamBitrateLists[contentType] && $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex]) {
+                availableBitrates[contentType] = $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex];
             } else {
-                availableBitrates.audio = [];
+                availableBitrates[contentType] = [];
             }
-            if ($scope.streamInfo && $scope.streamInfo.video && !isNaN($scope.streamInfo.video.pathIndex) && !isNaN($scope.streamInfo.video.periodIndex) && !isNaN($scope.streamInfo.video.adaptationSetIndex)
-                && $scope.streamBitrateLists && $scope.streamBitrateLists.video && $scope.streamBitrateLists.video[$scope.streamInfo.video.pathIndex][$scope.streamInfo.video.periodIndex][$scope.streamInfo.video.adaptationSetIndex]) {
-               availableBitrates.video = $scope.streamBitrateLists.video[$scope.streamInfo.video.pathIndex][$scope.streamInfo.video.periodIndex][$scope.streamInfo.video.adaptationSetIndex];
-            } else {
-                availableBitrates.video = [];
-            }
-            if (availableBitrates.audio.length >= 1 || availableBitrates.video.length >= 1) {
+            if (availableBitrates[contentType].length >= 1) {
                 contentFunc = function (element, index) {
                     var result = isNaN(index) ? ' Auto Switch' : Math.floor(element.bandwidth / 1000) + ' kbps';
                     result += element && element.width && element.height ? ' (' + element.width + 'x' + element.height + ')' : '';
                     return result;
                 };
-                bitrateListMenu = createMenu(availableBitrates, contentFunc);
+                bitrateListMenu = createMenu(availableBitrates, contentFunc, contentType);
                 var func = function () {
                     onMenuClick(bitrateListMenu, bitrateListBtn);
                 };
-                menuHandlersList.bitrate = func;
-                bitrateListBtn.addEventListener('click', func);
+                if (!menuHandlersList.bitrate) {
+                    menuHandlersList.bitrate = func;
+                    bitrateListBtn.addEventListener('click', func);
+                }
                 bitrateListBtn.classList.remove('hide');
             } else {
                 bitrateListBtn.classList.add('hide');
@@ -440,57 +436,53 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         }
     }
 
-    var createTrackSwitchMenu = function () {
+    var createTrackSwitchMenu = function (contentType, i) {
         var contentFunc;
         if (trackSwitchBtn) {
-            destroyMenu(trackSwitchMenu, trackSwitchBtn, menuHandlersList.track);
+            // destroyMenu(trackSwitchMenu, trackSwitchBtn, menuHandlersList.track);
             trackSwitchMenu = null;
             var availableTracks = { menuType: 'track' };
-            if ($scope.streamInfo && $scope.streamInfo.audio && !isNaN($scope.streamInfo.audio.pathIndex) && !isNaN($scope.streamInfo.audio.periodIndex)
-                 && $scope.streamMpds && $scope.streamMpds.audio && $scope.streamMpds.audio[$scope.streamInfo.audio.pathIndex] && $scope.streamMpds.audio[$scope.streamInfo.audio.pathIndex].Period && $scope.streamMpds.audio[$scope.streamInfo.audio.pathIndex].Period[$scope.streamInfo.audio.periodIndex] && $scope.streamMpds.audio[$scope.streamInfo.audio.pathIndex].Period[$scope.streamInfo.audio.periodIndex].AdaptationSet) {
-                availableTracks.audio = $scope.streamMpds.audio[$scope.streamInfo.audio.pathIndex].Period[$scope.streamInfo.audio.periodIndex].AdaptationSet;
-                let i = 0;
-                while (i < availableTracks.audio.length) {
-                    if (availableTracks.audio[i].contentType != 'audio') {
-                        availableTracks.audio.splice(i, 1);
+            var periodIndex = NaN;
+            if ($scope.streamMpds && $scope.streamMpds[contentType] && $scope.streamMpds[contentType][i] && $scope.streamMpds[contentType][i].Period) {
+                for (let j = 0; j < $scope.streamMpds[contentType][i].Period.length; j++) {
+                    if (!isNaN($scope.streamMpds[contentType][i].Period[j].start) && $scope.streamMpds[contentType][i].Period[j].start == 0) {
+                        var periodIndex = j;
+                        break;
+                    }
+                }
+            }
+            if (!isNaN(periodIndex) && $scope.streamMpds && $scope.streamMpds[contentType] && $scope.streamMpds[contentType][i] && $scope.streamMpds[contentType][i].Period && $scope.streamMpds[contentType][i].Period[periodIndex] && $scope.streamMpds[contentType][i].Period[periodIndex].AdaptationSet) {
+                availableTracks[contentType] = $scope.streamMpds[contentType][i].Period[periodIndex].AdaptationSet;
+                let j = 0;
+                while (j < availableTracks[contentType].length) {
+                    if (availableTracks[contentType][j].contentType != contentType) {
+                        availableTracks[contentType].splice(j, 1);
                     } else {
-                        i++;
+                        j++;
                     }
                 }
             } else {
-                availableTracks.audio = [];
+                availableTracks[contentType] = [];
             }
-            if ($scope.streamInfo && $scope.streamInfo.video && !isNaN($scope.streamInfo.video.pathIndex) && !isNaN($scope.streamInfo.video.periodIndex)
-                 && $scope.streamMpds && $scope.streamMpds.video && $scope.streamMpds.video[$scope.streamInfo.video.pathIndex] && $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period && $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex] && $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet) {
-                availableTracks.video = $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet;
-                let i = 0;
-                while (i < availableTracks.video.length) {
-                    if (availableTracks.video[i].contentType != 'video') {
-                        availableTracks.video.splice(i, 1);
-                    } else {
-                        i++;
+            if (availableTracks[contentType].length >= 1) {
+                contentFunc = function (element, index) {
+                    var info = isNaN(index) ? ' Auto Switch' : '';
+                    if (element && element.contentType) {
+                        info += element.contentType.charAt(0).toUpperCase() + element.contentType.slice(1) + ' - ' + i;
                     }
-                }
-            } else {
-                availableTracks.video = [];
-            }
-            if (availableTracks.audio.length >= 1 || availableTracks.video.length >= 1) {
-                contentFunc = function (element) {
-                    var info = '';
-                    if (element.id >= 0) {
-                        info += 'ID - ' + element.id;
+                    if (element && element.id >= 0) {
+                        info += ' - ID - ' + element.id;
                     }
-                    if (element.contentType) {
-                        info += ' - ' + element.contentType;
-                    }
-                    return info;
+                    return { info: info, pathIndex: isNaN(index) ? NaN : i };
                 };
-                trackSwitchMenu = createMenu(availableTracks, contentFunc);
+                trackSwitchMenu = createMenu(availableTracks, contentFunc, contentType);
                 var func = function () {
                     onMenuClick(trackSwitchMenu, trackSwitchBtn);
                 };
-                menuHandlersList.track = func;
-                trackSwitchBtn.addEventListener('click', func);
+                if (!menuHandlersList.track) {
+                    menuHandlersList.track = func;
+                    trackSwitchBtn.addEventListener('click', func);
+                }
                 trackSwitchBtn.classList.remove('hide');
             }
         }
@@ -517,39 +509,38 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         //     var func = function () {
         //         onMenuClick(captionMenu, captionBtn);
         //     };
+        // if (!menuHandlersList.caption) {
         //     menuHandlersList.caption = func;
         //     captionBtn.addEventListener('click', func);
+        // }
         //     captionBtn.classList.remove('hide');
         // }
-        if (captionBtn) {
-            destroyMenu(captionMenu, captionBtn, menuHandlersList.caption);
-            captionMenu = null;
-            var tracks = textTrackList[streamId] || [];
-            var contentFunc = function (element, index) {
-                if (isNaN(index)) {
-                    return 'OFF';
-                }
-                var label = getLabelForLocale(element.labels);
-                if (label) {
-                    return label + ' : ' + element.type;
-                }
-                return element.lang + ' : ' + element.kind;
-            };
-            captionMenu = createMenu({ menuType: 'caption', arr: tracks }, contentFunc);
-            var func = function () {
-                onMenuClick(captionMenu, captionBtn);
-            };
-            menuHandlersList.caption = func;
-            captionBtn.addEventListener('click', func);
-            captionBtn.classList.remove('hide');
-        }
     };
 
-    var destroyMenu = function (menu, btn, handler) {
+    var destroyMenu = function (menu, btn, handler, menuType) {
         try {
             if (menu && videoController) {
                 btn.removeEventListener('click', handler);
                 videoController.removeChild(menu);
+                menuHandlersList[menuType] = null;
+            }
+        } catch (e) {
+        }
+    };
+
+    var destroyAllMenus = function () {
+        try {
+            if (bitrateListMenu && videoController) {
+                bitrateListBtn.removeEventListener('click', menuHandlersList.bitrate);
+                videoController.removeChild(bitrateListMenu);
+            }
+            if (trackSwitchMenu && videoController) {
+                trackSwitchBtn.removeEventListener('click', menuHandlersList.track);
+                videoController.removeChild(trackSwitchMenu);
+            }
+            if (captionMenu && videoController) {
+                captionBtn.removeEventListener('click', menuHandlersList.caption);
+                videoController.removeChild(captionMenu);
             }
         } catch (e) {
         }
@@ -566,7 +557,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         }
     };
 
-    var createMenu = function (info, contentFunc) {
+    var createMenu = function (info, contentFunc, contentType) {
         var menuType = info.menuType;
         if (!document.getElementById(menuType + 'Menu')) {
             var el = document.createElement('div');
@@ -581,21 +572,18 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         }
         switch (menuType) {
             case 'caption':
-                el.appendChild(document.createElement('ul'));
-                el = createMenuContent(el, getMenuContent(menuType, info.arr, contentFunc), 'caption', menuType + '-list');
-                setMenuItemsState(getMenuInitialIndex(info, menuType), menuType + '-list');
-                break;
+                // el.appendChild(document.createElement('ul'));
+                // el = createMenuContent(el, getMenuContent(menuType, info.arr, contentFunc), 'caption', menuType + '-list', i);
+                // setMenuItemsState(getMenuInitialIndex(info, menuType), menuType + '-list');
+                // break;
             case 'track':
             case 'bitrate':
-                if (info.video.length >= 1) {
-                    el.appendChild(createMediaTypeMenu('video'));
-                    el = createMenuContent(el, getMenuContent(menuType, info.video, contentFunc), 'video', 'video-' + menuType + '-list');
-                    setMenuItemsState(getMenuInitialIndex(menuType, 'video'), 'video-' + menuType + '-list');
-                }
-                if (info.audio.length >= 1) {
-                    el.appendChild(createMediaTypeMenu('audio'));
-                    el = createMenuContent(el, getMenuContent(menuType, info.audio, contentFunc), 'audio', 'audio-' + menuType + '-list');
-                    setMenuItemsState(getMenuInitialIndex(menuType, 'audio'), 'audio-' + menuType + '-list');
+                if (info[contentType].length >= 1) {
+                    if (!document.getElementById(contentType + '-' + menuType + '-control')) {
+                        el.appendChild(createMediaTypeMenu(contentType, menuType));
+                    }
+                    el = createMenuContent(el, getMenuContent(menuType, info[contentType], contentFunc, contentType), contentType, contentType + '-' + menuType + '-list');
+                    setMenuItemsState(getMenuInitialIndex(menuType, contentType), contentType + '-' + menuType + '-list');
                 }
                 break;
         }
@@ -603,41 +591,42 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         return el;
     };
 
-    var createMediaTypeMenu = function (type) {
+    var createMediaTypeMenu = function (contentType, menuType) {
         var div = document.createElement('div');
         var title = document.createElement('div');
         var content = document.createElement('ul');
-        div.id = type;
-        title.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+        div.id = contentType + '-' + menuType + '-control';
+        title.textContent = contentType.charAt(0).toUpperCase() + contentType.slice(1);
         title.classList.add('menu-sub-menu-title');
-        content.id = type + 'Content';
-        content.classList.add(type + '-menu-content');
+        content.id = contentType + '-' + menuType + '-control-content';
+        content.classList.add(contentType + '-menu-content');
         div.appendChild(title);
         div.appendChild(content);
         return div;
     };
 
-    var getMenuContent = function (type, arr, contentFunc, autoswitch) {
+    var getMenuContent = function (menuType, arr, contentFunc, contentType, autoswitch) {
         autoswitch = (autoswitch !== undefined) ? autoswitch : true;
         var content = [];
         arr.forEach(function (element, index) {
             content.push(contentFunc(element, index));
         });
-        if (type !== 'track' && autoswitch) {
+        if ((menuType == 'track' || menuType == 'bitrate') && document.getElementById(contentType + '-' + menuType + '-control-content').children.length == 0 && autoswitch) {
             content.unshift(contentFunc(null, NaN));
         }
         return content;
     };
 
-    var createMenuContent = function (menu, arr, mediaType, name) {
+    var createMenuContent = function (menu, arr, contentType, name) {
         for (var i = 0; i < arr.length; i++) {
             var item = document.createElement('li');
             item.id = name + 'Item_' + i;
             item.index = i;
-            item.mediaType = mediaType;
+            item.contentType = contentType;
             item.name = name;
             item.selected = false;
-            item.textContent = arr[i];
+            item.textContent = arr[i] instanceof Object ? arr[i].info : arr[i];
+            item.pathIndex = arr[i] instanceof Object ? arr[i].pathIndex : NaN;
             item.onmouseover = function () {
                 if (this.selected !== true) {
                     this.classList.add('menu-item-over');
@@ -648,24 +637,30 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             };
             item.onclick = setMenuItemsState.bind(item);
             var el;
-            if (mediaType === 'caption') {
+            if (contentType === 'caption') {
                 el = menu.querySelector('ul');
             } else {
-                el = menu.querySelector('.' + mediaType + '-menu-content');
+                el = menu.querySelector('.' + contentType + '-menu-content');
             }
             el.appendChild(item);
         }
         return menu;
     };
 
-    var getMenuInitialIndex = function (menuType, mediaType) {
+    var getMenuInitialIndex = function (menuType, contentType) {
         if (menuType === 'track') {
-            if ($scope.streamInfo && $scope.streamInfo[mediaType] && $scope.streamInfo[mediaType].adaptationSetIndex) {
-                return $scope.streamInfo[mediaType].adaptationSetIndex;
+            if ($scope.autoSwitchTrack[contentType]) {
+                return 0;
+            }
+            if ($scope.streamInfo && $scope.streamInfo[contentType] && !isNaN($scope.streamInfo[contentType].adaptationSetIndex)) {
+                return $scope.streamInfo[contentType].adaptationSetIndex;
             }
         } else if (menuType === 'bitrate') {
-            if ($scope.streamInfo && $scope.streamInfo[mediaType] && $scope.streamInfo[mediaType].adaptationSetIndex) {
-                return $scope.streamInfo[mediaType].adaptationSetIndex;
+            if ($scope.autoSwitchBitrate[contentType]) {
+                return 0;
+            }
+            if ($scope.streamInfo && $scope.streamInfo[contentType] && !isNaN($scope.streamInfo[contentType].adaptationSetIndex)) {
+                return $scope.streamInfo[contentType].adaptationSetIndex;
             }
         } else if (menuType === 'caption') {
             // return self.player.getCurrentTextTrackIndex() + 1;
@@ -688,23 +683,40 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                 item.classList.remove('menu-item-unselected');
                 item.classList.add('menu-item-selected');
                 if (type === undefined) { // User clicked so type is part of item binding.
-                    switch (item.name) {
-                        case 'video-bitrate-list':
-                        case 'audio-bitrate-list':
-                            if (item.index > 0) {
-                                $scope.autoSwitchBitrate[item.mediaType] = false;
-                                // self.player.setQualityFor(item.mediaType, item.index - 1, forceQuality);  //////////////////////
-                            } else {
-                                $scope.autoSwitchBitrate[item.mediaType] = true;
+                    if (item.name.slice(-12) == 'bitrate-list') {
+                        if (item.index > 0) {
+                            $scope.autoSwitchBitrate[item.contentType] = false;
+                            $scope.streamInfo[item.contentType].representationIndex = item.index;
+                            // self.player.setQualityFor(item.contentType, item.index - 1, forceQuality);  //////////////////////
+                        } else {
+                            $scope.autoSwitchBitrate[item.contentType] = true;
+                        }
+                    }
+                    if (item.name.slice(-10) == 'track-list') {
+                        if (item.index > 0) {
+                            $scope.autoSwitchTrack[item.contentType] = false;
+                            let index = -1;
+                            for (let i = 0; i < nodes.length; i++) {
+                                if (!isNaN(nodes[i].pathIndex) && nodes[i].pathIndex == item.pathIndex) {
+                                    index++;
+                                    if (nodes[i].textContent == item.textContent) {
+                                        break;
+                                    }
+                                }
                             }
-                            break;
-                        case 'caption-list':
-                            // self.player.setTextTrack(item.index - 1);  //////////////////////
-                            break;
-                        case 'video-track-list':
-                        case 'audio-track-list':
-                            // self.player.setCurrentTrack(self.player.getTracksFor(item.mediaType)[item.index]);  //////////////////////
-                            break;
+                            if (index == -1) {
+                                throw "Cannot find the index of the selected adaptation set!";
+                            }
+                            $scope.streamInfo[item.contentType].pathIndex = item.pathIndex;
+                            $scope.streamInfo[item.contentType].adaptationSetIndex = index;
+                            changeBitrateListbyTrack();
+                            // self.player.setCurrentTrack(self.player.getTracksFor(item.contentType)[item.index]);  //////////////////////
+                        } else {
+                            $scope.autoSwitchTrack[item.contentType] = true;
+                        }
+                    }
+                    if (item.name.slice(-12) == 'caption-list') {
+                        // self.player.setTextTrack(item.index - 1);  //////////////////////
                     }
                 }
             }
@@ -776,15 +788,16 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         }
     }
 
-    var onStreamActivated = function () {  //////////////////////
+    var onStreamActivated = function (contentType, i) {  //////////////////////
         updateDuration();
-
         //Bitrate Menu
-        createBitrateSwitchMenu();
+        if ($scope.streamInfo && $scope.streamInfo[contentType] && !isNaN($scope.streamInfo[contentType].pathIndex) && i == $scope.streamInfo[contentType].pathIndex) {
+            createBitrateSwitchMenu(contentType);
+        }
         //Track Switch Menu
-        createTrackSwitchMenu();
+        createTrackSwitchMenu(contentType, i);
         //Text Switch Menu
-        createCaptionSwitchMenu();
+        createCaptionSwitchMenu(contentType, i);
     }
 
     var onStreamDeactivated = function (e) {  //////////////////////
@@ -826,10 +839,88 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         // return bufferLevel;
     };
 
+    var onSeekBarMouseMoveOut = function (/*e*/) {
+        // if (!thumbnailContainer) return;
+        // thumbnailContainer.style.display = 'none';
+    };
+
+    var onSeekBarMouseMove = function (event) {
+        // if (!thumbnailContainer || !thumbnailElem) return;
+
+        // // Take into account page offset and seekbar position
+        // var elem = videoContainer || video;
+        // var videoContainerRect = elem.getBoundingClientRect();
+        // var seekbarRect = seekbar.getBoundingClientRect();
+        // var videoControllerRect = videoController.getBoundingClientRect();
+
+        // // Calculate time position given mouse position
+        // var left = event.clientX - seekbarRect.left;
+        // var mouseTime = calculateTimeByEvent(event);
+        // if (isNaN(mouseTime)) return;
+
+        // // Update timer and play progress bar if mousedown (mouse click down)
+        // if (seeking) {
+        //     setTime(mouseTime);
+        //     if (seekbarPlay) {
+        //         seekbarPlay.style.width = (mouseTime / self.player.duration() * 100) + '%';
+        //     }
+        // }
+
+        // // Get thumbnail information
+        // if (self.player.provideThumbnail) {
+        //     self.player.provideThumbnail(mouseTime, function (thumbnail) {
+
+        //         if (!thumbnail) return;
+
+        //         // Adjust left variable for positioning thumbnail with regards to its viewport
+        //         left += (seekbarRect.left - videoContainerRect.left);
+        //         // Take into account thumbnail control
+        //         var ctrlWidth = parseInt(window.getComputedStyle(thumbnailElem).width);
+        //         if (!isNaN(ctrlWidth)) {
+        //             left -= ctrlWidth / 2;
+        //         }
+
+        //         var scale = (videoContainerRect.height * maxPercentageThumbnailScreen) / thumbnail.height;
+        //         if (scale > maximumScale) {
+        //             scale = maximumScale;
+        //         }
+
+        //         // Set thumbnail control position
+        //         thumbnailContainer.style.left = left + 'px';
+        //         thumbnailContainer.style.display = '';
+        //         thumbnailContainer.style.bottom += Math.round(videoControllerRect.height + bottomMarginThumbnail) + 'px';
+        //         thumbnailContainer.style.height = Math.round(thumbnail.height) + 'px';
+
+        //         var backgroundStyle = 'url("' + thumbnail.url + '") ' + (thumbnail.x > 0 ? '-' + thumbnail.x : '0') +
+        //             'px ' + (thumbnail.y > 0 ? '-' + thumbnail.y : '0') + 'px';
+        //         thumbnailElem.style.background = backgroundStyle;
+        //         thumbnailElem.style.width = thumbnail.width + 'px';
+        //         thumbnailElem.style.height = thumbnail.height + 'px';
+        //         thumbnailElem.style.transform = 'scale(' + scale + ',' + scale + ')';
+
+        //         if (thumbnailTimeLabel) {
+        //             thumbnailTimeLabel.textContent = displayUTCTimeCodes ? self.player.formatUTC(mouseTime) : self.player.convertToTimeCode(mouseTime);
+        //         }
+        //     });
+        // }
+    };
+
+    var changeBitrateListbyTrack = function () {
+        destroyMenu(bitrateListMenu, bitrateListBtn, menuHandlersList.bitrate, 'bitrate');
+        if (!isNaN($scope.streamInfo['video'].representationIndex)) {
+            createBitrateSwitchMenu('video');
+        }
+        if (!isNaN($scope.streamInfo['audio'].representationIndex)) {
+            createBitrateSwitchMenu('audio');
+        }
+    };
+
     return {
         initialize: initialize,
         setDuration: setDuration,
         setTime: setTime,
+        destroyAllMenus: destroyAllMenus,
+        changeBitrateListbyTrack: changeBitrateListbyTrack,
         removeMenu: removeMenu,
 
         show: function () {

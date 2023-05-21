@@ -50,6 +50,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             mimeCodecs: NaN
         }
     };
+    $scope.autoSwitchTrack = {
+        video: NaN,
+        audio: NaN
+    };
     $scope.autoSwitchBitrate = {
         video: NaN,
         audio: NaN
@@ -1569,16 +1573,18 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 if (registerStreamInfoResult != "SUCCESS") {
                     throw registerStreamInfoResult;
                 }
-                // Create and initialize control bar
-                if (!$scope.controllBar) {
-                    $scope.controllBar = new ControlBar();
-                    $scope.controllBar.initialize();
-                }
-                // Create and add track/bitrate/caption lists into control bar
-                $scope.controllBar.onStreamActivated(contentType);
                 // Fetch the first init segment and the first media segment
                 $scope.fetchFirstSegment(contentType);
             }
+
+            // Create and initialize control bar
+            if (!$scope.controllBar) {
+                $scope.controllBar = new ControlBar();
+                $scope.controllBar.initialize();
+                $scope.controllBar.destroyAllMenus();
+            }
+            // Create and add track/bitrate/caption lists into control bar
+            $scope.controllBar.onStreamActivated(contentType, i);
         } catch (e) {
             window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
         }
@@ -1729,13 +1735,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             if (!$scope.streamIsDynamic) {
                 $scope.streamIsDynamic = manifest.type == "static" ? false : manifest.type == "dynamic" ? true : false;
             }
+            $scope.autoSwitchTrack[contentType] = true;
             $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default 
             $scope.streamInfo[contentType] = tempStreamInfo;
             $scope.streamInfo[contentType].mimeCodecs = $scope.streamBitrateLists[contentType][i][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].mimeCodecs;
             try {
                 $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer($scope.streamInfo[contentType].mimeCodecs);
             } catch (e) {
-                throw "SourceBuffer is not initialized!";
+                throw "SourceBuffer is not initialized: " + e;
             }
             $scope.mediaSource.duration = $scope.streamDuration;
 
