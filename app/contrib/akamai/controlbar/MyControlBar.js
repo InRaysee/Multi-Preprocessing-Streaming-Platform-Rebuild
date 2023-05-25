@@ -13,7 +13,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         track: null
     };
     var lastVolumeLevel = NaN;
-    var seeking = false;
     var videoControllerVisibleTimeout = null;
     var liveThresholdSecs = 12;
     var textTrackList = {};
@@ -64,9 +63,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var addPlayerEventsListeners = function () {
-        // self.player.on(dashjs.MediaPlayer.events.PLAYBACK_STARTED, onPlayStart, this);
+        // self.player.on(dashjs.MediaPlayer.events.PLAYBACK_STARTED, onPlaybackStart, this);
         // self.player.on(dashjs.MediaPlayer.events.PLAYBACK_PAUSED, onPlaybackPaused, this);
-        // self.player.on(dashjs.MediaPlayer.events.PLAYBACK_TIME_UPDATED, onPlayTimeUpdate, this);
+        // self.player.on(dashjs.MediaPlayer.events.PLAYBACK_TIME_UPDATED, onPlaybackTimeUpdate, this);
         // self.player.on(dashjs.MediaPlayer.events.STREAM_ACTIVATED, onStreamActivated, this);
         // self.player.on(dashjs.MediaPlayer.events.STREAM_DEACTIVATED, onStreamDeactivated, this);
         // self.player.on(dashjs.MediaPlayer.events.STREAM_TEARDOWN_COMPLETE, onStreamTeardownComplete, this);
@@ -75,9 +74,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var removePlayerEventsListeners = function () {
-        // self.player.off(dashjs.MediaPlayer.events.PLAYBACK_STARTED, onPlayStart, this);
+        // self.player.off(dashjs.MediaPlayer.events.PLAYBACK_STARTED, onPlaybackStart, this);
         // self.player.off(dashjs.MediaPlayer.events.PLAYBACK_PAUSED, onPlaybackPaused, this);
-        // self.player.off(dashjs.MediaPlayer.events.PLAYBACK_TIME_UPDATED, onPlayTimeUpdate, this);
+        // self.player.off(dashjs.MediaPlayer.events.PLAYBACK_TIME_UPDATED, onPlaybackTimeUpdate, this);
         // self.player.off(dashjs.MediaPlayer.events.STREAM_ACTIVATED, onStreamActivated, this);
         // self.player.off(dashjs.MediaPlayer.events.STREAM_DEACTIVATED, onStreamDeactivated, this);
         // self.player.off(dashjs.MediaPlayer.events.STREAM_TEARDOWN_COMPLETE, onStreamTeardownComplete, this);
@@ -109,11 +108,11 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var togglePlayPauseBtnState = function () {
-        element.paused ? setPlayBtn() : setPauseBtn();
+        element.paused ? setPauseBtn() : setPlayBtn();
     };
 
     var setPlayBtn = function () {
-        var span = document.getElementById('icronPlayPause');
+        var span = document.getElementById('iconPlayPause');
         if (span !== null) {
             span.classList.remove('icon-pause');
             span.classList.add('icon-play');
@@ -121,7 +120,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var setPauseBtn = function () {
-        var span = document.getElementById('icronPlayPause');
+        var span = document.getElementById('iconPlayPause');
         if (span !== null) {
             span.classList.remove('icon-play');
             span.classList.add('icon-pause');
@@ -230,7 +229,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
     
     var onSeeking = function (event) {
-        seeking = true;
+        $scope.isSeeking = true;
         var mouseTime = calculateTimeByEvent(event);
         if (seekbarPlay) {
             seekbarPlay.style.width = (mouseTime / playerDuration() * 100) + '%';
@@ -283,37 +282,72 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         return (h === 0 ? '' : (h < 10 ? '0' + h.toString() + ':' : h.toString() + ':')) + (m < 10 ? '0' + m.toString() : m.toString()) + ':' + (s < 10 ? '0' + s.toString() : s.toString());
     };
 
-    // var onSeekBarMouseMove = function (event) {};
-
     var onSeeked = function (event) {
-        seeking = false;
         // document.removeEventListener('mousemove', onSeekBarMouseMove, true);
         document.removeEventListener('mouseup', onSeeked, true);
         // seeking
         var mouseTime = calculateTimeByEvent(event);
         if (!isNaN(mouseTime)) {
             mouseTime = mouseTime < 0 ? 0 : mouseTime;
-            self.player.seek(mouseTime);
             seek(mouseTime);
         }
         // onSeekBarMouseMoveOut(event);
         if (seekbarPlay) {
             seekbarPlay.style.width = (mouseTime / playerDuration() * 100) + '%';
         }
+        $scope.isSeeking = false;
     };
 
     var seek = function (value) {   ///////////// TODO: isDynamic
         // let time = $scope.streamIsDynamic ? getDVRSeekOffset(value) : value;
-        // let currentTime = element.currentTime;
-        // if (time === currentTime) return;
+        let time = value;
+        let currentTime = element.currentTime;
+        if (time === currentTime) return;
         // internalSeek = (internal === true);
         // if (!internalSeek) {
         //     seekTarget = time;
         //     eventBus.trigger(Events.PLAYBACK_SEEK_ASKED);
         // }
-        // videoModel.setCurrentTime(time, stickToBuffered);
+        element.currentTime = value;
+        let contentType = [];
+        if ($scope.streamSourceBuffer["video"]) {
+            contentType.push("video");
+        }
+        if ($scope.streamSourceBuffer["audio"]) {
+            contentType.push("audio");
+        }
+        if (contentType.length == 0) {
+            window.alert("Error when seek: no SourceBuffer of video/audio!");
+            return;
+        }
+        for (let i = 0; i < contentType.length; i++) {
+            let segDuration = $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].duration;
+            let segmentIndex = Math.floor(value / segDuration);
+            let bufferLevelAsArray = getBufferLevelasArray(contentType[i]);
+            for (let j = 0; j < bufferLevelAsArray.length; j++) {
+                if (bufferLevelAsArray[j].start <= value && bufferLevelAsArray[j].end >= value) {
+                    while ((segmentIndex + 1) * segDuration <= bufferLevelAsArray[j].end) {
+                        segmentIndex++;
+                    }
+                }
+            }
+            $scope.streamInfo[contentType[i]].segmentIndex = segmentIndex;
+        }
     }
 
+    var getBufferLevelasArray = function (contentType) {  //////////////////////
+        var elementBuffered = $scope.streamSourceBuffer[contentType].buffered;
+        var result = [];
+        if (elementBuffered.length == 0) {
+            return result;
+        }
+        for (let i = 0; i < elementBuffered.length; i++) {
+            result.push({ start: elementBuffered.start(i), end: elementBuffered.end(i) });
+        }
+        return result;
+    };
+
+    // var onSeekBarMouseMove = function (event) {};
     // var onSeekBarMouseMoveOut = function () {};
 
     var onFullScreenChange = function () {
@@ -761,22 +795,19 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         positionMenu(menu, btn);
     };
 
-    var onPlayStart = function () {
+    var onPlaybackStart = function () {
         setTime(displayUTCTimeCodes ? timeAsUTC(playerTime()) : playerTime());
-        updateplayerDuration();
+        updateDuration();
         togglePlayPauseBtnState();
-        if (seekbarBufferInterval) {
-            clearInterval(seekbarBufferInterval);
-        }
     }
 
     var onPlaybackPaused = function () {
         togglePlayPauseBtnState();
     }
 
-    var onPlayTimeUpdate = function () {
-        updateplayerDuration();
-        if (!seeking) {
+    var onPlaybackTimeUpdate = function () {
+        updateDuration();
+        if (!$scope.isSeeking) {
             setTime(displayUTCTimeCodes ? timeAsUTC(playerTime()) : playerTime());
             if (seekbarPlay) {
                 seekbarPlay.style.width = (playerTime() / playerDuration() * 100) + '%';
@@ -826,17 +857,16 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     }
 
     var getBufferLevel = function () {  //////////////////////
-        // var bufferLevel = 0;
-        // if (self.player.getDashMetrics) {
-        //     var dashMetrics = self.player.getDashMetrics();
-        //     if (dashMetrics) {
-        //         bufferLevel = dashMetrics.getCurrentBufferLevel('video', true);
-        //         if (!bufferLevel) {
-        //             bufferLevel = dashMetrics.getCurrentBufferLevel('audio', true);
-        //         }
-        //     }
-        // }
-        // return bufferLevel;
+        var elementBuffered = element.buffered;
+        if (elementBuffered.length == 0) {
+            return 0;
+        }
+        for (let i = 0; i < elementBuffered.length; i++) {
+            if (elementBuffered.start(i) <= element.currentTime && elementBuffered.end(i) >= element.currentTime) {
+                return elementBuffered.end(i) - element.currentTime;
+            }
+        }
+        return 0;
     };
 
     var onSeekBarMouseMoveOut = function (/*e*/) {
@@ -859,7 +889,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         // if (isNaN(mouseTime)) return;
 
         // // Update timer and play progress bar if mousedown (mouse click down)
-        // if (seeking) {
+        // if ($scope.isSeeking) {
         //     setTime(mouseTime);
         //     if (seekbarPlay) {
         //         seekbarPlay.style.width = (mouseTime / self.player.duration() * 100) + '%';
@@ -968,7 +998,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             window.removeEventListener('resize', handleMenuPositionOnResize);
             this.resetSelectionMenus();
             menuHandlersList = [];
-            seeking = false;
+            $scope.isSeeking = false;
             if (seekbarPlay) {
                 seekbarPlay.style.width = '0%';
             }
@@ -996,9 +1026,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             document.removeEventListener('webkitfullscreenchange', onFullScreenChange);
         },
 
-        onPlayStart: onPlayStart,
+        onPlaybackStart: onPlaybackStart,
         onPlaybackPaused: onPlaybackPaused,
-        onPlayTimeUpdate: onPlayTimeUpdate,
+        onPlaybackTimeUpdate: onPlaybackTimeUpdate,
         onStreamActivated: onStreamActivated,
         onStreamDeactivated: onStreamDeactivated,
         onStreamTeardownComplete: onStreamTeardownComplete,

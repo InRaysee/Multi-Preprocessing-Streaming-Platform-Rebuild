@@ -202,60 +202,70 @@
 											Multi-Path
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="VRMode" type="radio" autocomplete="off" ng-click="changeMode('VR')">
+											<input name="modes" id="VRMode" type="radio" autocomplete="off" ng-click="changeMode('VR')" disabled>
 											VR
 										</label>
 									</form>
 								</div>
 							</div>
 
-							<!-- Video path settings -->
+							<!-- Video/audio path settings -->
 							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 16.5%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Number of Video Path(s)</div>
+								<div class="options-item-title">Number of Paths</div>
 								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_1" type="radio" autocomplete="off" ng-click="changeVideoNumber(1)">
-											1
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_2" type="radio" autocomplete="off" ng-click="changeVideoNumber(2)">
-											2
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_3" type="radio" autocomplete="off" ng-click="changeVideoNumber(3)">
-											3
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_4" type="radio" autocomplete="off" ng-click="changeVideoNumber(4)">
-											4
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_5" type="radio" autocomplete="off" ng-click="changeVideoNumber(5)">
-											5
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="video_num" id="video_num_6" type="radio" autocomplete="off" ng-click="changeVideoNumber(6)" checked="true">
-											6
-										</label>
-									</form>
+									<div class="row">
+										<b>Videos</b>
+										<form>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_1" type="radio" autocomplete="off" ng-click="changeVideoNumber(1)">
+												1
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_2" type="radio" autocomplete="off" ng-click="changeVideoNumber(2)">
+												2
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_3" type="radio" autocomplete="off" ng-click="changeVideoNumber(3)">
+												3
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_4" type="radio" autocomplete="off" ng-click="changeVideoNumber(4)">
+												4
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_5" type="radio" autocomplete="off" ng-click="changeVideoNumber(5)">
+												5
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="video_num" id="video_num_6" type="radio" autocomplete="off" ng-click="changeVideoNumber(6)" checked="true">
+												6
+											</label>
+										</form>
+									</div>
+									<div class="row">
+										<b>Audios</b>
+										<form>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="audio_num" id="audio_num_0" type="radio" autocomplete="off" ng-click="changeAudioNumber(0)">
+												0
+											</label>
+											<label data-toggle="tooltip" data-placement="right">
+												<input name="audio_num" id="audio_num_1" type="radio" autocomplete="off" ng-click="changeAudioNumber(1)" checked="true">
+												1
+											</label>
+										</form>
+									</div>
 								</div>
 							</div>
 
-							<!-- Audio path settings -->
+							<!-- Initial settings -->
 							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 16.5%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Number of Audio Path(s)</div>
+								<div class="options-item-title">Initial Settings</div>
 								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="audio_num" id="audio_num_0" type="radio" autocomplete="off" ng-click="changeAudioNumber(0)">
-											0
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="audio_num" id="audio_num_1" type="radio" autocomplete="off" ng-click="changeAudioNumber(1)" checked="true">
-											1
-										</label>
-									</form>
+									<label data-toggle="tooltip" data-placement="right">
+										Target buffer length (s)
+										<input style="width: 200px;" value="10" step="1" min="0" type="number" id="target-buffer" ng-model="targetBuffer">
+									</label>
 								</div>
 							</div>
 
@@ -313,7 +323,7 @@
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled">
+											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled" checked>
 											Life signal enabled
 										</label>
 									</form>
@@ -346,7 +356,7 @@
 											Buffer & sync & quality
 										</label>
 											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
-												Preferred sync delay (sec)
+												Preferred sync delay (s)
 												<input style="width: 200px;" value="0.5" min="0" max="5" step="0.01" type="number" id="preferred-sync-delay" ng-model="preferredSyncDelay">
 											</label>
 										<label data-toggle="tooltip" data-placement="right">
@@ -367,15 +377,15 @@
 											<input style="width: 200px;" value="500" step="10" min="0" type="number" id="scheduling-timeout" ng-model="schedulingTimeout">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											Target latency (sec)
+											Target latency (s)
 											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											Minimal drift (sec)
+											Minimal drift (s)
 											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											Maximal drift (sec)
+											Maximal drift (s)
 											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
@@ -383,7 +393,7 @@
 											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											Catchup latency threshold (sec)
+											Catchup latency threshold (s)
 											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold">
 										</label>
 									</form>
@@ -438,13 +448,6 @@
 
 					<!-- Flat -->
 					<div id="videoContainer" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left;">
-						<!-- <video id="video_0" style="display: flex; width:100%; height:530px;"></video>
-						<video id="video_1" style="display: none; width:100%; height:530px;"></video>
-						<video id="video_2" style="display: none; width:100%; height:530px;"></video>
-						<video id="video_3" style="display: none; width:100%; height:530px;"></video>
-						<video id="video_4" style="display: none; width:100%; height:530px;"></video>
-						<video id="video_5" style="display: none; width:100%; height:530px;"></video>
-						<audio id="audio"></audio> -->
 						<video id="video" style="display: flex; width:100%; height:530px;"></video>
 						<div id="videoController" class="video-controller unselectable" style="display: block;">
 							<div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">

@@ -11,7 +11,12 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.streamSourceBuffer = {  // Containers for SourceBuffers
         video: null,
         audio: null
-    }
+    };
+    $scope.streamBuffedTime = NaN;  // The buffered time in the video element
+    $scope.streamBufferToAppend = {
+        video: [],
+        audio: []
+    };
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
         audio: 1
@@ -23,11 +28,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.streamBitrateLists = {  // Arrays of bitrate lists
         video: [],
         audio: []
-    }
+    };
     $scope.initCache = {  // Cache of init segments loaded
         video: [],
         audio: []
-    }
+    };
     $scope.streamDuration = NaN;  // Total duration of the stream
     $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
     $scope.streamInfo = {  // Information of streams selected
@@ -38,7 +43,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             representationIndex: NaN,
             segmentIndex: NaN,
             baseUrl: NaN,
-            mimeCodecs: NaN
+            mimeCodecs: NaN,
+            lastSegmentIndex: NaN
         },
         audio: {
             pathIndex: NaN,
@@ -47,17 +53,23 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             representationIndex: NaN,
             segmentIndex: NaN,
             baseUrl: NaN,
-            mimeCodecs: NaN
+            mimeCodecs: NaN,
+            lastSegmentIndex: NaN
         }
     };
-    $scope.autoSwitchTrack = {
+    $scope.autoSwitchTrack = {  // Flags for judging if the tracks are auto switched
         video: NaN,
         audio: NaN
     };
-    $scope.autoSwitchBitrate = {
+    $scope.autoSwitchBitrate = {  // Flags for judging if the bitrates are auto switched
         video: NaN,
         audio: NaN
     };
+    $scope.isFetchingSegment = {  // Flag for identifying if fetching the segment
+        video: NaN,
+        audio: NaN
+    };
+    $scope.isSeeking = NaN;
     $scope.matchers = [  // Matchers for data adjustments (dash.js)
         new DurationMatcher(),
         new DateTimeMatcher(),
@@ -71,6 +83,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         COMMENT_NODE	   : 8,
         DOCUMENT_NODE 	   : 9
     };
+
+    $scope.targetBuffer = 10;  // The buffer level desired to be fetched
 /////////////////////////////////////////////////////////////////////////////////////
 
     //// Global variables (containers: cannot adjust mannually)
@@ -521,17 +535,17 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.preferredPathID = 1;  // Switch the path of stream manually
     $scope.preferredSyncDelay = 0.5;  // Set the tolerance of sync delay (s)
     $scope.preferredQualitySelected = 0;  // Switch the quality by manual switching ABR strategy and multipath ABR strategy
-    $scope.lifeSignalEnabled = false;  // Whether discard the lowest bitrate as life signals or not
+    $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
+        "http://localhost:8080/apple/v9/stream.mpd",
+        "http://localhost:8080/apple/v9/stream.mpd",
+        "http://localhost:8080/apple/v9/stream.mpd",
+        "http://localhost:8080/apple/v9/stream.mpd",
+        "http://localhost:8080/apple/v9/stream.mpd",
+        "http://localhost:8080/apple/v9/stream.mpd"
     ];
     $scope.audioURLs = [  // Save the selected media source
-        "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
+        "http://localhost:8080/apple/v9/stream.mpd"
 ];
 
 
@@ -1574,7 +1588,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     throw registerStreamInfoResult;
                 }
                 // Fetch the first init segment and the first media segment
-                $scope.fetchFirstSegment(contentType);
+                $scope.fetchSegment(contentType, "InitSegment");
+                setInterval($scope.scheduleFetcher.bind(this, contentType), 50);
             }
 
             // Create and initialize control bar
@@ -1585,10 +1600,41 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             }
             // Create and add track/bitrate/caption lists into control bar
             $scope.controllBar.onStreamActivated(contentType, i);
+            // Add eventListeners of control bar
+            $scope.streamElement.addEventListener('timeupdate', $scope.controllBar.onPlaybackTimeUpdate);
         } catch (e) {
             window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
         }
     
+    };
+
+    // Fetch the segments periodly if isFetchingSegment is false
+    $scope.scheduleFetcher = function(contentType) {
+        var bufferLevel = $scope.getBufferLevel(contentType);
+        if (!$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer) {
+            if ($scope.initCache[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex]) {
+                // if (isNaN($scope.streamInfo[contentType].lastSegmentIndex) || $scope.streamInfo[contentType].lastSegmentIndex != $scope.streamInfo[contentType].segmentIndex) {
+                if (!isNaN($scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
+                    $scope.fetchSegment(contentType, "MediaSegment");
+                }
+            } else {
+                $scope.fetchSegment(contentType, "InitSegment");
+            }
+        }
+    };
+
+    // Get the buffer level of videos/audios
+    $scope.getBufferLevel = function(contentType) {
+        var elementBuffered = $scope.streamSourceBuffer[contentType].buffered;
+        if (elementBuffered.length == 0) {
+            return 0;
+        }
+        for (let i = 0; i < elementBuffered.length; i++) {
+            if (elementBuffered.start(i) <= $scope.streamElement.currentTime && elementBuffered.end(i) >= $scope.streamElement.currentTime) {
+                return elementBuffered.end(i) - $scope.streamElement.currentTime;
+            }
+        }
+        return 0;
     };
 
     // Register bitrate lists
@@ -1620,16 +1666,20 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                                 let mimeCodecsFromMpd = mimeFromMpd + ";codecs=\"" + codecsFromMpd + "\"";
                                 if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodecsFromMpd)) {
                                     $scope.streamBitrateLists[contentType][i][j][jj][jjj] = {
-                                        id: manifest.Period[j].AdaptationSet[jj].Representation[jjj].id != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].id : NaN,
+                                        id: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].id) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].id : NaN,
                                         mimeCodecs: mimeCodecsFromMpd,
                                         bandwidth: manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth : NaN,
-                                        duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration : NaN,
+                                        duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration / 1000000 : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration / 1000000 : NaN,
                                         initialization: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization : NaN,
                                         media: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].media : NaN,
-                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN,
-                                        width: manifest.Period[j].AdaptationSet[jj].Representation[jjj].width != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].width : NaN,
-                                        height: manifest.Period[j].AdaptationSet[jj].Representation[jjj].height != NaN ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].height : NaN
+                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN,
+                                        width: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].width) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].width : NaN,
+                                        height: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].height) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].height : NaN,
+                                        segmentNum: NaN
                                     };
+                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration && manifest.mediaPresentationDuration) {
+                                        $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
+                                    }
                                 }
                             }
                         }
@@ -1667,7 +1717,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                         throw "No adaptation set is available in path " + i + ", period " + j + "!";
                     }
                     for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType && manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation.length > ($scope.lifeSignalEnabled ? 1 : 0)) {
+                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType && manifest.Period[j].AdaptationSet[jj].Representation != undefined) {
                             tempStreamInfo.adaptationSetIndex = jj;
                             // representationIndex
                             let firstsmall, secondsmall;
@@ -1694,22 +1744,26 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                                     }
                                 }
                             }
-                            if ((!$scope.lifeSignalEnabled) && firstsmall) {
-                                if ($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber != NaN && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs) {
-                                    tempStreamInfo.representationIndex = firstsmall.key;
-                                    // segmentIndex
-                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
-                                    // mimeCodecs
-                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
-                                    break;
-                                }
-                            } else if ($scope.lifeSignalEnabled && secondsmall) {
-                                if ($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber != NaN && $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs) {
+                            if ($scope.lifeSignalEnabled && secondsmall) {
+                                if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber) && $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration) {
                                     tempStreamInfo.representationIndex = secondsmall.key;
                                     // segmentIndex
                                     tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber;
                                     // mimeCodecs
-                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber;
+                                    tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs;
+                                    // duration
+                                    tempStreamInfo.duration = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration;
+                                    break;
+                                }
+                            } else if (firstsmall) {
+                                if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber) && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration) {
+                                    tempStreamInfo.representationIndex = firstsmall.key;
+                                    // segmentIndex
+                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
+                                    // mimeCodecs
+                                    tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs;
+                                    // duration
+                                    tempStreamInfo.duration = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration;
                                     break;
                                 }
                             }
@@ -1735,8 +1789,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             if (!$scope.streamIsDynamic) {
                 $scope.streamIsDynamic = manifest.type == "static" ? false : manifest.type == "dynamic" ? true : false;
             }
-            $scope.autoSwitchTrack[contentType] = true;
-            $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default 
+            $scope.autoSwitchTrack[contentType] = true;  // Use path switching as default
+            $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default
+            $scope.isFetchingSegment[contentType] = false;
+            $scope.isSeeking = false;
             $scope.streamInfo[contentType] = tempStreamInfo;
             $scope.streamInfo[contentType].mimeCodecs = $scope.streamBitrateLists[contentType][i][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].mimeCodecs;
             try {
@@ -1744,6 +1800,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             } catch (e) {
                 throw "SourceBuffer is not initialized: " + e;
             }
+            $scope.streamSourceBuffer[contentType].addEventListener('updateend', $scope.appendBufferFromListener(contentType));
+            $scope.streamSourceBuffer[contentType].addEventListener('updateend', $scope.onBufferLevelUpdated);
+            setInterval($scope.appendBufferFromInterval, 100);
             $scope.mediaSource.duration = $scope.streamDuration;
 
             return "SUCCESS";
@@ -1753,8 +1812,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     };
 
-    // Only run when the first stream is registerred
-    $scope.fetchFirstSegment = function(contentType) {
+    $scope.onBufferLevelUpdated = function() {
+        if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
+            $scope.controllBar.onBufferLevelUpdated();
+        }
+    };
+
+    // Run when the segment need to be fetched from servers
+    $scope.fetchSegment = function(contentType, urlType) {
 
         var curStreamInfo = {
             pathIndex: $scope.streamInfo[contentType].pathIndex,
@@ -1765,24 +1830,46 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             baseUrl: $scope.streamInfo[contentType].baseUrl,
             mimeCodecs: $scope.streamInfo[contentType].mimeCodecs
         };
+        if (urlType == "InitSegment" && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
+            console.log("Init segment of " + contentType + " " + curStreamInfo.pathIndex + " period " + curStreamInfo.periodIndex + " adaptationSet " + curStreamInfo.adaptationSetIndex + " representation " + curStreamInfo.representationIndex + " is in the initCache!");
+            // $scope.streamBufferToAppend[contentType].push($scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]);
+            return;
+        }
         var paramForResolveUrl = {
             id: $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].id,
             segmentIndex: curStreamInfo.segmentIndex
         };
         var url = curStreamInfo.baseUrl;
-        var urlExtend = $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization;
-        $scope.fetchBuffer($scope.resolveUrl("InitSegment", url, urlExtend, paramForResolveUrl), "arraybuffer", (buffer) => {
-            $scope.loadFirstSegment(buffer, contentType, curStreamInfo);
-        });
+        var urlExtend = urlType == "InitSegment" ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization : urlType == "MediaSegment" ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].media : "";
+        var urlResolved = $scope.resolveUrl(urlType, url, urlExtend, paramForResolveUrl);
+        $scope.isFetchingSegment[contentType] = true;
+        $scope.fetchBuffer(urlResolved, "arraybuffer", 
+            (buffer) => {
+                $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
+                $scope.isFetchingSegment[contentType] = false;
+            },
+            (status) => {
+                if (status == 404) {
+                    console.log("No file: " + urlResolved);
+                    $scope.isFetchingSegment[contentType] = false;
+                    $scope.streamInfo[contentType].segmentIndex = $scope.streamInfo[contentType].lastSegmentIndex;
+                }
+            }
+        );
 
     };
 
-    $scope.loadFirstSegment = function(buffer, contentType, curStreamInfo) {
+    // Load segments from responses and append to queue
+    $scope.loadSegment = function(buffer, contentType, curStreamInfo, urlType) {
 
-        $scope.streamSourceBuffer[contentType].appendBuffer(buffer);
-        $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = buffer;
-        // TODO
-
+        $scope.streamBufferToAppend[contentType].push(buffer);
+        if (urlType == "InitSegment") {  // Save in the cache if InitSegment
+            $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = buffer;
+        } else if (urlType == "MediaSegment") {    // Add buffered time if MediaSegment
+            $scope.streamInfo[contentType].lastSegmentIndex = $scope.streamInfo[contentType].segmentIndex;
+            $scope.streamInfo[contentType].segmentIndex++;
+        }
+        $scope.scheduleFetcher(contentType);
     }
 
     // Dealing with url with urlType
@@ -1850,7 +1937,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                         throw "Wrong placeholder of representation ID!";
                     }
                     tempUrlExtend = tempUrlExtend.replace("$RepresentationID$", paramForResolveUrl.id);  // Replace representation ID in the URL
-                    if (tempUrlExtend.indexOf("$Number%05d$") == -1) {
+                    if (tempUrlExtend.indexOf("$Number%05d$") == -1) { /////////////////////////
                         throw "Wrong placeholder of segment number!";
                     }
                     tempUrlExtend = tempUrlExtend.replace("$Number%05d$", numberMatcher(paramForResolveUrl.segmentIndex, "$Number%05d$"));  // Replace segment number in the URL
@@ -1860,25 +1947,56 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     return "";
                 }
             default:
+                window.alert("Error when resolving URL of InitSegment/MediaSegment!");
                 return "";
         }
 
     };
 
+    // Triggered when updateend event happens
+    $scope.appendBufferFromListener = function(contentType) {
+        if ($scope.streamSourceBuffer[contentType].updating) {
+            return;
+        }
+        if ($scope.streamBufferToAppend[contentType].length > 0) {
+            let buffer = $scope.streamBufferToAppend[contentType].shift();
+            $scope.streamSourceBuffer[contentType].appendBuffer(buffer);
+        }
+    }
+
+    // Periodly check and append buffers
+    $scope.appendBufferFromInterval = function() {
+        if (!$scope.streamSourceBuffer['video'].updating && $scope.streamBufferToAppend['video'].length > 0) {
+            let buffer = $scope.streamBufferToAppend['video'].shift();
+            $scope.streamSourceBuffer['video'].appendBuffer(buffer);
+        }
+        if (!$scope.streamSourceBuffer['audio'].updating && $scope.streamBufferToAppend['audio'].length > 0) {
+            let buffer = $scope.streamBufferToAppend['audio'].shift();
+            $scope.streamSourceBuffer['audio'].appendBuffer(buffer);
+        }
+    }
+
     // Create and load a XMLHttpRequest
-    $scope.fetchBuffer = function(url, responseType, callback) {
+    $scope.fetchBuffer = function(url, responseType, callback, noFile) {
 
         if (!url) {
             window.alert("The URL is invalid: " + url);
             return;
         }
-
         var xhr = new XMLHttpRequest();
         xhr.open('get', url);
         xhr.responseType = responseType;  // 'text', 'arraybuffer'
         xhr.onload = function () {
-            callback(xhr.response);
+            if (xhr.status == 200) {
+                callback(xhr.response);
+            }
         };
+        xhr.onreadystatechange = function () {
+            if (noFile && xhr.status == 404) {
+                noFile(xhr.status);
+                xhr.onreadystatechange = null;
+            }
+        }
         xhr.send();
 
     };
@@ -1893,332 +2011,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Enabling the FOV event listener in iframe, and start initialization
     document.getElementById('frame').onload = function () {
-        $scope.initial();
-    };
-
-    // Initializing DASH players
-    $scope.initial = function() {
-        $scope.players = [];
-        let video, url;
-
-        // Video part
-        for (let i = 0; i < $scope.playerNum; i++) {
-            video = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : null;
-            $scope.players[i] = new dashjs.MediaPlayer().create();
-            url = $scope.videoURLs[i];
-            $scope.buffer_empty_flag[i] = true;
-
-            // Don't use dash.js default rules
-            $scope.players[i].updateSettings({
-                'info': {
-                    'id': "video_" + i,
-                    'count': i,
-                    'totalThroughputNeeded': true
-                },
-                'streaming': {
-                    'buffer': {
-                        'bufferToKeep': $scope.playerBufferToKeep,
-                        'stableBufferTime': $scope.playerStableBufferTime,
-                        'bufferTimeAtTopQuality': $scope.playerBufferTimeAtTopQuality,
-                        'bufferTimeAtTopQualityLongForm': $scope.playerBufferTimeAtTopQualityLongForm,
-                        'fastSwitchEnabled': true
-                    },
-                    'delay': {
-                        'liveDelay': $scope.targetLatency
-                    },
-                    'liveCatchup': {
-                        'enabled': true,
-                        'minDrift': $scope.minDrift,
-                        'maxDrift': $scope.maxDrift,
-                        'playbackRate': $scope.catchupPlaybackRate,
-                        'latencyThreshold': $scope.liveCatchupLatencyThreshold
-                    },
-                    'scheduling': {
-                        'defaultTimeout': $scope.schedulingTimeout
-                    }
-                // },
-                // 'debug': {
-                //     'logLevel': 5
-                }
-            });
-
-            // Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
-            switch ($scope.selectedRule) {
-                case "MyThroughputRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                	$scope.players[i].addABRCustomRule('qualitySwitchRules', 'MyThroughputRule', MyThroughputRule);
-                	break;
-                case "MultiPathRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                    $scope.players[i].addABRCustomRule('qualitySwitchRules', 'MultiPathRule', MultiPathRule);
-                    break;
-                case "HighestBitrateRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                    $scope.players[i].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
-                    break;
-                case "LowestBitrateRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                    $scope.players[i].addABRCustomRule('qualitySwitchRules', 'LowestBitrateRule', LowestBitrateRule);
-                    break;
-                case "GlobalSwitchRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                    $scope.players[i].addABRCustomRule('qualitySwitchRules', 'GlobalSwitchRule', GlobalSwitchRule);
-                    break;
-                case "FOVRule":
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': false
-                            }
-                        }
-                    });
-                    $scope.players[i].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
-                    break;
-                default:
-                    $scope.players[i].updateSettings({
-                        'streaming': {
-                            'abr': {
-                                'useDefaultABRRules': true
-                            }
-                        }
-                    });
-                    break;
-            }
-
-            // Turn on the event listeners and add actions for triggers 
-            $scope.players[i].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], $scope.buffer_empty_event);
-            $scope.players[i].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], $scope.buffer_loaded_event);
-            $scope.players[i].on(dashjs.MediaPlayer.events["QUALITY_CHANGE_RENDERED"], $scope.quality_change_rendered);
-
-            // Initializing players
-            $scope.players[i].initialize(video, url, false);
-            $scope.playerBufferLength[i] = $scope.players[i].getBufferLength("video");
-            $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("video");
-            $scope.playerTime[i] = 0;
-            $scope.loadedTime[i] = 0;
-            $scope.playerDownloadingQuality[i] = $scope.players[i].getQualityFor("video");
-            $scope.playerPlaybackQuality[i] = 0;
-            $scope.playerBitrateList[i] = [];
-            $scope.playerCatchUp[i] = false;
-            $scope.playerRTT[i] = Infinity;
-
-            // Initializing charts
-            $scope.chartState["downloadingQuality"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-            $scope.chartState["playbackQuality"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-            $scope.chartState["buffer"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-            $scope.chartState["throughput"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-            $scope.chartState["RTT"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-            $scope.chartState["requests"]["video_" + i] = {
-                data: [], color: $scope.chartColor[i], label: 'video ' + (i + 1)
-            };
-        }
-
-        // Audio part
-        if ($scope.isAudio && $scope.audioURLs[0] != "") {
-            var audio = $scope.selectedMode == 'Multi-Path' ? document.getElementById( "audio" ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "audio") : null;
-            $scope.players[$scope.playerNum] = new dashjs.MediaPlayer().create();
-            url = $scope.audioURLs[0];
-            $scope.buffer_empty_flag[$scope.playerNum] = true;
-
-            $scope.players[$scope.playerNum].updateSettings({
-                'info': {
-                    'id': "audio",
-                    'count': $scope.playerNum,
-                    'totalThroughputNeeded': true
-                },
-                'streaming': {
-                    // 'abr': {
-                    //     'useDefaultABRRules': false
-                    // },
-                    'buffer': {
-                        'bufferToKeep': $scope.playerBufferToKeep,
-                        'stableBufferTime': $scope.playerStableBufferTime,
-                        'bufferTimeAtTopQuality': $scope.playerBufferTimeAtTopQuality,
-                        'fastSwitchEnabled': true
-                    },
-                    'delay': {
-                        'liveDelay': $scope.targetLatency
-                    },
-                    'liveCatchup': {
-                        'enabled': true,
-                        'minDrift': $scope.minDrift,
-                        'maxDrift': $scope.maxDrift,
-                        'playbackRate': $scope.catchupPlaybackRate,
-                        'latencyThreshold': $scope.liveCatchupLatencyThreshold
-                    },
-                    'scheduling': {
-                        'defaultTimeout': $scope.schedulingTimeout
-                    }
-                }
-            });
-
-            // Turn on the event listeners and add actions for triggers 
-            $scope.players[$scope.playerNum].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], $scope.buffer_empty_event);
-            $scope.players[$scope.playerNum].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], $scope.buffer_loaded_event);
-            $scope.players[$scope.playerNum].on(dashjs.MediaPlayer.events["QUALITY_CHANGE_RENDERED"], $scope.quality_change_rendered);
-
-            // Initializing
-            $scope.players[$scope.playerNum].initialize(audio, url, false);
-            $scope.playerBufferLength[$scope.playerNum] = $scope.players[$scope.playerNum].getBufferLength("audio");
-            $scope.playerAverageThroughput[$scope.playerNum] = $scope.players[$scope.playerNum].getAverageThroughput("audio");
-            $scope.playerTime[$scope.playerNum] = 0;
-            $scope.loadedTime[$scope.playerNum] = 0;
-            $scope.playerDownloadingQuality[$scope.playerNum] = $scope.players[$scope.playerNum].getQualityFor("audio");
-            $scope.playerPlaybackQuality[$scope.playerNum] = 0;
-            $scope.playerCatchUp[$scope.playerNum] = false;
-            $scope.playerRTT[$scope.playerNum] = Infinity;
-
-            // Initializing charts
-            $scope.chartState["downloadingQuality"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-            $scope.chartState["playbackQuality"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-            $scope.chartState["buffer"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-            $scope.chartState["throughput"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-            $scope.chartState["RTT"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-            $scope.chartState["requests"]["audio"] = {
-                data: [], color: $scope.chartColor[$scope.playerNum], label: 'audio'
-            };
-        }
-
-        // Initializing Controllbars
-        $scope.controllBar = new ControlBar($scope.players);
-        $scope.controllBar.initialize();
-
-        // Initialize charts by media types
-        $scope.initChartingByMediaType('downloadingQuality');
-        $scope.initChartingByMediaType('playbackQuality');
-        $scope.initChartingByMediaType('buffer');
-        $scope.initChartingByMediaType('throughput');
-        $scope.initChartingByMediaType('RTT');
-        $scope.initChartingByMediaType('requests');
-
-        // Set the fastest mediaplayer's timeline as the normalized time
-        setInterval($scope.setNormalizedTime, $scope.IntervalOfSetNormalizedTime);
-        // Compute total throughput according to recent HTTP requests
-        setInterval($scope.computetotalThroughput, $scope.IntervalOfComputetotalThroughput);
-        // Compute QoE
-        setInterval($scope.computeQoE, $scope.IntervalOfComputeQoE);
-        // Capture the pictures from mediaplayers
-        setInterval($scope.capturePictures, $scope.IntervalOfCaptures);
-        // Update settings according to catchup parameters in options
-        setInterval($scope.updateCatchupSettings, $scope.IntervalOfApplyOptions);
-        // Show the data in monitor
-        setInterval($scope.updateStats, $scope.IntervalOfUpdateStats);
-        // Show the data in figures
-        setInterval($scope.updateFigures, $scope.IntervalOfUpdateFigures);
-        // Show the requests data in figures
-        setInterval($scope.updateRequestsFigures, $scope.IntervalOfUpdateRequestsFigures);
-        // Display different path's player according to downloading qualities
-        setInterval($scope.switchPath, $scope.IntervalOfSwitchPath);
-        // Set up the qualities when using MultiPathRule
-        setInterval($scope.updateMultiPathQualities, $scope.IntervalOfUpdateMultiPathQualities);
-
-        document.getElementById('Load').style.display = "none";
-        document.getElementById('Reload').style.display = "inline-block";
-    };
-
-    // Pause in all players
-    $scope.pause_all = function() {
-        for (let i = 0; i <= $scope.playerNum; i++) {
-            if ($scope.players[i]) {
-                $scope.players[i].pause();
-            }
-        }
-    };
-
-    // Play in all players
-    $scope.play_all = function() {
-        for (let i = 0; i <= $scope.playerNum; i++) {
-            if ($scope.players[i]) {
-                $scope.players[i].play();
-            }
-        }
-    };
-
-    // Triggered when any player's buffer is empty, which to stop all the players and wait for rebuffering.
-    $scope.buffer_empty_event = function(e) {
-        $scope.buffer_empty_flag[e.info.count] = true;
-        if (e.info.count == $scope.playerNum) {
-            $scope.pause_all();
-        } else {
-            for (let i = 0; i < $scope.playerNum; i++) {
-                if ($scope.players[i] && !$scope.buffer_empty_flag[i]) {
-                    return;
-                }
-            }
-            $scope.pause_all();
-        }
-    };
-
-    // Triggered when any player's buffer is loaded (again), which to start all the players when all-set.
-    $scope.buffer_loaded_event = function(e) {
-        $scope.buffer_empty_flag[e.info.count] = false;
-        if (e.info.count == $scope.playerNum) {
-            for (let i = 0; i < $scope.playerNum; i++) {
-                if ($scope.players[i] && !$scope.buffer_empty_flag[i]) {
-                    if (!$scope.forcedPause) {
-                        $scope.play_all();
-                    }
-                    return;
-                }
-            }
-        } else {
-            if ($scope.players[$scope.playerNum] && $scope.buffer_empty_flag[$scope.playerNum]) {
-                return;
-            }
-            if (!$scope.forcedPause) {
-                $scope.play_all();
-            }
-        }
+        // $scope.initial();
     };
 
     // Triggered when the playback quality has changed
