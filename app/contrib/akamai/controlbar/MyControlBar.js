@@ -616,7 +616,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                     if (!document.getElementById(contentType + '-' + menuType + '-control')) {
                         el.appendChild(createMediaTypeMenu(contentType, menuType));
                     }
-                    el = createMenuContent(el, getMenuContent(menuType, info[contentType], contentFunc, contentType), contentType, contentType + '-' + menuType + '-list');
+                    el = createMenuContent(el, getMenuContent(menuType, info[contentType], contentFunc, contentType), contentType, menuType);
                     setMenuItemsState(getMenuInitialIndex(menuType, contentType), contentType + '-' + menuType + '-list');
                 }
                 break;
@@ -651,13 +651,13 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         return content;
     };
 
-    var createMenuContent = function (menu, arr, contentType, name) {
+    var createMenuContent = function (menu, arr, contentType, menuType) {
         for (var i = 0; i < arr.length; i++) {
             var item = document.createElement('li');
-            item.id = name + 'Item_' + i;
-            item.index = i;
+            item.id = contentType + '-' + menuType + '-list' + 'Item_' + document.getElementById(contentType + '-' + menuType + '-control-content').children.length;
+            item.index = document.getElementById(contentType + '-' + menuType + '-control-content').children.length;
             item.contentType = contentType;
-            item.name = name;
+            item.name = contentType + '-' + menuType + '-list';
             item.selected = false;
             item.textContent = arr[i] instanceof Object ? arr[i].info : arr[i];
             item.pathIndex = arr[i] instanceof Object ? arr[i].pathIndex : NaN;
@@ -720,8 +720,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                     if (item.name.slice(-12) == 'bitrate-list') {
                         if (item.index > 0) {
                             $scope.autoSwitchBitrate[item.contentType] = false;
-                            $scope.streamInfo[item.contentType].representationIndex = item.index;
-                            // self.player.setQualityFor(item.contentType, item.index - 1, forceQuality);  //////////////////////
+                            $scope.streamInfo[item.contentType].representationIndex = item.index - 1;
                         } else {
                             $scope.autoSwitchBitrate[item.contentType] = true;
                         }
@@ -743,11 +742,10 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                             }
                             $scope.streamInfo[item.contentType].pathIndex = item.pathIndex;
                             $scope.streamInfo[item.contentType].adaptationSetIndex = index;
-                            changeBitrateListbyTrack();
-                            // self.player.setCurrentTrack(self.player.getTracksFor(item.contentType)[item.index]);  //////////////////////
                         } else {
                             $scope.autoSwitchTrack[item.contentType] = true;
                         }
+                        changeBitrateListbyTrack(item.contentType);
                     }
                     if (item.name.slice(-12) == 'caption-list') {
                         // self.player.setTextTrack(item.index - 1);  //////////////////////
@@ -935,8 +933,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         // }
     };
 
-    var changeBitrateListbyTrack = function () {
+    var changeBitrateListbyTrack = function (contentType) {
         destroyMenu(bitrateListMenu, bitrateListBtn, menuHandlersList.bitrate, 'bitrate');
+        $scope.autoSwitchBitrate[contentType] = true;
         if (!isNaN($scope.streamInfo['video'].representationIndex)) {
             createBitrateSwitchMenu('video');
         }

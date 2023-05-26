@@ -1,54 +1,106 @@
-var LowestBitrateRule;
-
 // Rule that selects the possible lowest bitrate
-function LowestBitrateRuleClass() {
+var LowestBitrateRuleClass = function () {
 
-    var appElement = document.querySelector('[ng-controller=DashController]');
-    var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
-    let factory = dashjs.FactoryMaker;
-    let SwitchRequest = factory.getClassFactoryByName('SwitchRequest');
-    let context = this.context;
     let instance;
+    let appElement = document.querySelector('[ng-controller=DashController]');
+    let $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
 
     function setup() {
     }
 
     // Always select the lowest bitrate
-    function getMaxIndex(rulesContext) {
-        const switchRequest = SwitchRequest(context).create();
-
-        if (!rulesContext || !rulesContext.hasOwnProperty('getMediaInfo') || !rulesContext.hasOwnProperty('getAbrController')) {
-            return switchRequest;
+    function setStreamInfo(streamInfo, contentType) {
+        
+        if (!$scope.streamBitrateLists || !$scope.streamBitrateLists[contentType]) {
+            return streamInfo;
         }
 
-        const mediaType = rulesContext.getMediaInfo().type;
-        const mediaInfo = rulesContext.getMediaInfo();
-        const abrController = rulesContext.getAbrController();
-
-        if (mediaType != "video") {  // Default settings for audio
-            return switchRequest;           
+        let firstsmall, secondsmall;
+        for (let i = 0; i < $scope.streamBitrateLists[contentType].length; i++) {
+            let j = streamInfo.periodIndex;
+            if ($scope.streamBitrateLists[contentType][i][j]) {
+                for (let jj = 0; jj < $scope.streamBitrateLists[contentType][i][j].length; jj++) {
+                    if ($scope.streamBitrateLists[contentType][i][j][jj]) {
+                        for (let jjj = 0; jjj < $scope.streamBitrateLists[contentType][i][j][jj].length; jjj++) {
+                            if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth != undefined) {
+                                if (!firstsmall) {
+                                    firstsmall = {
+                                        pathIndex: i,
+                                        periodIndex: j,
+                                        adaptationSetIndex: jj,
+                                        representationIndex: jjj,
+                                        bandwidth: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth
+                                    };
+                                } else if (firstsmall && !secondsmall) {
+                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < firstsmall.bandwidth) {
+                                        secondsmall = firstsmall;
+                                        firstsmall = {
+                                            pathIndex: i,
+                                            periodIndex: j,
+                                            adaptationSetIndex: jj,
+                                            representationIndex: jjj,
+                                            bandwidth: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth
+                                        };
+                                    } else if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth > firstsmall.bandwidth) {
+                                        secondsmall = {
+                                            pathIndex: i,
+                                            periodIndex: j,
+                                            adaptationSetIndex: jj,
+                                            representationIndex: jjj,
+                                            bandwidth: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth
+                                        };
+                                    }
+                                } else if (!firstsmall && secondsmall) {
+                                    window.alert("Error when using LowestBitrateRule!");
+                                    return streamInfo;
+                                } else {
+                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < firstsmall.bandwidth) {
+                                        secondsmall = firstsmall;
+                                        firstsmall = {
+                                            pathIndex: i,
+                                            periodIndex: j,
+                                            adaptationSetIndex: jj,
+                                            representationIndex: jjj,
+                                            bandwidth: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth
+                                        };
+                                    } else if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth > firstsmall.bandwidth && $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth < secondsmall.bandwidth) {
+                                        secondsmall = {
+                                            pathIndex: i,
+                                            periodIndex: j,
+                                            adaptationSetIndex: jj,
+                                            representationIndex: jjj,
+                                            bandwidth: $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth
+                                        };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }     
+            }
+        }
+        if ($scope.lifeSignalEnabled && secondsmall) {
+            streamInfo.pathIndex = secondsmall.pathIndex;
+            streamInfo.periodIndex = secondsmall.periodIndex;
+            streamInfo.adaptationSetIndex = secondsmall.adaptationSetIndex;
+            streamInfo.representationIndex = secondsmall.representationIndex;
+        }
+        if (!$scope.lifeSignalEnabled && firstsmall) {
+            streamInfo.pathIndex = firstsmall.pathIndex;
+            streamInfo.periodIndex = firstsmall.periodIndex;
+            streamInfo.adaptationSetIndex = firstsmall.adaptationSetIndex;
+            streamInfo.representationIndex = firstsmall.representationIndex;
         }
 
-        // Ask to switch to the lowest bitrate
-        switchRequest.quality = 0;
-        switchRequest.reason = 'Always switching to the lowest bitrate';
-        switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
-
-        const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates
-        switchRequest.quality = bitrateList.length > 1 && $scope.lifeSignalEnabled ? 1 : 0;
-
-        return switchRequest;
+        return streamInfo;
+        
     }
 
     instance = {
-        getMaxIndex: getMaxIndex,
+        setStreamInfo: setStreamInfo
     };
 
     setup();
 
     return instance;
 }
-
-LowestBitrateRuleClass.__dashjs_factory_name = 'LowestBitrateRule';
-LowestBitrateRule = dashjs.FactoryMaker.getClassFactory(LowestBitrateRuleClass);
-

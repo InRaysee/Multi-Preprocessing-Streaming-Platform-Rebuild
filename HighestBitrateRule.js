@@ -1,61 +1,47 @@
-var HighestBitrateRule;
-
 // Rule that selects the possible highest bitrate
-function HighestBitrateRuleClass() {
+var HighestBitrateRuleClass = function () {
 
-    let factory = dashjs.FactoryMaker;
-    let SwitchRequest = factory.getClassFactoryByName('SwitchRequest');
-    let context = this.context;
     let instance;
+    let appElement = document.querySelector('[ng-controller=DashController]');
+    let $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
 
     function setup() {
     }
 
     // Always select the highest bitrate
-    function getMaxIndex(rulesContext) {
-        const switchRequest = SwitchRequest(context).create();
-
-        if (!rulesContext || !rulesContext.hasOwnProperty('getMediaInfo') || !rulesContext.hasOwnProperty('getAbrController')) {
-            return switchRequest;
+    function setStreamInfo(streamInfo, contentType) {
+        
+        if (!$scope.streamBitrateLists || !$scope.streamBitrateLists[contentType]) {
+            return streamInfo;
         }
 
-        const mediaType = rulesContext.getMediaInfo().type;
-        const mediaInfo = rulesContext.getMediaInfo();
-        const abrController = rulesContext.getAbrController();
-
-        if (mediaType != "video") {  // Default settings for audio
-            return switchRequest;           
-        }
-
-        // Ask to switch to the highest bitrate
-        switchRequest.quality = 0;
-        switchRequest.reason = 'Always switching to the highest bitrate';
-        switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
-
-        const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates
-        let tag = 0;
-        if (bitrateList.length <= 1) {
-            return switchRequest;
-        }
-        for (let i = 1; i < bitrateList.length; i++) {  // Choose the highest bitrate
-            if (bitrateList[i].bitrate > bitrateList[tag].bitrate) {
-                tag = i;
+        for (let i = 0; i < $scope.streamBitrateLists[contentType].length; i++) {
+            let j = streamInfo.periodIndex;
+            if ($scope.streamBitrateLists[contentType][i][j]) {
+                for (let jj = 0; jj < $scope.streamBitrateLists[contentType][i][j].length; jj++) {
+                    if ($scope.streamBitrateLists[contentType][i][j][jj]) {
+                        for (let jjj = 0; jjj < $scope.streamBitrateLists[contentType][i][j][jj].length; jjj++) {
+                            if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth != undefined && $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth > $scope.streamBitrateLists[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].bandwidth) {
+                                streamInfo.pathIndex = i;
+                                streamInfo.periodIndex = j;
+                                streamInfo.adaptationSetIndex = jj;
+                                streamInfo.representationIndex = jjj;
+                            }
+                        }
+                    }
+                }     
             }
         }
-        switchRequest.quality = tag;
+        
+        return streamInfo;
 
-        return switchRequest;
     }
 
     instance = {
-        getMaxIndex: getMaxIndex,
+        setStreamInfo: setStreamInfo
     };
 
     setup();
 
     return instance;
 }
-
-HighestBitrateRuleClass.__dashjs_factory_name = 'HighestBitrateRule';
-HighestBitrateRule = dashjs.FactoryMaker.getClassFactory(HighestBitrateRuleClass);
-

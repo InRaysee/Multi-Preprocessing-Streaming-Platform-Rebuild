@@ -264,7 +264,11 @@
 								<div class="options-item-body">
 									<label data-toggle="tooltip" data-placement="right">
 										Target buffer length (s)
-										<input style="width: 200px;" value="10" step="1" min="0" type="number" id="target-buffer" ng-model="targetBuffer">
+										<input style="width: 200px;" step="1" min="0" type="number" id="target-buffer" ng-model="targetBuffer">
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										Schedule Interval (ms)
+										<input style="width: 200px;" step="10" min="0" type="number" id="schedule-interval" ng-model="scheduleInterval">
 									</label>
 								</div>
 							</div>
@@ -275,47 +279,53 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="DefaultRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('DefaultRule')">
+											<input name="abr-rules" id="DefaultRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('defaultRule')" disabled>
 											DefaultRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('MyThroughputRule')">
+											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myThroughputRule')" disabled>
 											MyThroughputRule
 										</label>
 										
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MultiPathRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('MultiPathRule')" checked="true">
+											<input name="abr-rules" id="MultiPathRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('multiPathRule')" disabled>
 											MultiPathRule
 										</label>
 
 											<label data-toggle="tooltip" data-placement="right">
-												<input name="abr-multipath-rules" id="Keep-highest-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;">
+												<input name="abr-multipath-rules" id="Keep-highest-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" disabled>
 												Keep highest
 											</label>
 
 											<label data-toggle="tooltip" data-placement="right">
-												<input name="abr-multipath-rules" id="Buffer-besed-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" checked="true">
+												<input name="abr-multipath-rules" id="Buffer-besed-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" checked="true" disabled>
 												Buffer-besed
 											</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('HighestBitrateRule')">
+											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
 											HighestBitrateRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('LowestBitrateRule')">
+											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('lowestBitrateRule')">
 											LowestBitrateRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('GlobalSwitchRule')">
+											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('globalSwitchRule')">
 											GlobalSwitchRule
 										</label>
 											<label data-toggle="tooltip" data-placement="right" id="label-preferred-quality-seleceted-video" style="margin-left: 10px;">
-												Preferred quality
-												<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="preferred-quality-selected-video" ng-model="preferredQualitySelected" disabled="true">
+												<div class="row">
+													<span style="line-height: 25px;">Video quality</span>
+													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-video" ng-model="globalQuality.video" disabled>	
+												</div>
+												<div class="row">
+													<span style="line-height: 25px;">Audio quality</span>
+													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-audio" ng-model="globalQuality.audio" disabled>	
+												</div>
 											</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="abr-rules" id="FOVRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('FOVRule')" disabled>
@@ -336,28 +346,28 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_0" type="radio" autocomplete="off" ng-click="changePathStrategy(0)">
+											<input name="path_select" id="path_select_0" type="radio" autocomplete="off" ng-click="changePathStrategy(0)" disabled>
 											Manual switches
 										</label>
 											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
 												Preferred path ID
-												<input style="width: 40px;" value="1" min="1" max="6" type="number" id="preferred-path-id" ng-model="preferredPathID" disabled="true">
+												<input style="width: 40px;" value="1" min="1" max="6" type="number" id="preferred-path-id" ng-model="preferredPathID" disabled>
 											</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_1" type="radio" autocomplete="off" ng-click="changePathStrategy(1)">
+											<input name="path_select" id="path_select_1" type="radio" autocomplete="off" ng-click="changePathStrategy(1)" disabled>
 											Downloading quality based
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_2" type="radio" autocomplete="off" ng-click="changePathStrategy(2)">
+											<input name="path_select" id="path_select_2" type="radio" autocomplete="off" ng-click="changePathStrategy(2)" disabled>
 											Playback quality based
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_3" type="radio" autocomplete="off" ng-click="changePathStrategy(3)" checked="true">
+											<input name="path_select" id="path_select_3" type="radio" autocomplete="off" ng-click="changePathStrategy(3)" checked="true" disabled>
 											Buffer & sync & quality
 										</label>
 											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
 												Preferred sync delay (s)
-												<input style="width: 200px;" value="0.5" min="0" max="5" step="0.01" type="number" id="preferred-sync-delay" ng-model="preferredSyncDelay">
+												<input style="width: 200px;" value="0.5" min="0" max="5" step="0.01" type="number" id="preferred-sync-delay" ng-model="preferredSyncDelay"  disabled>
 											</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="path_select" id="path_select_4" type="radio" autocomplete="off" ng-click="changePathStrategy(4)" disabled>
@@ -373,28 +383,24 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											Scheduling Timeout (ms)
-											<input style="width: 200px;" value="500" step="10" min="0" type="number" id="scheduling-timeout" ng-model="schedulingTimeout">
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
 											Target latency (s)
-											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency">
+											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency" disabled>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Minimal drift (s)
-											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift">
+											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift" disabled>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Maximal drift (s)
-											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift">
+											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift" disabled>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Catchup playback rate (%)
-											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate">
+											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate" disabled>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Catchup latency threshold (s)
-											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold">
+											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold" disabled>
 										</label>
 									</form>
 								</div>

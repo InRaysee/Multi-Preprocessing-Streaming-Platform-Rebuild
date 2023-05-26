@@ -1,68 +1,104 @@
-var GlobalSwitchRule;
+// Rule that selects the possible highest bitrate
+var GlobalSwitchRuleClass = function () {
 
-// Rule that selects the possible global switching bitrate
-function GlobalSwitchRuleClass() {
-
-    var appElement = document.querySelector('[ng-controller=DashController]');
-    var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
-    let factory = dashjs.FactoryMaker;
-    let SwitchRequest = factory.getClassFactoryByName('SwitchRequest');
-    let context = this.context;
     let instance;
+    let appElement = document.querySelector('[ng-controller=DashController]');
+    let $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
+
+    let bitrateLists = {
+        video: [],
+        audio: []
+    };
 
     function setup() {
     }
 
-    // Always select the global switching bitrate
-    function getMaxIndex(rulesContext) {
-        const switchRequest = SwitchRequest(context).create();
+    // Always select the highest bitrate
+    function setStreamInfo(streamInfo, contentType) {
 
-        if (!rulesContext || !rulesContext.hasOwnProperty('getMediaInfo') || !rulesContext.hasOwnProperty('getAbrController')) {
-            return switchRequest;
+        if (!$scope.streamBitrateLists || !$scope.streamBitrateLists[contentType]) {
+            return streamInfo;
         }
 
-        const mediaType = rulesContext.getMediaInfo().type;
-        const mediaInfo = rulesContext.getMediaInfo();
-        const abrController = rulesContext.getAbrController();
+        bitrateLists[contentType] = [];
 
-        var info = abrController.getSettings().info;
-        const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates (A - Z)
-
-        if (mediaType != "video") {  // Default settings for audio
-            return switchRequest;           
-        }
-
-        // Ask to switch to the global switching bitrate
-        switchRequest.quality = $scope.playerDownloadingQuality[info.count];
-        switchRequest.reason = 'Always switching to the global switching bitrate';
-        switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
-
-        if (info && info.count != undefined) {
-            if ($scope.changeQualityFlag[info.count] == 1) {
-                switchRequest.quality = $scope.multiPathQuality[info.count];
-                $scope.changeQualityFlag[info.count] = 0;
-                for (let i = 0; i < $scope.playerNum; i++) {
-                    if (i != info.count && $scope.changeQualityFlag[i] == 0) {
-                        $scope.multiPathQuality[i] = 0;
+        for (let i = 0; i < $scope.streamBitrateLists[contentType].length; i++) {
+            let j = streamInfo.periodIndex;
+            if ($scope.streamBitrateLists[contentType][i][j]) {
+                for (let jj = 0; jj < $scope.streamBitrateLists[contentType][i][j].length; jj++) {
+                    if ($scope.streamBitrateLists[contentType][i][j][jj]) {
+                        for (let jjj = 0; jjj < $scope.streamBitrateLists[contentType][i][j][jj].length; jjj++) {
+                            if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth != undefined) {
+                                let curIndexes = {
+                                    pathIndex: i,
+                                    periodIndex: j,
+                                    adaptationSetIndex: jj,
+                                    representationIndex: jjj
+                                };
+                                let curBandwidth = $scope.streamBitrateLists[contentType][i][j][jj][jjj].bandwidth;
+                                if (bitrateLists[contentType].length == 0) {
+                                    bitrateLists[contentType].push({
+                                        indexes: [curIndexes],
+                                        bandwidth: curBandwidth
+                                    });
+                                } else {
+                                    let k = 0;
+                                    while (k < bitrateLists[contentType].length) {
+                                        if (bitrateLists[contentType][k].bandwidth == curBandwidth) {
+                                            bitrateLists[contentType][k].indexes.push(curIndexes);
+                                            break;
+                                        }
+                                        k++;
+                                    }
+                                    if (k == bitrateLists[contentType].length) {
+                                        let kk = 0;
+                                        while (kk < bitrateLists[contentType].length) {
+                                            if (bitrateLists[contentType][kk].bandwidth > curBandwidth) {
+                                                bitrateLists[contentType].splice(kk, 0, {
+                                                    indexes: [curIndexes],
+                                                    bandwidth: curBandwidth
+                                                });
+                                                break;
+                                            }
+                                            kk++;
+                                        }
+                                        if (kk == bitrateLists[contentType].length) {
+                                            bitrateLists[contentType].push({
+                                                indexes: [curIndexes],
+                                                bandwidth: curBandwidth
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
-            } else {
-                switchRequest.quality = $scope.multiPathQuality[info.count];
+                }     
             }
         }
 
-        return switchRequest;
+        if ($scope.globalQuality[contentType] < ($scope.lifeSignalEnabled ? 1 : 0)) {
+            $scope.globalQuality[contentType] = $scope.lifeSignalEnabled ? 1 : 0;
+        }
+        if ($scope.globalQuality[contentType] >= bitrateLists[contentType].length - 1) {
+            $scope.globalQuality[contentType] = bitrateLists[contentType].length - 1;
+        }
+
+        // Select the first choice in the list with the same bandwidth
+        streamInfo.pathIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].pathIndex;
+        streamInfo.periodIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].periodIndex;
+        streamInfo.adaptationSetIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].adaptationSetIndex;
+        streamInfo.representationIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].representationIndex;
+
+        return streamInfo;
+
     }
 
     instance = {
-        getMaxIndex: getMaxIndex,
+        setStreamInfo: setStreamInfo
     };
 
     setup();
 
     return instance;
 }
-
-GlobalSwitchRuleClass.__dashjs_factory_name = 'GlobalSwitchRule';
-GlobalSwitchRule = dashjs.FactoryMaker.getClassFactory(GlobalSwitchRuleClass);
-

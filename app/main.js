@@ -1,10 +1,54 @@
+//////////////////////////////// InRaysee DASH Player ////////////////////////////////
+/*
+TODOs:
+  [ ] 1. ABR rules.
+  [ ] 2. Path switching.
+  [ ] 3. Reload.
+  [ ] 4. Multiple stream URLs.
+  [ ] 5. Data monitors, figures and stats.
+  [ ] 6. Module spliting.
+  [ ] 7. Multiple periods and different segment indexs.
+  [ ] 8. Live mode with catchup.
+  [ ] 9. VR mode.
+*/
+//////////////////////////////////////////////////////////////////////////////////////
+
 var app = angular.module('DashPlayer', ['angular-flot']);
 
-app.controller('DashController', ['$scope','$interval', function ($scope, $interval) {
-
-    $interval(function () {}, 1);
+app.controller('DashController', function ($scope) {
 
 /////////////////////////////////////////////////////////////////////////////////////
+    $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL = 100;
+    $scope.TYPE_OF_MPD = "MPD";
+    $scope.TYPE_OF_INIT_SEGMENT = "InitSegment";
+    $scope.TYPE_OF_MEDIA_SEGMENT = "MediaSegment";
+    $scope.EVENT_TIME_UPDATE = "timeupdate";
+    $scope.EVENT_UPDATE_END = "updateend";
+    $scope.TAG_OF_REPRESENTATION_ID = "$RepresentationID$";
+    $scope.TAG_OF_SEGMENT_INDEX = "$Number%05d$";
+    $scope.RESPONSE_TYPE_OF_MPD = "text";
+    $scope.RESPONSE_TYPE_OF_SEGMENT = "arraybuffer";
+    $scope.HTTP_REQUEST_METHOD = "get";
+    $scope.DOM_NODE_TYPES = {  // Node types for parsers
+        ELEMENT_NODE 	   : 1,
+        TEXT_NODE    	   : 3,
+        CDATA_SECTION_NODE : 4,
+        COMMENT_NODE	   : 8,
+        DOCUMENT_NODE 	   : 9
+    };
+
+    $scope.matchers = [  // Matchers for data adjustments (dash.js)
+        new DurationMatcher(),
+        new DateTimeMatcher(),
+        new NumericMatcher(),
+        new StringMatcher()
+    ];
+    $scope.abrRules = {  // ABR rules preloaded
+        highestBitrateRule: new HighestBitrateRuleClass(),
+        lowestBitrateRule: new LowestBitrateRuleClass(),
+        globalSwitchRule: new GlobalSwitchRuleClass()
+    };
+
     $scope.mediaSource = null;  // Container for the MediaSource object
     $scope.streamElement = null;  // Container for video element in HTML page
     $scope.controllBar = null;  // Container for video control bar
@@ -12,11 +56,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         video: null,
         audio: null
     };
-    $scope.streamBuffedTime = NaN;  // The buffered time in the video element
-    $scope.streamBufferToAppend = {
+    $scope.streamBufferToAppend = {  // Queues of buffers to append
         video: [],
         audio: []
     };
+    $scope.initCache = {  // Cache of init segments loaded
+        video: [],
+        audio: []
+    };
+
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
         audio: 1
@@ -29,12 +77,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         video: [],
         audio: []
     };
-    $scope.initCache = {  // Cache of init segments loaded
-        video: [],
-        audio: []
-    };
-    $scope.streamDuration = NaN;  // Total duration of the stream
-    $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
+
     $scope.streamInfo = {  // Information of streams selected
         video: {
             pathIndex: NaN,
@@ -57,6 +100,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             lastSegmentIndex: NaN
         }
     };
+
+    $scope.streamDuration = NaN;  // Total duration of the stream
+    $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
     $scope.autoSwitchTrack = {  // Flags for judging if the tracks are auto switched
         video: NaN,
         audio: NaN
@@ -70,21 +116,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         audio: NaN
     };
     $scope.isSeeking = NaN;
-    $scope.matchers = [  // Matchers for data adjustments (dash.js)
-        new DurationMatcher(),
-        new DateTimeMatcher(),
-        new NumericMatcher(),
-        new StringMatcher()
-    ];
-    $scope.DOMNodeTypes = {  // Node types for parsers
-        ELEMENT_NODE 	   : 1,
-        TEXT_NODE    	   : 3,
-        CDATA_SECTION_NODE : 4,
-        COMMENT_NODE	   : 8,
-        DOCUMENT_NODE 	   : 9
-    };
 
-    $scope.targetBuffer = 10;  // The buffer level desired to be fetched
+    $scope.targetBuffer = 2;  // The buffer level desired to be fetched
+    $scope.scheduleInterval = 50;  // Interval of triggering schedule fetcher to start requests
+    $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
+        video: 0,
+        audio: 0
+    };
 /////////////////////////////////////////////////////////////////////////////////////
 
     //// Global variables (containers: cannot adjust mannually)
@@ -158,6 +196,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         {
             name:"VOD (Captions by WebVTT)",
             url:"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/elephants_dream_480p_heaac5_1_https.mpd"
+        },
+        {
+            name:"VOD (Multi periods)",
+            url:"https://media.axprod.net/TestVectors/v8-MultiContent/Clear/Manifest.mpd"
         },
         {
             name:"VOD (Local CMPVP907)",
@@ -523,9 +565,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     //// Global variables (public: adjust by users)
 
     $scope.optionButton = "Show Options";  // Save the state of option button
-    $scope.selectedRule = "MultiPathRule";  // Save the selected ABR strategy
+    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
     $scope.selectedMode = 'Multi-Path';  // Save the selected mode
-    $scope.schedulingTimeout = 500;  // Scheduling timeout
     $scope.targetLatency = 10;  // The live delay allowed
     $scope.minDrift = 0.02;  // The minimal latency deviation allowed
     $scope.maxDrift = 3;  // The maximal latency deviation allowed
@@ -534,7 +575,6 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.pathSwitchStrategy = 3;  // ID of path switching strategy
     $scope.preferredPathID = 1;  // Switch the path of stream manually
     $scope.preferredSyncDelay = 0.5;  // Set the tolerance of sync delay (s)
-    $scope.preferredQualitySelected = 0;  // Switch the quality by manual switching ABR strategy and multipath ABR strategy
     $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
         "http://localhost:8080/apple/v9/stream.mpd",
@@ -1088,12 +1128,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // Changing the ABR rule
     $scope.changeABRStrategy = function (strategy) {
         $scope.selectedRule = strategy;
-        if ($scope.selectedRule == "GlobalSwitchRule") {
-            document.getElementById('preferred-quality-selected-video').removeAttribute("disabled");
+        if ($scope.selectedRule == "globalSwitchRule") {
+            document.getElementById('global-quality-video').removeAttribute("disabled");
+            document.getElementById('global-quality-audio').removeAttribute("disabled");
         } else {
-            document.getElementById('preferred-quality-selected-video').disabled = true;
+            document.getElementById('global-quality-video').disabled = true;
+            document.getElementById('global-quality-audio').disabled = true;
         }
-        if ($scope.selectedRule == "MultiPathRule") {
+        if ($scope.selectedRule == "multiPathRule") {
             document.getElementById('Keep-highest-with-same-MPD').removeAttribute("disabled");
             document.getElementById('Buffer-besed-with-same-MPD').removeAttribute("disabled");
         } else {
@@ -1309,12 +1351,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         // ABR strategies, number of video and audio paths, scheduling timeout cannot change after initialization
         document.getElementById( "MultiPathMode" ).disabled = "true";
         document.getElementById( "VRMode" ).disabled = "true";
-        document.getElementById( "DefaultRule" ).disabled = "true";
-        document.getElementById( "MyThroughputRule" ).disabled = "true";
-        document.getElementById( "MultiPathRule" ).disabled = "true";
-        document.getElementById( "HighestBitrateRule" ).disabled = "true";
-        document.getElementById( "LowestBitrateRule" ).disabled = "true";
-        document.getElementById( "GlobalSwitchRule" ).disabled = "true";
+        // document.getElementById( "DefaultRule" ).disabled = "true";
+        // document.getElementById( "MyThroughputRule" ).disabled = "true";
+        // document.getElementById( "MultiPathRule" ).disabled = "true";
+        // document.getElementById( "HighestBitrateRule" ).disabled = "true";
+        // document.getElementById( "LowestBitrateRule" ).disabled = "true";
+        // document.getElementById( "GlobalSwitchRule" ).disabled = "true";
+        // document.getElementById( "life_signal" ).disabled = "true";
         document.getElementById( "video_num_1" ).disabled = "true";
         document.getElementById( "video_num_2" ).disabled = "true";
         document.getElementById( "video_num_3" ).disabled = "true";
@@ -1323,8 +1366,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         document.getElementById( "video_num_6" ).disabled = "true";
         document.getElementById( "audio_num_0" ).disabled = "true";
         document.getElementById( "audio_num_1" ).disabled = "true";
-        document.getElementById( "scheduling-timeout" ).disabled = "true";
-        document.getElementById( "life_signal" ).disabled = "true";
+        // document.getElementById( "schedule-interval" ).disabled = "true";
         switch ($scope.selectedMode) {
             case 'Multi-Path':
                 $scope.mse_init();
@@ -1432,7 +1474,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             window.alert("Empty URL when fetching MPD!");
             return;
         }
-        $scope.fetchBuffer($scope.resolveUrl("MPD", url), 'text', callback);
+        $scope.fetchBuffer($scope.resolveUrl($scope.TYPE_OF_MPD, url), $scope.RESPONSE_TYPE_OF_MPD, callback);
 
     };
 
@@ -1449,7 +1491,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
         manifest = manifest.MPD;
 
-        var baseUrl = contentType == "video" ? $scope.resolveUrl("MPD", $scope.videoURLs[i]) : contentType == "audio" ? $scope.resolveUrl("MPD", $scope.audioURLs[i]) : NaN;
+        var baseUrl = contentType == "video" ? $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.videoURLs[i]) : contentType == "audio" ? $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.audioURLs[i]) : NaN;
         manifest.baseUrl = baseUrl ? baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1) : NaN;
         if (!manifest.baseUrl || manifest.baseUrl == "") {
             window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No base URL available in the manifest!");
@@ -1465,18 +1507,18 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // Extract MPD nodes from XML data
     $scope.parseManifest = function(node, path) {
 
-        if (node.nodeType == $scope.DOMNodeTypes.DOCUMENT_NODE) {  // Read the root node and its children nodes
+        if (node.nodeType == $scope.DOM_NODE_TYPES.DOCUMENT_NODE) {  // Read the root node and its children nodes
             var result = new Object;
             var nodeChildren = node.childNodes;
             for (let i = 0; i < nodeChildren.length; i++) {
                 var child = nodeChildren[i];
-                if (child.nodeType == $scope.DOMNodeTypes.ELEMENT_NODE) {
+                if (child.nodeType == $scope.DOM_NODE_TYPES.ELEMENT_NODE) {
                     result = {};
                     result[child.localName] = $scope.parseManifest(child);
                 }
             }
             return result;
-        } else if (node.nodeType == $scope.DOMNodeTypes.ELEMENT_NODE) {  // Read the element nodes and their children nodes
+        } else if (node.nodeType == $scope.DOM_NODE_TYPES.ELEMENT_NODE) {  // Read the element nodes and their children nodes
             var result = new Object;
             result.__cnt = 0;
             var nodeChildren = node.childNodes;
@@ -1485,7 +1527,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             for (let i = 0; i < nodeChildren.length; i++) {
                 var child = nodeChildren[i];
                 var childName = child.localName;
-                if (child.nodeType != $scope.DOMNodeTypes.COMMENT_NODE) {
+                if (child.nodeType != $scope.DOM_NODE_TYPES.COMMENT_NODE) {
                     var childPath = path + "." + childName;
                     result.__cnt++;
                     if (result[childName] == null) {
@@ -1554,7 +1596,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             delete result.__cnt;
 
             return result;
-        } else if (node.nodeType == $scope.DOMNodeTypes.TEXT_NODE || node.nodeType == $scope.DOMNodeTypes.CDATA_SECTION_NODE) {  // Read the text and cdata_section nodes
+        } else if (node.nodeType == $scope.DOM_NODE_TYPES.TEXT_NODE || node.nodeType == $scope.DOM_NODE_TYPES.CDATA_SECTION_NODE) {  // Read the text and cdata_section nodes
             return node.nodeValue.trim();
         }
 
@@ -1588,8 +1630,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     throw registerStreamInfoResult;
                 }
                 // Fetch the first init segment and the first media segment
-                $scope.fetchSegment(contentType, "InitSegment");
-                setInterval($scope.scheduleFetcher.bind(this, contentType), 50);
+                $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
+                setInterval($scope.scheduleFetcher.bind(this, contentType), $scope.scheduleInterval);
             }
 
             // Create and initialize control bar
@@ -1601,7 +1643,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             // Create and add track/bitrate/caption lists into control bar
             $scope.controllBar.onStreamActivated(contentType, i);
             // Add eventListeners of control bar
-            $scope.streamElement.addEventListener('timeupdate', $scope.controllBar.onPlaybackTimeUpdate);
+            $scope.streamElement.addEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
         } catch (e) {
             window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
         }
@@ -1612,13 +1654,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.scheduleFetcher = function(contentType) {
         var bufferLevel = $scope.getBufferLevel(contentType);
         if (!$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer) {
+            if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
+                $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo($scope.streamInfo[contentType], contentType);
+            }
             if ($scope.initCache[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex]) {
-                // if (isNaN($scope.streamInfo[contentType].lastSegmentIndex) || $scope.streamInfo[contentType].lastSegmentIndex != $scope.streamInfo[contentType].segmentIndex) {
                 if (!isNaN($scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
-                    $scope.fetchSegment(contentType, "MediaSegment");
+                    $scope.fetchSegment(contentType, $scope.TYPE_OF_MEDIA_SEGMENT);
                 }
             } else {
-                $scope.fetchSegment(contentType, "InitSegment");
+                $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
             }
         }
     };
@@ -1677,8 +1721,18 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                                         height: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].height) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].height : NaN,
                                         segmentNum: NaN
                                     };
-                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration && manifest.mediaPresentationDuration) {
-                                        $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
+                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration) {
+                                        if (manifest.Period[j].duration) {
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
+                                        } else if (manifest.Period[j].start != undefined) {
+                                            let temp = manifest.mediaPresentationDuration;
+                                            for (let k = 0; k < manifest.Period.length; k++) {
+                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < temp) {
+                                                    temp = manifest.Period[k].start;
+                                                }
+                                            }
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
+                                        }
                                     }
                                 }
                             }
@@ -1697,6 +1751,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.registerFirstStreamInfo = function(manifest, contentType, i) {
 
         try {
+            // Extract the current streamInfo
             var tempStreamInfo = {};
             // baseUrl
             if (!manifest.baseUrl) {
@@ -1710,7 +1765,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 throw "No period is available in path " + i + "!";
             }
             for (let j = 0; j < manifest.Period.length; j++) {
-                if (manifest.Period[j].start == 0) {
+                if ((manifest.Period[j].start != undefined && manifest.Period[j].start == 0) || (manifest.Period[j].start == undefined && manifest.Period[j].id != undefined && manifest.Period[j].id == 0) || (manifest.Period[j].start == undefined && manifest.Period[j].id == undefined)) {
                     tempStreamInfo.periodIndex = j;
                     // adaptationSetIndex
                     if (!manifest.Period[j].AdaptationSet || manifest.Period[j].AdaptationSet.length == 0) {
@@ -1779,7 +1834,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 }
             }
 
-            // Create SourceBuffer and set MediaSource's duration
+            // Create SourceBuffer and initialize settings and parameters
             if ($scope.streamSourceBuffer[contentType]) {
                 throw "The registeration of path " + i + " is aborted by the existing SourceBuffer!";
             }
@@ -1800,9 +1855,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             } catch (e) {
                 throw "SourceBuffer is not initialized: " + e;
             }
-            $scope.streamSourceBuffer[contentType].addEventListener('updateend', $scope.appendBufferFromListener(contentType));
-            $scope.streamSourceBuffer[contentType].addEventListener('updateend', $scope.onBufferLevelUpdated);
-            setInterval($scope.appendBufferFromInterval, 100);
+            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener(contentType));
+            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, () => {
+                if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
+                    $scope.controllBar.onBufferLevelUpdated();
+                }
+            });
+            setInterval($scope.appendBufferFromInterval, $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL);
             $scope.mediaSource.duration = $scope.streamDuration;
 
             return "SUCCESS";
@@ -1810,12 +1869,6 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             return "registerFirstStreamInfo: " + e;
         }
 
-    };
-
-    $scope.onBufferLevelUpdated = function() {
-        if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
-            $scope.controllBar.onBufferLevelUpdated();
-        }
     };
 
     // Run when the segment need to be fetched from servers
@@ -1830,7 +1883,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             baseUrl: $scope.streamInfo[contentType].baseUrl,
             mimeCodecs: $scope.streamInfo[contentType].mimeCodecs
         };
-        if (urlType == "InitSegment" && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
+        if (urlType == $scope.TYPE_OF_INIT_SEGMENT && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
             console.log("Init segment of " + contentType + " " + curStreamInfo.pathIndex + " period " + curStreamInfo.periodIndex + " adaptationSet " + curStreamInfo.adaptationSetIndex + " representation " + curStreamInfo.representationIndex + " is in the initCache!");
             // $scope.streamBufferToAppend[contentType].push($scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]);
             return;
@@ -1840,10 +1893,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             segmentIndex: curStreamInfo.segmentIndex
         };
         var url = curStreamInfo.baseUrl;
-        var urlExtend = urlType == "InitSegment" ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization : urlType == "MediaSegment" ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].media : "";
+        var urlExtend = urlType == $scope.TYPE_OF_INIT_SEGMENT ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization : urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].media : "";
         var urlResolved = $scope.resolveUrl(urlType, url, urlExtend, paramForResolveUrl);
         $scope.isFetchingSegment[contentType] = true;
-        $scope.fetchBuffer(urlResolved, "arraybuffer", 
+        $scope.fetchBuffer(urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT, 
             (buffer) => {
                 $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
                 $scope.isFetchingSegment[contentType] = false;
@@ -1863,11 +1916,31 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.loadSegment = function(buffer, contentType, curStreamInfo, urlType) {
 
         $scope.streamBufferToAppend[contentType].push(buffer);
-        if (urlType == "InitSegment") {  // Save in the cache if InitSegment
+        if (urlType == $scope.TYPE_OF_INIT_SEGMENT) {  // Save in the cache if InitSegment
             $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = buffer;
-        } else if (urlType == "MediaSegment") {    // Add buffered time if MediaSegment
+        } else if (urlType == $scope.TYPE_OF_MEDIA_SEGMENT) {    // Add buffered time if MediaSegment
             $scope.streamInfo[contentType].lastSegmentIndex = $scope.streamInfo[contentType].segmentIndex;
             $scope.streamInfo[contentType].segmentIndex++;
+            // Judge if continue, jump into the next period or end the stream
+            if ($scope.streamInfo[contentType].segmentIndex > $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum + $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber - 1) {
+                let curPeriodIndex = $scope.streamInfo[contentType].periodIndex;
+                let temp = {
+                    value: $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].mediaPresentationDuration,
+                    index: -1
+                };
+                for (let i = 0; i < $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period.length; i++) {
+                    if ($scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start != undefined && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start > $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[curPeriodIndex].start && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start < temp.value) {
+                        temp.value = $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start;
+                        temp.index = i;
+                    } else if ($scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].id != undefined && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].id == $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[curPeriodIndex].id + 1) {
+                        temp.index = i;
+                    }
+                }
+                if (temp.index != -1) {
+                    $scope.streamInfo[contentType].periodIndex = temp.index;
+                    $scope.streamInfo[contentType].segmentIndex = $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber;
+                }
+            }
         }
         $scope.scheduleFetcher(contentType);
     }
@@ -1876,7 +1949,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.resolveUrl = function(urlType, url, urlExtend, paramForResolveUrl) {
 
         switch (urlType) {
-            case "MPD":
+            case $scope.TYPE_OF_MPD:
                 var mergeUrl = NaN;
                 if (url.slice(0, 7) == "http://" || url.slice(0, 8) == "https://") {  // Absolute address with http/https prefix
                     mergeUrl = url;
@@ -1903,24 +1976,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     mergeUrl = "http://" + url;  // Use http as default
                 }
                 return mergeUrl;
-            case "InitSegment":
+            case $scope.TYPE_OF_INIT_SEGMENT:
                 try {
                     if (url == "") {
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf("$RepresentationID$") == -1) {
+                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) == -1) {
                         throw "Wrong placeholder of representation ID!";
                     }
-                    tempUrlExtend = tempUrlExtend.replace("$RepresentationID$", paramForResolveUrl.id);  // Replace representation ID in the URL
+                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     return url + tempUrlExtend;
                 } catch (e) {
                     window.alert("Error when resolving URL of InitSegment: " + e);
                     return "";
                 }
-            case "MediaSegment":
+            case $scope.TYPE_OF_MEDIA_SEGMENT:
                 try {
                     let numberMatcher = function (num, lenstr) {
+                        if (lenstr.indexOf("%") == -1) {
+                            return num.toString();
+                        }
                         let len = parseInt(lenstr.slice(lenstr.indexOf("%") + 1, lenstr.indexOf("%") + 3));
                         let result = num.toString();
                         while (result.length < len) {
@@ -1933,14 +2009,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf("$RepresentationID$") == -1) {
+                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) == -1) {
                         throw "Wrong placeholder of representation ID!";
                     }
-                    tempUrlExtend = tempUrlExtend.replace("$RepresentationID$", paramForResolveUrl.id);  // Replace representation ID in the URL
-                    if (tempUrlExtend.indexOf("$Number%05d$") == -1) { /////////////////////////
+                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
+                    $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Number"), tempUrlExtend.lastIndexOf("$") + 1);
+                    if (tempUrlExtend.indexOf($scope.TAG_OF_SEGMENT_INDEX) == -1) { /////////////////////////
                         throw "Wrong placeholder of segment number!";
                     }
-                    tempUrlExtend = tempUrlExtend.replace("$Number%05d$", numberMatcher(paramForResolveUrl.segmentIndex, "$Number%05d$"));  // Replace segment number in the URL
+                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl.segmentIndex, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
                     return url + tempUrlExtend;
                 } catch (e) {
                     window.alert("Error when resolving URL of MediaSegment: " + e);
@@ -1966,11 +2043,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Periodly check and append buffers
     $scope.appendBufferFromInterval = function() {
-        if (!$scope.streamSourceBuffer['video'].updating && $scope.streamBufferToAppend['video'].length > 0) {
+        if ($scope.streamSourceBuffer['video'] && !$scope.streamSourceBuffer['video'].updating && $scope.streamBufferToAppend['video'].length > 0) {
             let buffer = $scope.streamBufferToAppend['video'].shift();
             $scope.streamSourceBuffer['video'].appendBuffer(buffer);
         }
-        if (!$scope.streamSourceBuffer['audio'].updating && $scope.streamBufferToAppend['audio'].length > 0) {
+        if ($scope.streamSourceBuffer['audio'] && !$scope.streamSourceBuffer['audio'].updating && $scope.streamBufferToAppend['audio'].length > 0) {
             let buffer = $scope.streamBufferToAppend['audio'].shift();
             $scope.streamSourceBuffer['audio'].appendBuffer(buffer);
         }
@@ -1984,7 +2061,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             return;
         }
         var xhr = new XMLHttpRequest();
-        xhr.open('get', url);
+        xhr.open($scope.HTTP_REQUEST_METHOD, url);
         xhr.responseType = responseType;  // 'text', 'arraybuffer'
         xhr.onload = function () {
             if (xhr.status == 200) {
@@ -2364,7 +2441,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     }
                 }
             } else if (document.getElementById('GlobalSwitchRule').checked) {
-                $scope.multiPathQuality[0] = $scope.preferredQualitySelected;
+                $scope.multiPathQuality[0] = $scope.globalQuality.video;
             }
         } else {
             if (document.getElementById('MultiPathRule').checked) {
@@ -2396,14 +2473,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     }
                 }
             } else if (document.getElementById('GlobalSwitchRule').checked) {
-                let tempIndex = $scope.playerTotalBitrateList[$scope.preferredQualitySelected].count;
+                let tempIndex = $scope.playerTotalBitrateList[$scope.globalQuality.video].count;
                 let tempRRT = [];
                 for (let i = 0; i < tempIndex.length; i++) {
                     tempRRT[i] = $scope.playerRTT[tempIndex[i]];
                 }
                 let i = tempIndex[tempRRT.indexOf(Math.min.apply(null, tempRRT))];
                 for (let j = 0; j < $scope.playerBitrateList[i].length; j++) {
-                    if ($scope.playerBitrateList[i][j].bitrate == $scope.playerTotalBitrateList[$scope.preferredQualitySelected].bitrate) {
+                    if ($scope.playerBitrateList[i][j].bitrate == $scope.playerTotalBitrateList[$scope.globalQuality.video].bitrate) {
                         $scope.multiPathQuality[i] = j;
                         $scope.changeQualityFlag[i] = 1;
                         break;
@@ -2414,12 +2491,12 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     };
 
     // Other platform intervals
-    setInterval(() => {
-        $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
-        $scope.preferredPathID = $scope.preferredPathID > $scope.playerNum ? $scope.playerNum : $scope.preferredPathID;
-        if ($scope.playerTotalBitrateList && $scope.playerTotalBitrateList.length > 0) {
-            $scope.preferredQualitySelected = $scope.preferredQualitySelected >= $scope.playerTotalBitrateList.length ? $scope.playerTotalBitrateList.length - 1 : $scope.preferredQualitySelected;
-        }
-    }, $scope.IntervalOfPlatformAdjustment);
+    // setInterval(() => {
+    //     $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
+    //     $scope.preferredPathID = $scope.preferredPathID > $scope.playerNum ? $scope.playerNum : $scope.preferredPathID;
+    //     if ($scope.playerTotalBitrateList && $scope.playerTotalBitrateList.length > 0) {
+    //         $scope.globalQuality.video = $scope.globalQuality.video >= $scope.playerTotalBitrateList.length ? $scope.playerTotalBitrateList.length - 1 : $scope.globalQuality.video;
+    //     }
+    // }, $scope.IntervalOfPlatformAdjustment);
 
-}]);
+});
