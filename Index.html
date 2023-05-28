@@ -37,12 +37,11 @@
 		<script src="app/contrib/dash.js/externals/StringMatcher.js"></script>
 
 		<!-- Import ABR rules -->
+		<script src="MyBufferRule.js"></script>
 		<script src="HighestBitrateRule.js"></script>
 		<script src="LowestBitrateRule.js"></script>
 		<script src="MyThroughputRule.js"></script>
 		<script src="GlobalSwitchRule.js"></script>
-		<script src="MultiPathRule.js"></script>
-		<script src="FOVRule.js"></script>
 
 		<style>
 			body {
@@ -193,7 +192,7 @@
 						<div id="option" class="row" style="display: none;">
 
 							<!-- Streaming mode -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 16.5%; min-width: max-content; height: 335px;">
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">Streaming Mode</div>
 								<div class="options-item-body">
 									<form>
@@ -201,16 +200,12 @@
 											<input name="modes" id="MultiPathMode" type="radio" autocomplete="off" ng-click="changeMode('Multi-Path')" checked="true">
 											Multi-Path
 										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="VRMode" type="radio" autocomplete="off" ng-click="changeMode('VR')" disabled>
-											VR
-										</label>
 									</form>
 								</div>
 							</div>
 
 							<!-- Video/audio path settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 16.5%; min-width: max-content; height: 335px;">
+							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">Number of Paths</div>
 								<div class="options-item-body">
 									<div class="row">
@@ -259,7 +254,7 @@
 							</div>
 
 							<!-- Initial settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 16.5%; min-width: max-content; height: 335px;">
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">Initial Settings</div>
 								<div class="options-item-body">
 									<label data-toggle="tooltip" data-placement="right">
@@ -268,40 +263,25 @@
 									</label>
 									<label data-toggle="tooltip" data-placement="right">
 										Schedule Interval (ms)
-										<input style="width: 200px;" step="10" min="0" type="number" id="schedule-interval" ng-model="scheduleInterval">
+										<input style="width: 200px;" step="10" min="0" type="number" id="schedule-interval" ng-model="INTERVAL_OF_SCHEDULE_FETCHER">
 									</label>
 								</div>
 							</div>
 
 							<!-- ABR strategies -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 16.5%; min-width: max-content; height: 335px;">
+							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">ABR Strategies</div>
 								<div class="options-item-body">
 									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="DefaultRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('defaultRule')" disabled>
-											DefaultRule
-										</label>
-
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myThroughputRule')" disabled>
 											MyThroughputRule
 										</label>
 										
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MultiPathRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('multiPathRule')" disabled>
-											MultiPathRule
+											<input name="abr-rules" id="MyBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myBufferRule')">
+											MyBufferRule
 										</label>
-
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="abr-multipath-rules" id="Keep-highest-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" disabled>
-												Keep highest
-											</label>
-
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="abr-multipath-rules" id="Buffer-besed-with-same-MPD" type="radio" autocomplete="off" style="margin-left: 10px;" checked="true" disabled>
-												Buffer-besed
-											</label>
 
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
@@ -327,10 +307,6 @@
 													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-audio" ng-model="globalQuality.audio" disabled>	
 												</div>
 											</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="FOVRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('FOVRule')" disabled>
-											FOVRule
-										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled" checked>
@@ -340,45 +316,8 @@
 								</div>
 							</div>
 
-							<!-- Path switching strategies -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 17%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Path Switching Strategies</div>
-								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_0" type="radio" autocomplete="off" ng-click="changePathStrategy(0)" disabled>
-											Manual switches
-										</label>
-											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
-												Preferred path ID
-												<input style="width: 40px;" value="1" min="1" max="6" type="number" id="preferred-path-id" ng-model="preferredPathID" disabled>
-											</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_1" type="radio" autocomplete="off" ng-click="changePathStrategy(1)" disabled>
-											Downloading quality based
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_2" type="radio" autocomplete="off" ng-click="changePathStrategy(2)" disabled>
-											Playback quality based
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_3" type="radio" autocomplete="off" ng-click="changePathStrategy(3)" checked="true" disabled>
-											Buffer & sync & quality
-										</label>
-											<label data-toggle="tooltip" data-placement="right" style="margin-left: 10px;">
-												Preferred sync delay (s)
-												<input style="width: 200px;" value="0.5" min="0" max="5" step="0.01" type="number" id="preferred-sync-delay" ng-model="preferredSyncDelay"  disabled>
-											</label>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="path_select" id="path_select_4" type="radio" autocomplete="off" ng-click="changePathStrategy(4)" disabled>
-											VR
-										</label>
-									</form>
-								</div>
-							</div>
-
 							<!-- Catchup settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 17%; min-width: max-content; height: 335px;">
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">Catchup Settings</div>
 								<div class="options-item-body">
 									<form>
@@ -417,40 +356,6 @@
 
 				<!-- Video container -->
 				<div class="">
-
-					<!-- VR -->
-					<div id="videoContainerVR" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left; display: none;">
-						<iframe frameborder="0" scrolling="no" id="frame" style="display: flex; width:100%; height:530px; margin: 0;"></iframe>
-						<div id="videoControllerVR" class="video-controller unselectable" style="display: block;">
-							<div id="playPauseBtnVR" class="btn-play-pause" title="Play/Pause">
-								<span id="iconPlayPauseVR" class="icon-play"></span>
-							</div>
-							<span id="videoTimeVR" class="time-display">00:00:00</span>
-							<div id="fullscreenBtnVR" class="btn-fullscreen control-icon-layout" title="Fullscreen" style="display: none;">
-								<span class="icon-fullscreen-enter"></span>
-							</div>
-							<div id="bitrateListBtnVR" class="control-icon-layout" title="Bitrate List">
-								<span class="icon-bitrate"></span>
-							</div>
-							<input type="range" id="volumebarVR" class="volumebar" value="1" min="0" max="1" step=".01">
-							<div id="muteBtnVR" class="btn-mute control-icon-layout" title="Mute">
-								<span id="iconMuteVR" class="icon-mute-off"></span>
-							</div>
-							<div id="trackSwitchBtnVR" class="control-icon-layout" title="A/V Tracks">
-								<span class="icon-tracks"></span>
-							</div>
-							<div id="captionBtnVR" class="btn-caption control-icon-layout" title="Closed Caption">
-								<span class="icon-caption"></span>
-							</div>
-							<span id="videoDurationVR" class="duration-display">00:00:00</span>
-							<div class="seekContainer">
-								<div id="seekbarVR" class="seekbar seekbar-complete">
-									<div id="seekbar-bufferVR" class="seekbar seekbar-buffer"></div>
-									<div id="seekbar-playVR" class="seekbar seekbar-play"></div>
-								</div>
-							</div>
-						</div>
-					</div>
 
 					<!-- Flat -->
 					<div id="videoContainer" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left;">
@@ -507,54 +412,16 @@
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Total QOE : </label> {{totalQOE.toFixed(2)}}
 							</div>
-							<div class="text-success" id="currentPathIDDisplay">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Path ID : </label> {{currentPathID ? currentPathID : ""}}
-							</div>
-							<div class="text-success" id="currentPathQualityDisplay">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Path Quality : </label> {{playerPlaybackQuality[currentPathID - 1]}}
-							</div>
-							<div class="text-success" id="currentLongitude" style="display: none;">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Longitude : </label> {{lon.toFixed(2)}} {{lon != null? "°" : ""}}
-							</div>
-							<div class="text-success" id="currentLatitude" style="display: none;">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Current Latitude : </label> {{lat.toFixed(2)}} {{lat != null? "°" : ""}}
-							</div>
 						</div>
 					</div>
 				</div>
 				
 			</div>
 
-			<!-- Captures -->
-			<div class="row" style="background-color: #ffffff">
-				<div class="tabs-section" style="margin: 15px;">
-					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
-						<thhead><tr>
-							<th style="text-align: center;">video 1</th>
-							<th style="text-align: center;">video 2</th>
-							<th style="text-align: center;">video 3</th>
-							<th style="text-align: center;">video 4</th>
-							<th style="text-align: center;">video 5</th>
-							<th style="text-align: center;">video 6</th>
-						</tr></thhead>
-						<tbody>
-						<tr>
-							<td><canvas id="capture_0" width="150px"></canvas></td>
-							<td><canvas id="capture_1" width="150px"></canvas></td>
-							<td><canvas id="capture_2" width="150px"></canvas></td>
-							<td><canvas id="capture_3" width="150px"></canvas></td>
-							<td><canvas id="capture_4" width="150px"></canvas></td>
-							<td><canvas id="capture_5" width="150px"></canvas></td>
-						</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-
 			<!-- Status of all paths -->
 			<div class="row" style="background-color: #ffffff">
 				<div id="statstable" class="table-striped" style="margin: 15px;">
-					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
+					<table class="table table-striped" style="border: 3px solid #136bfb; padding-left: 5px;padding-right: 5px;text-align: center;">
 						<thead>
 						<tr>
 							<th style="text-align: center;">Player ID</th>
@@ -628,6 +495,36 @@
 					</div>
 				</div>
 
+			</div>
+
+			<!-- List of all requests -->
+			<div class="row" style="background-color: #ffffff">
+				<div id="request-list" class="table-striped" style="margin: 15px;">
+					<table class="table table-striped" style="border: 3px solid #136bfb; padding-left: 5px;padding-right: 5px; text-align: center;">
+						<thead>
+						<tr>
+							<th style="text-align: center;">Type</th>
+							<th style="text-align: center;">Content</th>
+							<th style="text-align: center;">Path</th>
+							<th style="text-align: center;">Period</th>
+							<th style="text-align: center;">AdaptationSet</th>
+							<th style="text-align: center;">Representation</th>
+							<th style="text-align: center;">Segment</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr ng-repeat="item in requestList">
+							<td>{{item.urlType}}</td>
+							<td>{{item.contentType}}</td>
+							<td>{{item.pathIndex}}</td>
+							<td>{{item.periodIndex}}</td>
+							<td>{{item.adaptationSetIndex}}</td>
+							<td>{{item.representationIndex}}</td>
+							<td>{{item.segmentIndex}}</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
 			</div>
 
 		</div>

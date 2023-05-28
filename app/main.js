@@ -1,23 +1,33 @@
 //////////////////////////////// InRaysee DASH Player ////////////////////////////////
 /*
 TODOs:
-  [ ] 1. ABR rules.
+  [-] 1. ABR rules.
+    [ ] 1.1. MyThroughputRule.
+    [-] 1.2. MyBufferRule.
+    [x] 1.3. HighestBitrateRule.
+    [x] 1.4. LowestBitrateRule.
+    [x] 1.5. GlobalSwitchRule.
   [ ] 2. Path switching.
   [ ] 3. Reload.
-  [ ] 4. Multiple stream URLs.
-  [ ] 5. Data monitors, figures and stats.
-  [ ] 6. Module spliting.
-  [ ] 7. Multiple periods and different segment indexs.
-  [ ] 8. Live mode with catchup.
-  [ ] 9. VR mode.
+  [ ] 4. Forced switch quality.
+  [ ] 5. Multiple stream URLs.
+  [ ] 6. Data monitors, figures and stats.
+  [ ] 7. Module spliting.
+  [ ] 8. Multiple periods and different segment indexs.
+  [ ] 9. Live mode with catchup.
+  [ ] 10. VR mode.
 */
 //////////////////////////////////////////////////////////////////////////////////////
 
 var app = angular.module('DashPlayer', ['angular-flot']);
 
-app.controller('DashController', function ($scope) {
+app.controller('DashController', ['$scope', '$interval', function ($scope, $interval) {
+
+    $interval(function () {}, 1);
 
 /////////////////////////////////////////////////////////////////////////////////////
+    $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT = 10;
+    $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;  // Interval of triggering schedule fetcher to start requests
     $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL = 100;
     $scope.TYPE_OF_MPD = "MPD";
     $scope.TYPE_OF_INIT_SEGMENT = "InitSegment";
@@ -44,6 +54,7 @@ app.controller('DashController', function ($scope) {
         new StringMatcher()
     ];
     $scope.abrRules = {  // ABR rules preloaded
+        myBufferRule: new MyBufferRuleClass(),
         highestBitrateRule: new HighestBitrateRuleClass(),
         lowestBitrateRule: new LowestBitrateRuleClass(),
         globalSwitchRule: new GlobalSwitchRuleClass()
@@ -118,7 +129,6 @@ app.controller('DashController', function ($scope) {
     $scope.isSeeking = NaN;
 
     $scope.targetBuffer = 2;  // The buffer level desired to be fetched
-    $scope.scheduleInterval = 50;  // Interval of triggering schedule fetcher to start requests
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
@@ -127,18 +137,12 @@ app.controller('DashController', function ($scope) {
 
     //// Global variables (containers: cannot adjust mannually)
 
-    $scope.players = [];  // Container for DASH players
-    $scope.controllBar = null;  // Container for controllbars
-    $scope.buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not
-    $scope.forcedPause = false;  // Flag for player to identify whether stop mannually or not
-    $scope.lon = NaN, $scope.lat = NaN;  // Longitude and latitude in spherical coordinates
     $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
-    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
     $scope.startupTime = 0;  // Startup time of streaming
     $scope.startupTimeFormatted = null;  // Formatted startup time of streaming
     $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
     $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
-    $scope.currentPathID = NaN;  // Current path ID
+    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
     $scope.playerBufferLength = [];  // Data from monitor
     $scope.playerAverageThroughput = [];  // Data from monitor
     $scope.playerTime = [];  // Data from monitor
@@ -149,18 +153,12 @@ app.controller('DashController', function ($scope) {
     $scope.playerCatchUp = [];  // Data from playback controller
     $scope.playerRTT = [];  // Data from monitor
     $scope.playerBitrateList = [];  // Data from bitrate list
-    $scope.playerLastBitrateList = [];  // Data from bitrate list
-    $scope.playerTotalBitrateList = [];  // Data from bitrate list
     $scope.requestList = [];  // Data from all HTTPRequests
     $scope.requestListLength = 0;  // Data from all HTTPRequests
-    $scope.multiPathQuality = [0, 0, 0, 0, 0, 0];  // For Switching the quality by manual switching ABR strategy and multipath ABR strategy
-    $scope.previousmultiPathQuality = [0, 0, 0, 0, 0, 0];  // For Switching the quality by manual switching ABR strategy and multipath ABR strategy
-    $scope.changeQualityFlag = [0, 0, 0, 0, 0, 0];  // For Switching the quality by manual switching ABR strategy and multipath ABR strategy
 
 
     //// Global variables (private: only adjust in codes)
 
-    $scope.IntervalOfPlatformAdjustment = 10;  // [For setting interval] Set the interval time for platform interval function
     $scope.IntervalOfSetNormalizedTime = 10;  // [For setting interval] Set the fastest mediaplayer's timeline as the normalized time
     $scope.IntervalOfComputetotalThroughput = 1000;  // [For setting interval] Compute total throughput according to recent HTTP requests
     $scope.IntervalOfComputeQoE = 1000;  // [For setting interval] Compute QoE
@@ -168,24 +166,9 @@ app.controller('DashController', function ($scope) {
     $scope.IntervalOfUpdateFigures = 500;  // [For setting interval] Show the data in figures
     $scope.IntervalOfUpdateRequestsFigures = 100;  // [For setting interval] Show the requests data in figures
     $scope.IntervalOfCaptures = 100;  // [For setting interval] Capture the pictures from mediaplayers
-    $scope.IntervalOfSwitchPath = 100;  // [For setting interval] Switch the best path according to players' qualities
-    $scope.IntervalOfApplyOptions = 1000;  // [For setting interval] Apply parameters in options
-    $scope.IntervalOfUpdateMultiPathQualities = 1000;  // [For setting interval] Set up the qualities when using MultiPathRule
     $scope.GET_SAMPLE_WINDOW_SIZE_FOR_RTT = 5;  // Set up the window size for calculating RTT
-    $scope.drawmycanvas = {  // Set the width and height of the capture pictures
-        "width": "150",
-        "height": "150"
-    };
-    // $scope.mycanvas = {  // Set the width and height of the canvases
-    //     "width":"150px",
-    //     "height":"150px"
-    // };
     $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
     $scope.requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
-    $scope.playerBufferToKeep = 4;  // Allows you to modify the buffer that is kept in source buffer in seconds
-    $scope.playerStableBufferTime = 4;  // The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
-    $scope.playerBufferTimeAtTopQuality = 4;  // The time that the internal buffer target will be set to once playing the top quality
-    $scope.playerBufferTimeAtTopQualityLongForm = 4;  // The time that the internal buffer target will be set to once playing the top quality for a long form
     $scope.lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
     $scope.qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
     $scope.availableStreams = [  // All the available preset media sources
@@ -565,16 +548,13 @@ app.controller('DashController', function ($scope) {
     //// Global variables (public: adjust by users)
 
     $scope.optionButton = "Show Options";  // Save the state of option button
-    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
+    $scope.selectedRule = "myBufferRule";  // Save the selected ABR strategy
     $scope.selectedMode = 'Multi-Path';  // Save the selected mode
     $scope.targetLatency = 10;  // The live delay allowed
     $scope.minDrift = 0.02;  // The minimal latency deviation allowed
     $scope.maxDrift = 3;  // The maximal latency deviation allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
-    $scope.pathSwitchStrategy = 3;  // ID of path switching strategy
-    $scope.preferredPathID = 1;  // Switch the path of stream manually
-    $scope.preferredSyncDelay = 0.5;  // Set the tolerance of sync delay (s)
     $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
         "http://localhost:8080/apple/v9/stream.mpd",
@@ -586,7 +566,7 @@ app.controller('DashController', function ($scope) {
     ];
     $scope.audioURLs = [  // Save the selected media source
         "http://localhost:8080/apple/v9/stream.mpd"
-];
+    ];
 
 
     //// Global variables (stat & chart related)
@@ -994,60 +974,9 @@ app.controller('DashController', function ($scope) {
         switch (mode) {
             case 'Multi-Path':
                 $scope.selectedMode = 'Multi-Path';
-                document.getElementById( "videoContainerVR" ).style.display = "none";
                 document.getElementById( "videoContainer" ).style.display = "block";
-                document.getElementById( "FOVRule" ).disabled = "true";
-                document.getElementById( "DefaultRule" ).checked = true;
-                $scope.changeABRStrategy('DefaultRule');
-                document.getElementById( "video_num_1" ).removeAttribute("disabled");
-                document.getElementById( "video_num_2" ).removeAttribute("disabled");
-                document.getElementById( "video_num_3" ).removeAttribute("disabled");
-                document.getElementById( "video_num_4" ).removeAttribute("disabled");
-                document.getElementById( "video_num_5" ).removeAttribute("disabled");
-                document.getElementById( "video_num_6" ).removeAttribute("disabled");
-                document.getElementById( "path_select_0" ).checked = true;
-                $scope.changePathStrategy(0);
-                document.getElementById( "path_select_0" ).removeAttribute("disabled");
-                document.getElementById( "path_select_1" ).removeAttribute("disabled");
-                document.getElementById( "path_select_2" ).removeAttribute("disabled");
-                document.getElementById( "path_select_3" ).removeAttribute("disabled");
-                document.getElementById( "path_select_4" ).disabled = "true";
-                document.getElementById( "currentPathIDDisplay" ).style.display = "block";
-                document.getElementById( "currentPathQualityDisplay" ).style.display = "block";
-                document.getElementById( "currentLongitude" ).style.display = "none";
-                document.getElementById( "currentLatitude" ).style.display = "none";
-                document.getElementById( "life_signal" ).removeAttribute("disabled");
+                $scope.changeABRStrategy('myBufferRule');
                 break;
-            case 'VR':
-                $scope.selectedMode = 'VR';
-                document.getElementById( "videoContainerVR" ).style.display = "block";
-                document.getElementById( "videoContainer" ).style.display = "none";
-                document.getElementById( "FOVRule" ).removeAttribute("disabled");
-                document.getElementById( "FOVRule" ).checked = true;
-                $scope.changeABRStrategy('FOVRule');
-                document.getElementById( "video_num_6" ).checked = true;
-                $scope.changeVideoNumber(6);
-                document.getElementById( "video_num_1" ).disabled = "true";
-                document.getElementById( "video_num_2" ).disabled = "true";
-                document.getElementById( "video_num_3" ).disabled = "true";
-                document.getElementById( "video_num_4" ).disabled = "true";
-                document.getElementById( "video_num_5" ).disabled = "true";
-                document.getElementById( "video_num_6" ).disabled = "true";
-                document.getElementById( "path_select_4" ).checked = true;
-                $scope.changePathStrategy(4);
-                document.getElementById( "path_select_0" ).disabled = "true";
-                document.getElementById( "path_select_1" ).disabled = "true";
-                document.getElementById( "path_select_2" ).disabled = "true";
-                document.getElementById( "path_select_3" ).disabled = "true";
-                document.getElementById( "path_select_4" ).disabled = "true";
-                document.getElementById( "currentPathIDDisplay" ).style.display = "none";
-                document.getElementById( "currentPathQualityDisplay" ).style.display = "none";
-                document.getElementById( "currentLongitude" ).style.display = "block";
-                document.getElementById( "currentLatitude" ).style.display = "block";
-                $scope.lifeSignalEnabled = false;
-                document.getElementById( "life_signal" ).disabled = "true";
-                break;
-        
             default:
                 break;
         }
@@ -1134,46 +1063,6 @@ app.controller('DashController', function ($scope) {
         } else {
             document.getElementById('global-quality-video').disabled = true;
             document.getElementById('global-quality-audio').disabled = true;
-        }
-        if ($scope.selectedRule == "multiPathRule") {
-            document.getElementById('Keep-highest-with-same-MPD').removeAttribute("disabled");
-            document.getElementById('Buffer-besed-with-same-MPD').removeAttribute("disabled");
-        } else {
-            document.getElementById('Keep-highest-with-same-MPD').disabled = true;
-            document.getElementById('Buffer-besed-with-same-MPD').disabled = true;
-        }
-    };
-
-    // Changing the strategy of path switching
-    $scope.changePathStrategy = function (num) {
-        switch (num) {
-            case 0:
-                $scope.pathSwitchStrategy = 0;
-                document.getElementById( "preferred-path-id" ).removeAttribute("disabled");
-                document.getElementById( "preferred-sync-delay" ).disabled = "true";
-                break;
-            case 1:
-                $scope.pathSwitchStrategy = 1;
-                document.getElementById( "preferred-path-id" ).disabled = "true";
-                document.getElementById( "preferred-sync-delay" ).disabled = "true";
-                break;
-            case 2:
-                $scope.pathSwitchStrategy = 2;
-                document.getElementById( "preferred-path-id" ).disabled = "true";
-                document.getElementById( "preferred-sync-delay" ).disabled = "true";
-                break;
-            case 3:
-                $scope.pathSwitchStrategy = 3;
-                document.getElementById( "preferred-path-id" ).disabled = "true";
-                document.getElementById( "preferred-sync-delay" ).removeAttribute("disabled");
-                break;
-            case 4:
-                $scope.pathSwitchStrategy = 4;
-                document.getElementById( "preferred-path-id" ).disabled = "true";
-                document.getElementById( "preferred-sync-delay" ).disabled = "true";
-                break;
-            default:
-                break;
         }
     };
 
@@ -1348,35 +1237,16 @@ app.controller('DashController', function ($scope) {
 /////////////////////////////////////////////////////////////////////////////////////
     // Loading streams
     $scope.loadStream = function() {
-        // ABR strategies, number of video and audio paths, scheduling timeout cannot change after initialization
+
         document.getElementById( "MultiPathMode" ).disabled = "true";
-        document.getElementById( "VRMode" ).disabled = "true";
-        // document.getElementById( "DefaultRule" ).disabled = "true";
-        // document.getElementById( "MyThroughputRule" ).disabled = "true";
-        // document.getElementById( "MultiPathRule" ).disabled = "true";
-        // document.getElementById( "HighestBitrateRule" ).disabled = "true";
-        // document.getElementById( "LowestBitrateRule" ).disabled = "true";
-        // document.getElementById( "GlobalSwitchRule" ).disabled = "true";
-        // document.getElementById( "life_signal" ).disabled = "true";
-        document.getElementById( "video_num_1" ).disabled = "true";
-        document.getElementById( "video_num_2" ).disabled = "true";
-        document.getElementById( "video_num_3" ).disabled = "true";
-        document.getElementById( "video_num_4" ).disabled = "true";
-        document.getElementById( "video_num_5" ).disabled = "true";
-        document.getElementById( "video_num_6" ).disabled = "true";
-        document.getElementById( "audio_num_0" ).disabled = "true";
-        document.getElementById( "audio_num_1" ).disabled = "true";
-        // document.getElementById( "schedule-interval" ).disabled = "true";
         switch ($scope.selectedMode) {
             case 'Multi-Path':
                 $scope.mse_init();
                 break;
-            case 'VR':
-                $scope.aframe_init();
-                break;
             default:
                 break;
         }
+
     };
 
     // Initializing streams with MediaSource
@@ -1451,12 +1321,30 @@ app.controller('DashController', function ($scope) {
 
         for (let i = 0; i < $scope.streamNum.video; i++) {
             $scope.fetchMpd($scope.videoURLs[i], (response) => {
+                $scope.requestList.push({
+                    urlType: $scope.TYPE_OF_MPD,
+                    contentType: "video",
+                    pathIndex: i,
+                    periodIndex: "-",
+                    adaptationSetIndex: "-",
+                    representationIndex: "-",
+                    segmentIndex: "-"
+                });
                 $scope.loadMpd(response, "video", i);
             });
         }
 
         for (let i = 0; i < $scope.streamNum.audio; i++) {
             $scope.fetchMpd($scope.audioURLs[i], (response) => {
+                $scope.requestList.push({
+                    urlType: $scope.TYPE_OF_MPD,
+                    contentType: "audio",
+                    pathIndex: i,
+                    periodIndex: "-",
+                    adaptationSetIndex: "-",
+                    representationIndex: "-",
+                    segmentIndex: "-"
+                });
                 $scope.loadMpd(response, "audio", i);
             });
         }
@@ -1631,7 +1519,7 @@ app.controller('DashController', function ($scope) {
                 }
                 // Fetch the first init segment and the first media segment
                 $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
-                setInterval($scope.scheduleFetcher.bind(this, contentType), $scope.scheduleInterval);
+                setInterval($scope.scheduleFetcher.bind(this, contentType), $scope.INTERVAL_OF_SCHEDULE_FETCHER);
             }
 
             // Create and initialize control bar
@@ -1855,6 +1743,8 @@ app.controller('DashController', function ($scope) {
             } catch (e) {
                 throw "SourceBuffer is not initialized: " + e;
             }
+            $scope.startupTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000));
+            $scope.startupTimeFormatted = $scope.startupTime.toLocaleString();
             $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener(contentType));
             $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, () => {
                 if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
@@ -1896,8 +1786,18 @@ app.controller('DashController', function ($scope) {
         var urlExtend = urlType == $scope.TYPE_OF_INIT_SEGMENT ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization : urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].media : "";
         var urlResolved = $scope.resolveUrl(urlType, url, urlExtend, paramForResolveUrl);
         $scope.isFetchingSegment[contentType] = true;
+        console.log("Fetching " + urlType + ": Type " + contentType + ", Path " + curStreamInfo.pathIndex + ", Period " + curStreamInfo.periodIndex + ", AdaptationSet " + curStreamInfo.adaptationSetIndex + ", Representation " + curStreamInfo.representationIndex + (urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? ", Segment " + curStreamInfo.segmentIndex + "." : "."));
         $scope.fetchBuffer(urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT, 
             (buffer) => {
+                $scope.requestList.push({
+                    urlType: urlType,
+                    contentType: contentType,
+                    pathIndex: curStreamInfo.pathIndex,
+                    periodIndex: curStreamInfo.periodIndex,
+                    adaptationSetIndex: curStreamInfo.adaptationSetIndex,
+                    representationIndex: curStreamInfo.representationIndex,
+                    segmentIndex: curStreamInfo.segmentIndex
+                });
                 $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
                 $scope.isFetchingSegment[contentType] = false;
             },
@@ -2079,68 +1979,10 @@ app.controller('DashController', function ($scope) {
     };
 /////////////////////////////////////////////////////////////////////////////////////
 
-    // Initializing the aframe page
-    $scope.aframe_init = function() {
-        document.getElementById( 'frame' ).src = "./6_1_1.html";
-        $scope.lon = 0;
-        $scope.lat = 0;
-    };
-
-    // Enabling the FOV event listener in iframe, and start initialization
-    document.getElementById('frame').onload = function () {
-        // $scope.initial();
-    };
-
-    // Triggered when the playback quality has changed
-    $scope.quality_change_rendered = function(e) {
-        // Calculate playbackQuality for each path by API
-        if ($scope.playerPlaybackQuality != undefined && $scope.playerPlaybackQuality[e.count] != undefined) {
-            $scope.playerPlaybackQuality[e.count] = e.newQuality;
-        }
-    };
-
     // Reloading streams
     $scope.reloadStream = function() {
         $scope.clearchartData();
-        $scope.forcedPause = false;
-        $scope.requestList = [];
-        $scope.requestListLength = 0;
-        $scope.playerTotalBitrateList = [];
-        $scope.multiPathQuality = [0, 0, 0, 0, 0, 0];
-        $scope.previousmultiPathQuality = [0, 0, 0, 0, 0, 0];
-        $scope.changeQualityFlag = [0, 0, 0, 0, 0, 0];
-        for (let i = 0; i < $scope.playerNum; i++) {
-            if ($scope.players[i] && $scope.videoURLs[i]) {
-                $scope.buffer_empty_flag[i] = true;
-                $scope.playerBufferLength[i] = 0;
-                $scope.playerAverageThroughput[i] = 0;
-                $scope.playerTime[i] = 0;
-                $scope.loadedTime[i] = 0;
-                $scope.playerDownloadingQuality[i] = 0;
-                $scope.playerPlaybackQuality[i] = 0;
-                $scope.playerPastDownloadingQuality[i] = 0;
-                $scope.playerCatchUp[i] = 0;
-                $scope.playerRTT[i] = Infinity;
-                $scope.playerBitrateList[i] = [];
-                $scope.playerLastBitrateList[i] = [];
-                $scope.players[i].attachSource($scope.videoURLs[i]);
-            }
-        }
-        if ($scope.players[$scope.playerNum] && $scope.audioURLs[0]) {
-            $scope.buffer_empty_flag[$scope.playerNum] = true;
-            $scope.playerBufferLength[$scope.playerNum] = 0;
-            $scope.playerAverageThroughput[$scope.playerNum] = 0;
-            $scope.playerTime[$scope.playerNum] = 0;
-            $scope.loadedTime[$scope.playerNum] = 0;
-            $scope.playerDownloadingQuality[$scope.playerNum] = 0;
-            $scope.playerPlaybackQuality[$scope.playerNum] = 0;
-            $scope.playerPastDownloadingQuality[$scope.playerNum] = 0;
-            $scope.playerCatchUp[$scope.playerNum] = 0;
-            $scope.playerRTT[$scope.playerNum] = Infinity;
-            $scope.playerBitrateList[$scope.playerNum] = [];
-            $scope.playerLastBitrateList[$scope.playerNum] = [];
-            $scope.players[$scope.playerNum].attachSource($scope.audioURLs[0]);
-        }
+        /////////////////////////
     };
 
 
@@ -2247,73 +2089,11 @@ app.controller('DashController', function ($scope) {
         $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
     };
 
-    // Capture the pictures from mediaplayers
-    $scope.capturePictures = function() {
-        for (let i = 0; i < $scope.playerNum; i++) {
-            if ($scope.players[i]) {
-                document.getElementById("capture_" + i).getContext('2d').drawImage($scope.selectedMode == 'Multi-Path' ? document.getElementById( "video_" + i ) : $scope.selectedMode == 'VR' ? document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i) : null, 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
-                document.getElementById("capture_" + i).style = "width: 150px; height: " + (150 * ($scope.playerBitrateList[i][0] ? ($scope.playerBitrateList[i][0].height / $scope.playerBitrateList[i][0].width) : 150)) + "px";
-                // img.src = canvas.toDataURL("image/png");
-            }
-        }
-    };
-
-    // Update settings according to catchup parameters in options
-    $scope.updateCatchupSettings = function() {
-        for (let i = 0; i <= $scope.playerNum; i++) {
-            if ($scope.players[i]) {
-                $scope.players[i].updateSettings({
-                    'streaming': {
-                        'delay': {
-                            'liveDelay': $scope.targetLatency
-                        },
-                        'liveCatchup': {
-                            'minDrift': $scope.minDrift,
-                            'maxDrift': $scope.maxDrift,
-                            'playbackRate': $scope.catchupPlaybackRate,
-                            'latencyThreshold': $scope.liveCatchupLatencyThreshold
-                        }
-                    }
-                });
-            }
-        }
-    };
-
     // Show the data in monitor
     $scope.updateStats = function() {
         $scope.stats.splice(0, $scope.stats.length);
         for (let i = 0; i <= $scope.playerNum; i++) {
             if ($scope.players[i]) {
-                // Initialize playerBitrateList and playerTotalBitrateList
-                if (i < $scope.playerNum && $scope.playerBitrateList[i].length == 0) {
-                    $scope.playerBitrateList[i] = $scope.players[i].getBitrateInfoListFor("video");
-                    if ($scope.playerBitrateList[i].length > 0) {
-                        for (let ii = 0; ii < $scope.playerBitrateList[i].length; ii++) {
-                            let j = 0;
-                            while (j < $scope.playerTotalBitrateList.length) {
-                                if ($scope.playerBitrateList[i][ii].bitrate > $scope.playerTotalBitrateList[j].bitrate) {
-                                    j++;
-                                } else if ($scope.playerBitrateList[i][ii].bitrate == $scope.playerTotalBitrateList[j].bitrate) {
-                                    $scope.playerTotalBitrateList[j].count[$scope.playerTotalBitrateList[j].count.length] = i;
-                                    break;
-                                } else if ($scope.playerBitrateList[i][ii].bitrate < $scope.playerTotalBitrateList[j].bitrate) {
-                                    for (let k = $scope.playerTotalBitrateList.length - 1; k >= j; k--) {
-                                        $scope.playerTotalBitrateList[k + 1] = $scope.playerTotalBitrateList[k];
-                                    }
-                                    $scope.playerTotalBitrateList[j] = $scope.playerBitrateList[i][ii];
-                                    $scope.playerTotalBitrateList[j].count = [];
-                                    $scope.playerTotalBitrateList[j].count[0] = i;
-                                    break;
-                                }
-                            }
-                            if (j == $scope.playerTotalBitrateList.length) {
-                                $scope.playerTotalBitrateList[j] = $scope.playerBitrateList[i][ii];
-                                $scope.playerTotalBitrateList[j].count = [];
-                                $scope.playerTotalBitrateList[j].count[0] = i;
-                            }
-                        }
-                    }
-                }
                 // Calculate bufferLength, averageThroughput, timeline, loadedTimeline and downloadingQuality for each path by APIs
                 $scope.playerBufferLength[i] = $scope.players[i].getBufferLength(i == $scope.playerNum ? "audio" : "video");
                 $scope.playerBufferLength[i] = $scope.playerBufferLength[i] > 0 ? $scope.playerBufferLength[i] : 0;
@@ -2351,152 +2131,9 @@ app.controller('DashController', function ($scope) {
         }
     };
 
-    // Display different path's player according to downloading qualities
-    $scope.switchPath = function() {
-        let temp = 0;
-        switch ($scope.pathSwitchStrategy) {
-            case 0:
-                temp = $scope.preferredPathID - 1;
-                break;
-            case 1:
-                for (let i = 0; i < $scope.playerNum; i++) {
-                    if ($scope.playerDownloadingQuality[i] > $scope.playerDownloadingQuality[temp]) {
-                        temp = i;
-                    }
-                }
-                break;
-            case 2:
-                for (let i = 0; i < $scope.playerNum; i++) {
-                    if ($scope.playerPlaybackQuality[i] > $scope.playerPlaybackQuality[temp]) {
-                        temp = i;
-                    }
-                }
-                break;
-            case 3:
-                let candidates = Array.apply(null, { length: $scope.playerNum }).map((item, index)=>{
-                    return index;
-                });
-                // Give up all empty-buffer paths
-                for (let i = 0; i < $scope.playerNum; i++) {
-                    if ($scope.buffer_empty_flag[i] || $scope.playerPlaybackQuality[i] == -1) {
-                        candidates = candidates.filter(item => item != i);
-                    }
-                }
-                if (candidates.length >= 1) {
-                    temp = candidates[0];
-                    if (candidates.length > 1) {
-                        // Give up all non-sync paths
-                        if ($scope.normalizedTime) {
-                            for (let i = 0; i < $scope.playerNum; i++) {
-                                if ($scope.normalizedTime - $scope.targetLatency - $scope.players[i].getVideoElement().currentTime > $scope.preferredSyncDelay) {
-                                    candidates = candidates.filter(item => item != i);
-                                }
-                            }
-                        }
-                        if (candidates.length >= 1) {
-                            temp = candidates[0];
-                            if (candidates.length > 1 && $scope.playerBitrateList) {
-                                // Switch according to playback qualities
-                                for (let i = 0; i < candidates.length; i++) {
-                                    if ($scope.playerBitrateList[candidates[i]] && $scope.playerPlaybackQuality[candidates[i]] >= 0 && $scope.playerBitrateList[candidates[i]][$scope.playerPlaybackQuality[candidates[i]]] && $scope.playerBitrateList[candidates[i]][$scope.playerPlaybackQuality[candidates[i]]].bitrate) {
-                                        if ($scope.playerBitrateList[candidates[i]][$scope.playerPlaybackQuality[candidates[i]]].bitrate > $scope.playerBitrateList[temp][$scope.playerPlaybackQuality[temp]].bitrate) {
-                                            temp = candidates[i];
-                                        }
-                                    } else {
-                                        temp = candidates[0];
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                break;
-            case 4:
-                return;
-            default:
-                break;
-        }
-        $scope.currentPathID = temp + 1;
-        document.getElementById("video_" + temp).style.display = "flex";
-        for (let i = 0; i < $scope.playerNum; i++) {
-            if (i != temp) {
-                document.getElementById("video_" + i).style.display = "none";
-            }
-        }
-    };
-
-    // Set up the qualities when using MultiPathRule and GlobalSwitchRule
-    $scope.updateMultiPathQualities = function() {
-        if ($scope.playerNum == 1) {
-            if (document.getElementById('MultiPathRule').checked) {
-                if (document.getElementById('Keep-highest-with-same-MPD').checked) {
-                    $scope.multiPathQuality[0] = $scope.playerBitrateList[0].length - 1;
-                }
-                if (document.getElementById('Buffer-besed-with-same-MPD').checked) {
-                    if ($scope.playerBufferLength[0] < ($scope.targetLatency / 5)) {
-                        $scope.multiPathQuality[0] = Math.max($scope.multiPathQuality[0] - 1, $scope.lifeSignalEnabled && $scope.playerBitrateList[0].length > 1 ? 1 : 0);
-                    } else if ($scope.playerBufferLength[0] > ($scope.targetLatency / 2)) {
-                        $scope.multiPathQuality[0] = Math.min($scope.multiPathQuality[0] + 1, $scope.playerBitrateList[0].length - 1);
-                    }
-                }
-            } else if (document.getElementById('GlobalSwitchRule').checked) {
-                $scope.multiPathQuality[0] = $scope.globalQuality.video;
-            }
-        } else {
-            if (document.getElementById('MultiPathRule').checked) {
-                let playerVideoRTT = $scope.playerRTT;
-                if ($scope.playerRTT.length == $scope.playerNum + 1) {
-                    playerVideoRTT.pop();
-                }
-                if (!playerVideoRTT.reduce((a, b) => a + b) || playerVideoRTT.reduce((a, b) => a + b) == Infinity) {
-                    $scope.multiPathQuality = [0, 0, 0, 0, 0, 0];
-                    $scope.previousmultiPathQuality = [0, 0, 0, 0, 0, 0];
-                    return;
-                }
-                for (let i = 0; i < $scope.playerNum; i++) {
-                    if (playerVideoRTT[i] == Math.min.apply(null, playerVideoRTT)) {
-                        if (document.getElementById('Keep-highest-with-same-MPD').checked) {
-                            $scope.multiPathQuality[i] = $scope.playerBitrateList[i].length - 1;
-                        }
-                        if (document.getElementById('Buffer-besed-with-same-MPD').checked) {
-                            if ($scope.multiPathQuality[i] == 0) {
-                                $scope.multiPathQuality[i] = $scope.previousmultiPathQuality[i];
-                            }
-                            if ($scope.playerBufferLength[i] < ($scope.targetLatency / 5)) {
-                                $scope.multiPathQuality[i] = Math.max($scope.multiPathQuality[i] - 1, $scope.lifeSignalEnabled && $scope.playerBitrateList[i].length > 1 ? 1 : 0);
-                            } else if ($scope.playerBufferLength[i] > ($scope.targetLatency / 2)) {
-                                $scope.multiPathQuality[i] = Math.min($scope.multiPathQuality[i] + 1, $scope.playerBitrateList[i].length - 1);
-                            }
-                        }
-                        $scope.changeQualityFlag[i] = 1;
-                    }
-                }
-            } else if (document.getElementById('GlobalSwitchRule').checked) {
-                let tempIndex = $scope.playerTotalBitrateList[$scope.globalQuality.video].count;
-                let tempRRT = [];
-                for (let i = 0; i < tempIndex.length; i++) {
-                    tempRRT[i] = $scope.playerRTT[tempIndex[i]];
-                }
-                let i = tempIndex[tempRRT.indexOf(Math.min.apply(null, tempRRT))];
-                for (let j = 0; j < $scope.playerBitrateList[i].length; j++) {
-                    if ($scope.playerBitrateList[i][j].bitrate == $scope.playerTotalBitrateList[$scope.globalQuality.video].bitrate) {
-                        $scope.multiPathQuality[i] = j;
-                        $scope.changeQualityFlag[i] = 1;
-                        break;
-                    }
-                }
-            }
-        }
-    };
-
     // Other platform intervals
-    // setInterval(() => {
-    //     $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
-    //     $scope.preferredPathID = $scope.preferredPathID > $scope.playerNum ? $scope.playerNum : $scope.preferredPathID;
-    //     if ($scope.playerTotalBitrateList && $scope.playerTotalBitrateList.length > 0) {
-    //         $scope.globalQuality.video = $scope.globalQuality.video >= $scope.playerTotalBitrateList.length ? $scope.playerTotalBitrateList.length - 1 : $scope.globalQuality.video;
-    //     }
-    // }, $scope.IntervalOfPlatformAdjustment);
+    setInterval(() => {
+        $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
+    }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
 
-});
+}]);

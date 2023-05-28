@@ -1,5 +1,5 @@
-// Rule that manually selects the bitrate
-var GlobalSwitchRuleClass = function () {
+// Rule that selects the possible bitrate based on buffer level
+var MyBufferRuleClass = function () {
 
     let instance;
     let appElement = document.querySelector('[ng-controller=DashController]');
@@ -13,7 +13,7 @@ var GlobalSwitchRuleClass = function () {
     function setup() {
     }
 
-    // Always manually select the bitrate
+    // Always select the possible bitrate based on buffer level
     function setStreamInfo(streamInfo, contentType) {
 
         if (!$scope.streamBitrateLists || !$scope.streamBitrateLists[contentType]) {
@@ -77,19 +77,24 @@ var GlobalSwitchRuleClass = function () {
             }
         }
 
-        // Adjust the selected global quality according to length of bitrate lists and life-signal settings
-        if ($scope.globalQuality[contentType] < ($scope.lifeSignalEnabled ? 1 : 0)) {
-            $scope.globalQuality[contentType] = $scope.lifeSignalEnabled ? 1 : 0;
-        }
-        if ($scope.globalQuality[contentType] >= bitrateLists[contentType].length - 1) {
-            $scope.globalQuality[contentType] = bitrateLists[contentType].length - 1;
+        // Fetch the current buffer level and select quality according to exp function
+        let TargetQuality = bitrateLists[contentType].length - 1;
+        let elementBuffered = $scope.getBufferLevel(contentType);
+        let expFactor = Math.exp(elementBuffered) - 1;
+        let expMax = Math.exp($scope.targetBuffer) - 1;
+        let expRange = $scope.lifeSignalEnabled ? bitrateLists[contentType].length - 1 : bitrateLists[contentType].length;
+        for (let i = 0; i < expRange; i++) {
+            if (expFactor >= (expMax / expRange) * i && expFactor < (expMax / expRange) * (i + 1)) {
+                TargetQuality = $scope.lifeSignalEnabled ? i + 1 : i;
+                break;
+            }
         }
 
         // Select the first choice in the list with the same bandwidth
-        streamInfo.pathIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].pathIndex;
-        streamInfo.periodIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].periodIndex;
-        streamInfo.adaptationSetIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].adaptationSetIndex;
-        streamInfo.representationIndex = bitrateLists[contentType][$scope.globalQuality[contentType]].indexes[0].representationIndex;
+        streamInfo.pathIndex = bitrateLists[contentType][TargetQuality].indexes[0].pathIndex;
+        streamInfo.periodIndex = bitrateLists[contentType][TargetQuality].indexes[0].periodIndex;
+        streamInfo.adaptationSetIndex = bitrateLists[contentType][TargetQuality].indexes[0].adaptationSetIndex;
+        streamInfo.representationIndex = bitrateLists[contentType][TargetQuality].indexes[0].representationIndex;
 
         return streamInfo;
 
