@@ -10,8 +10,8 @@ TODOs:
   [x] 2. Path switching.
   [x] 3. Reload.
   [ ] 4. Forced switch quality.
-  [ ] 5. Multiple stream URLs.
-  [-] 6. Data monitors, figures and stats.
+  [-] 5. Multiple stream URLs.
+  [-] 6. Data monitors, charts and stats.
   [ ] 7. Module spliting.
   [x] 8. Multiple periods and different segment indexs.
   [ ] 9. Live mode with catchup.
@@ -27,15 +27,17 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
 /////////////////////////////////////////////////////////////////////////////////////
     $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT = 10;
-    $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;  // Interval of triggering schedule fetcher to start requests
-    $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL = 100;
+    $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
+    $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
+    $scope.INTERVAL_OF_APPEND_BUFFER = 100;
+    $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TYPE_OF_MPD = "MPD";
     $scope.TYPE_OF_INIT_SEGMENT = "InitSegment";
     $scope.TYPE_OF_MEDIA_SEGMENT = "MediaSegment";
     $scope.EVENT_TIME_UPDATE = "timeupdate";
     $scope.EVENT_UPDATE_END = "updateend";
     $scope.TAG_OF_REPRESENTATION_ID = "$RepresentationID$";
-    $scope.TAG_OF_SEGMENT_INDEX = "$Number%05d$";
+    $scope.TAG_OF_SEGMENT_INDEX = "$Number$";
     $scope.RESPONSE_TYPE_OF_MPD = "text";
     $scope.RESPONSE_TYPE_OF_SEGMENT = "arraybuffer";
     $scope.HTTP_REQUEST_METHOD = "get";
@@ -134,7 +136,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
-        audio: 1
+        audio: 2
     }
     $scope.optionButton = "Show Options";  // Save the state of option button
     $scope.selectedRule = "myBufferRule";  // Save the selected ABR strategy
@@ -148,391 +150,421 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
     $scope.availableStreams = [  // All the available preset media sources
         {
-            name:"VOD (Akamai BBB $Number$)",
-            url:"https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
+            name: "VOD (Akamai BBB $Number$)",
+            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
         },
         {
-            name:"VOD (Elephant Dream $Time$)",
-            url:"https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/MultiResMPEG2.mpd"
+            name: "VOD (Elephant Dream $Time$)",
+            url: "https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/MultiResMPEG2.mpd"
         },
         {
-            name:"VOD (Captions by WebVTT)",
-            url:"https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/elephants_dream_480p_heaac5_1_https.mpd"
+            name: "VOD (Captions by WebVTT)",
+            url: "https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/elephants_dream_480p_heaac5_1_https.mpd"
         },
         {
-            name:"VOD (Multi periods)",
-            url:"https://dash.akamaized.net/dash264/TestCases/5a/nomor/1.mpd"
+            name: "VOD (Multi periods)",
+            url: "https://dash.akamaized.net/dash264/TestCases/5a/nomor/1.mpd"
         },
         {
-            name:"VOD (Local CMPVP907)",
-            urls:[
-                "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd",
-                "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd"
-            ]
+            name: "VOD (Local CMPVP907)",
+            urls: {
+                video: [
+                    "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd",
+                ],
+                audio: [
+                    "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Local tokyo)",
-            urls:[
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd",
-                "http://localhost:8080/datasets/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Local tokyo)",
+            url: "http://localhost:8080/datasets/tokyo/v9/stream.mpd"
         },
         {
-            name:"VOD (Local apple)",
-            urls:[
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd",
-                "http://localhost:8080/datasets/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Local apple)",
+            url: "http://localhost:8080/datasets/apple/v9/stream.mpd"
         },
         {
-            name:"VOD (File BBB)",
-            urls:[
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (File BBB)",
+            url: "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
         },
         {
-            name:"VOD (File tokyo)",
-            urls:[
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (File tokyo)",
+            url: "http://222.20.126.108:8080/ffz/tokyo/v9/stream.mpd"
         },
         {
-            name:"VOD (File apple)",
-            urls:[
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (File apple)",
+            url: "http://222.20.126.108:8080/ffz/apple/v9/stream.mpd"
         },
         {
-            name:"VOD (File Docker BBB)",
-            urls:[
-                "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (File Docker BBB)",
+            urls: {
+                video: [
+                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (File Docker tokyo)",
-            urls:[
-                "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6003/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6005/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6007/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6009/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6011/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (File Docker tokyo)",
+            urls: {
+                video: [
+                    "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6003/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6005/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6007/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6009/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6011/ffz/tokyo/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.108:6001/ffz/tokyo/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (File Docker apple)",
-            urls:[
-                "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6003/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6005/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6007/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6009/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6011/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (File Docker apple)",
+            urls: {
+                video: [
+                    "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6003/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6005/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6007/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6009/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6011/ffz/apple/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.108:6001/ffz/apple/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Edge BBB)",
-            urls:[
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Edge BBB)",
+            url: "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
         },
         {
-            name:"VOD (Edge tokyo)",
-            urls:[
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Edge tokyo)",
+            url: "http://222.20.126.109:8080/ffz/tokyo/v9/stream.mpd"
         },
         {
-            name:"VOD (Edge apple)",
-            urls:[
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Edge apple)",
+            url: "http://222.20.126.109:8080/ffz/apple/v9/stream.mpd"
         },
         {
-            name:"VOD (Edge Docker BBB)",
-            urls:[
-                "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Edge Docker BBB)",
+            urls: {
+                video: [
+                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Edge Docker tokyo)",
-            urls:[
-                "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6003/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6005/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6007/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6009/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6011/ffz/tokyo/v9/stream.mpd",
-                "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Edge Docker tokyo)",
+            urls: {
+                video: [
+                    "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6003/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6005/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6007/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6009/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6011/ffz/tokyo/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://222.20.126.109:6001/ffz/tokyo/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Edge Docker apple)",
-            urls:[
-                "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6003/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6005/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6007/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6009/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6011/ffz/apple/v9/stream.mpd",
-                "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Edge Docker apple)",
+            urls: {
+                video: [
+                    "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6003/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6005/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6007/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6009/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6011/ffz/apple/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd",
+                    "http://222.20.126.109:6001/ffz/apple/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier File BBB)",
-            urls:[
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Zerotier File BBB)",
+            url: "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
         },
         {
-            name:"VOD (Zerotier File tokyo)",
-            urls:[
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier File tokyo)",
+            url: "http://172.28.0.53:8080/ffz/tokyo/v9/stream.mpd"
         },
         {
-            name:"VOD (Zerotier File apple)",
-            urls:[
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier File apple)",
+            url: "http://172.28.0.53:8080/ffz/apple/v9/stream.mpd"
         },
         {
-            name:"VOD (Zerotier File Docker BBB)",
-            urls:[
-                "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Zerotier File Docker BBB)",
+            urls: {
+                video: [
+                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier File Docker tokyo)",
-            urls:[
-                "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6003/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6005/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6007/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6009/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6011/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier File Docker tokyo)",
+            urls: {
+                video: [
+                    "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6003/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6005/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6007/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6009/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6011/ffz/tokyo/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.53:6001/ffz/tokyo/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier File Docker apple)",
-            urls:[
-                "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6003/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6005/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6007/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6009/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6011/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier File Docker apple)",
+            urls: {
+                video: [
+                    "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6003/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6005/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6007/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6009/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6011/ffz/apple/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.53:6001/ffz/apple/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier Edge BBB)",
-            urls:[
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Zerotier Edge BBB)",
+            url: "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
         },
         {
-            name:"VOD (Zerotier Edge tokyo)",
-            urls:[
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier Edge tokyo)",
+            url: "http://172.28.0.54:8080/ffz/tokyo/v9/stream.mpd"
         },
         {
-            name:"VOD (Zerotier Edge apple)",
-            urls:[
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier Edge apple)",
+            url: "http://172.28.0.54:8080/ffz/apple/v9/stream.mpd"
         },
         {
-            name:"VOD (Zerotier Edge Docker BBB)",
-            urls:[
-                "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-            ]
+            name: "VOD (Zerotier Edge Docker BBB)",
+            urls: {
+                video: [
+                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier Edge Docker tokyo)",
-            urls:[
-                "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6003/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6005/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6007/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6009/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6011/ffz/tokyo/v9/stream.mpd",
-                "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier Edge Docker tokyo)",
+            urls: {
+                video: [
+                    "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6003/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6005/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6007/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6009/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6011/ffz/tokyo/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd",
+                    "http://172.28.0.54:6001/ffz/tokyo/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"VOD (Zerotier Edge Docker apple)",
-            urls:[
-                "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6003/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6005/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6007/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6009/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6011/ffz/apple/v9/stream.mpd",
-                "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd"
-            ]
+            name: "VOD (Zerotier Edge Docker apple)",
+            urls: {
+                video: [
+                    "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6003/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6005/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6007/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6009/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6011/ffz/apple/v9/stream.mpd"
+                ],
+                audio: [
+                    "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd",
+                    "http://172.28.0.54:6001/ffz/apple/v9/stream.mpd"
+                ]
+            }
         },
         {
-            name:"LIVE (Livesim Single Rate)",
-            url:"https://livesim.dashif.org/livesim/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd"
+            name: "LIVE (Livesim Single Rate)",
+            url: "https://livesim.dashif.org/livesim/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd"
         },
         {
-            name:"LIVE (Cmafref Multi Rates)",
-            url:"https://cmafref.akamaized.net/cmaf/live-ull/2006350/akambr/out.mpd"
+            name: "LIVE (Cmafref Multi Rates)",
+            url: "https://cmafref.akamaized.net/cmaf/live-ull/2006350/akambr/out.mpd"
         },
         {
-            name:"LIVE (FileServer)",
-            url:"http://222.20.126.108:8000/dash/stream.mpd"
+            name: "LIVE (FileServer)",
+            url: "http://222.20.126.108:8000/dash/stream.mpd"
         },
         {
-            name:"LIVE (EdgeServer)",
-            url:"http://222.20.126.109:8000/dash/stream.mpd"
+            name: "LIVE (EdgeServer)",
+            url: "http://222.20.126.109:8000/dash/stream.mpd"
         },
         {
-            name:"LIVE (FS & ES)",
-            urls:[
-                "http://222.20.126.108:8000/face0/stream.mpd",
-                "http://222.20.126.108:8000/face1/stream.mpd",
-                "http://222.20.126.108:8000/face2/stream.mpd",
-                "http://222.20.126.109:8000/face3/stream.mpd",
-                "http://222.20.126.109:8000/face4/stream.mpd",
-                "http://222.20.126.109:8000/face5/stream.mpd",
-                "http://222.20.126.108:8000/face0/stream.mpd"
-            ]
+            name: "LIVE (FS & ES)",
+            urls: {
+                video: [
+                    "http://222.20.126.108:8000/face0/stream.mpd",
+                    "http://222.20.126.108:8000/face1/stream.mpd",
+                    "http://222.20.126.108:8000/face2/stream.mpd",
+                    "http://222.20.126.109:8000/face3/stream.mpd",
+                    "http://222.20.126.109:8000/face4/stream.mpd",
+                    "http://222.20.126.109:8000/face5/stream.mpd"
+                ],
+                audio: [
+                    "http://222.20.126.108:8000/face0/stream.mpd",
+                    "http://222.20.126.108:8000/face0/stream.mpd"
+                ]
+            }
         },
         {
-            name:"COPY"
+            name: "COPY"
         },
         {
-            name:"CUSTOM"
+            name: "CUSTOM"
         }
     ];
-    $scope.videoURLs = [  // Save the selected media source
-        "http://localhost:8080/apple/v9/stream.mpd",
-        "http://localhost:8080/apple/v9/stream.mpd",
-        "http://localhost:8080/apple/v9/stream.mpd",
-        "http://localhost:8080/apple/v9/stream.mpd",
-        "http://localhost:8080/apple/v9/stream.mpd",
-        "http://localhost:8080/apple/v9/stream.mpd"
-    ];
-    $scope.audioURLs = [  // Save the selected media source
-        "http://localhost:8080/apple/v9/stream.mpd"
-    ];
+    $scope.streamURLs = {  // Save the selected media sources
+        video: [
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd"
+        ],
+        audio: [
+            "http://localhost:8080/apple/v9/stream.mpd",
+            "http://localhost:8080/apple/v9/stream.mpd"
+        ]
+    };
+
+    $scope.monitorBufferLevel = {  // Monitor data: buffer level
+        video: NaN,
+        audio: NaN
+    };
+    $scope.chartData_bufferLevel = [];  // Save the buffer data need to put on the charts
+    $scope.maxBufferLevelBuffer = [];  // Buffer for maximal chart data
+    $scope.maxBufferLevel = 0;  // Maximal chart data
+    $scope.maxPointsToChart = 30;  // Set the maximum of the points printed on the charts
+    $scope.chartColor = ['#00CCBE', '#ffd446', '#FF6700', '#44c248', '#ff000a', '#b300ff', '#1100ff'];  // Colors of each objects (6 + 1 as maximum)
+    $scope.chartState = {  // Save the charts' states
+        downloadingQuality:{},
+        playbackQuality:{},
+        bufferLevel:{},
+        throughput:{},
+        RTT:{},
+        requests:{}
+    };
+    $scope.chartOptions_bufferLevel = {  // [For printing the chart] Set up the style of the charts
+        legend: {
+            labelBoxBorderColor: '#ffffff',
+            placement: 'outsideGrid',
+            container: '#legend-wrapper'
+        },
+        series: {
+            lines: {
+                show: true,
+                lineWidth: 2,
+                shadowSize: 1,
+                steps: false,
+                fill: false
+            },
+            points: {
+                radius: 4,
+                fill: true,
+                show: true
+            }
+        },
+        grid: {
+            clickable: false,
+            hoverable: false,
+            autoHighlight: true,
+            color: '#136bfb',
+            backgroundColor: '#ffffff'
+        },
+        axisLabels: {
+            position: 'left'
+        },
+        xaxis: {
+            tickFormatter: function tickFormatter(value) {
+                return $scope.convertToTimeCode(value);
+            },
+            tickDecimals: 0,
+            color: '#136bfb',
+            alignTicksWithAxis: 1
+        },
+        yaxis: {
+            min: 0,
+            max: $scope.maxBufferLevel,
+            tickLength: 0,
+            tickDecimals: 0,
+            color: '#136bfb',
+            position: 'right',
+            axisLabelPadding: 10
+        },
+        yaxes: [{axisLabel: "second"}]
+    };
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -542,7 +574,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
     $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
     $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
-    $scope.playerBufferLength = [];  // Data from monitor
     $scope.playerAverageThroughput = [];  // Data from monitor
     $scope.playerTime = [];  // Data from monitor
     $scope.loadedTime = [];  // Data from monitor
@@ -559,14 +590,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.IntervalOfSetNormalizedTime = 10;  // [For setting interval] Set the fastest mediaplayer's timeline as the normalized time
     $scope.IntervalOfComputetotalThroughput = 1000;  // [For setting interval] Compute total throughput according to recent HTTP requests
     $scope.IntervalOfComputeQoE = 1000;  // [For setting interval] Compute QoE
-    $scope.IntervalOfUpdateStats = 100;  // [For setting interval] Show the data in monitor
-    $scope.IntervalOfUpdateFigures = 500;  // [For setting interval] Show the data in figures
-    $scope.IntervalOfUpdateRequestsFigures = 100;  // [For setting interval] Show the requests data in figures
+    $scope.IntervalOfUpdateRequestsCharts = 100;  // [For setting interval] Show the requests data in charts
     $scope.GET_SAMPLE_WINDOW_SIZE_FOR_RTT = 5;  // Set up the window size for calculating RTT
 
 
     //// Global variables (public: adjust by users)
-
 
     $scope.targetLatency = 10;  // The live delay allowed
     $scope.minDrift = 0.02;  // The minimal latency deviation allowed
@@ -580,31 +608,18 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.stats = [];  // Save all the stats need to put on the charts
     $scope.chartData_downloadingQuality = [];  // Save the downloading qualtiy data need to put on the charts
     $scope.chartData_playbackQuality = [];  // Save the playback qualtiy data need to put on the charts
-    $scope.chartData_buffer = [];  // Save the buffer data need to put on the charts
     $scope.chartData_throughput = [];  // Save the throughput data need to put on the charts
     $scope.chartData_RTT = [];  // Save the RTT data need to put on the charts
     $scope.chartData_requests = [];  // Save the requests data need to put on the charts
     $scope.maxDownloadingQualityBuffer = [];  // Buffer for maximal chart data
     $scope.maxPlaybackQualityBuffer = [];  // Buffer for maximal chart data
-    $scope.maxBufferBuffer = [];  // Buffer for maximal chart data
     $scope.maxThroughputBuffer = [];  // Buffer for maximal chart data
     $scope.maxRTTBuffer = [];  // Buffer for maximal chart data
     $scope.maxDownloadingQuality = 0;  // Maximal chart data
     $scope.maxPlaybackQuality = 0;  // Maximal chart data
-    $scope.maxBuffer = 0;  // Maximal chart data
     $scope.maxThroughput = 0;  // Maximal chart data
     $scope.maxRTT = 0;  // Maximal chart data
     $scope.maxRequests = 0;  // Maximal chart data
-    $scope.maxPointsToChart = 30;  // Set the maximum of the points printed on the charts
-    $scope.chartColor = ['#00CCBE', '#ffd446', '#FF6700', '#44c248', '#ff000a', '#b300ff', '#1100ff'];  // Colors of each objects (6 + 1 as maximum)
-    $scope.chartState = {  // Save the charts' states
-        downloadingQuality:{},
-        playbackQuality:{},
-        buffer:{},
-        throughput:{},
-        RTT:{},
-        requests:{}
-    };
     $scope.chartOptions_downloadingQuality = {  // Set up the style of the charts
         legend: {
             labelBoxBorderColor: '#ffffff',
@@ -637,7 +652,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         xaxis: {
             tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
+                return $scope.convertToTimeCode(value);
             },
             tickDecimals: 0,
             color: '#136bfb',
@@ -686,7 +701,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         xaxis: {
             tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
+                return $scope.convertToTimeCode(value);
             },
             tickDecimals: 0,
             color: '#136bfb',
@@ -702,55 +717,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             axisLabelPadding: 10
         },
         yaxes: [{ axisLabel: "level" }]
-    };
-    $scope.chartOptions_buffer = {  // [For printing the chart] Set up the style of the charts
-        legend: {
-            labelBoxBorderColor: '#ffffff',
-            placement: 'outsideGrid',
-            container: '#legend-wrapper'
-        },
-        series: {
-            lines: {
-                show: true,
-                lineWidth: 2,
-                shadowSize: 1,
-                steps: false,
-                fill: false
-            },
-            points: {
-                radius: 4,
-                fill: true,
-                show: true
-            }
-        },
-        grid: {
-            clickable: false,
-            hoverable: false,
-            autoHighlight: true,
-            color: '#136bfb',
-            backgroundColor: '#ffffff'
-        },
-        axisLabels: {
-            position: 'left'
-        },
-        xaxis: {
-            tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
-            },
-            tickDecimals: 0,
-            color: '#136bfb',
-            alignTicksWithAxis: 1
-        },
-        yaxis: {
-            min: 0,
-            max: $scope.maxBuffer,
-            tickLength: 0,
-            tickDecimals: 0,
-            color: '#136bfb',
-            position: 'right',
-            axisLabelPadding: 10
-        },
-        yaxes: [{axisLabel: "second"}]
     };
     $scope.chartOptions_throughput = {  // [For printing the chart] Set up the style of the charts
         legend: {
@@ -784,7 +750,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         xaxis: {
             tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
+                return $scope.convertToTimeCode(value);
             },
             tickDecimals: 0,
             color: '#136bfb',
@@ -833,7 +799,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         xaxis: {
             tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
+                return $scope.convertToTimeCode(value);
             },
             tickDecimals: 0,
             color: '#136bfb',
@@ -882,7 +848,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         xaxis: {
             // tickFormatter: function tickFormatter(value) {
-            //     return $scope.players[0].convertToTimeCode(value);
+            //     return $scope.convertToTimeCode(value);
             // },
             tickDecimals: 0,
             color: '#136bfb',
@@ -904,62 +870,47 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     //// Functions: UI and options
 
     // Setting up media sources
-    $scope.setStream = function (item, num) {
-        switch (num) {
-            case 0:
-            case 1:
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-                $scope.videoURLs[num] = item.url ? item.url : item.urls[num];
-                break;
-            case 6:
-                $scope.audioURLs[0] = item.url ? item.url : item.urls[num];
-                break;
-            case 7:
-                if (item.name == "COPY") {
+    $scope.setStream = function (item, contentType, num) {
+        if (contentType != undefined && num != undefined) {
+            if (item.name == "COPY") {
+                $scope.streamURLs[contentType][num] = $scope.streamURLs[contentType][0];
+            } else if (item.name == "CUSTOM") {
+                $scope.streamURLs[contentType][num] = "";
+            } else {
+                $scope.streamURLs[contentType][num] = item.url ? item.url : item.urls[contentType][num];
+            }
+        } else {
+            if (item.name == "COPY") {
+                for (let i = 0; i < $scope.streamNum.video; i++) {
+                    $scope.streamURLs.video[i] = $scope.streamURLs.video[0];
+                }
+                for (let i = 0; i < $scope.streamNum.audio; i++) {
+                    $scope.streamURLs.audio[i] = $scope.streamURLs.video[0];
+                }
+            } else if (item.name == "CUSTOM") {
+                for (let i = 0; i < $scope.streamNum.video; i++) {
+                    $scope.streamURLs.video[i] = "";
+                }
+                for (let i = 0; i < $scope.streamNum.audio; i++) {
+                    $scope.streamURLs.audio[i] = "";
+                }
+            } else {
+                if (item.url) {
                     for (let i = 0; i < $scope.streamNum.video; i++) {
-                        if ($scope.videoURLs[i] != "") {
-                            for (let j = 0; j < $scope.streamNum.video; j++) {
-                                $scope.videoURLs[j] = $scope.videoURLs[i];
-                            }
-                            for (let j = 0; j < $scope.streamNum.audio; j++) {
-                                $scope.audioURLs[j] = $scope.audioURLs[i];
-                            }
-                            return;
-                        }
+                        $scope.streamURLs.video[i] = item.url;
                     }
-                } else if (item.name == "CUSTOM") {
-                        $scope.videoURLs[0] = "";
-                        $scope.videoURLs[1] = "";
-                        $scope.videoURLs[2] = "";
-                        $scope.videoURLs[3] = "";
-                        $scope.videoURLs[4] = "";
-                        $scope.videoURLs[5] = "";
-                        $scope.audioURLs[0] = "";
+                    for (let i = 0; i < $scope.streamNum.audio; i++) {
+                        $scope.streamURLs.audio[i] = item.url;
+                    }
                 } else {
-                    if (item.url) {
-                        $scope.videoURLs[0] = item.url;
-                        $scope.videoURLs[1] = item.url;
-                        $scope.videoURLs[2] = item.url;
-                        $scope.videoURLs[3] = item.url;
-                        $scope.videoURLs[4] = item.url;
-                        $scope.videoURLs[5] = item.url;
-                        $scope.audioURLs[0] = item.url;
-                    } else {
-                        $scope.videoURLs[0] = item.urls[0];
-                        $scope.videoURLs[1] = item.urls[1];
-                        $scope.videoURLs[2] = item.urls[2];
-                        $scope.videoURLs[3] = item.urls[3];
-                        $scope.videoURLs[4] = item.urls[4];
-                        $scope.videoURLs[5] = item.urls[5];
-                        $scope.audioURLs[0] = item.urls[6];
+                    for (let i = 0; i < $scope.streamNum.video; i++) {
+                        $scope.streamURLs.video[i] = item.urls.video[i];
+                    }
+                    for (let i = 0; i < $scope.streamNum.audio; i++) {
+                        $scope.streamURLs.audio[i] = item.urls.audio[i];
                     }
                 }
-                break;
-            default:
-                break;
+            }
         }
     };
 
@@ -974,7 +925,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
     };
 
-    // Changing the streaming mode
+    // Change the streaming mode
     $scope.changeMode = function (mode) {
         switch (mode) {
             case 'Multi-Path':
@@ -987,75 +938,15 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
     };
 
-    // Changing number of video paths
-    $scope.changeVideoNumber = function (num) {
-        $scope.streamNum.video = num;
-        switch (num) {
-            case 1:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: none";
-                document.getElementById('videoSource_2').style = "display: none";
-                document.getElementById('videoSource_3').style = "display: none";
-                document.getElementById('videoSource_4').style = "display: none";
-                document.getElementById('videoSource_5').style = "display: none";
-                break;
-            case 2:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: block";
-                document.getElementById('videoSource_2').style = "display: none";
-                document.getElementById('videoSource_3').style = "display: none";
-                document.getElementById('videoSource_4').style = "display: none";
-                document.getElementById('videoSource_5').style = "display: none";
-                break;
-            case 3:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: block";
-                document.getElementById('videoSource_2').style = "display: block";
-                document.getElementById('videoSource_3').style = "display: none";
-                document.getElementById('videoSource_4').style = "display: none";
-                document.getElementById('videoSource_5').style = "display: none";
-                break;
-            case 4:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: block";
-                document.getElementById('videoSource_2').style = "display: block";
-                document.getElementById('videoSource_3').style = "display: block";
-                document.getElementById('videoSource_4').style = "display: none";
-                document.getElementById('videoSource_5').style = "display: none";
-                break;
-            case 5:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: block";
-                document.getElementById('videoSource_2').style = "display: block";
-                document.getElementById('videoSource_3').style = "display: block";
-                document.getElementById('videoSource_4').style = "display: block";
-                document.getElementById('videoSource_5').style = "display: none";
-                break;
-            case 6:
-                document.getElementById('videoSource_0').style = "display: block";
-                document.getElementById('videoSource_1').style = "display: block";
-                document.getElementById('videoSource_2').style = "display: block";
-                document.getElementById('videoSource_3').style = "display: block";
-                document.getElementById('videoSource_4').style = "display: block";
-                document.getElementById('videoSource_5').style = "display: block";
-                break;
-            default:
-                break;
+    // Change the number of streams
+    $scope.changeStreamNumber = function (contentType, num) {
+        while ($scope.streamNum[contentType] < num) {
+            document.getElementById(contentType + 'Source_' + $scope.streamNum[contentType]).style = "display: block";
+            $scope.streamNum[contentType]++;
         }
-    };
-
-    // Changing number of audio paths
-    $scope.changeAudioNumber = function (num) {
-        $scope.streamNum.audio = num;
-        switch (num) {
-            case 0:
-                document.getElementById('audioSource_0').style = "display: none";
-                break;
-            case 1:
-                document.getElementById('audioSource_0').style = "display: block";
-                break;
-            default:
-                break;
+        while ($scope.streamNum[contentType] > num) {
+            document.getElementById(contentType + 'Source_' + ($scope.streamNum[contentType] - 1)).style = "display: none";
+            $scope.streamNum[contentType]--;
         }
     };
 
@@ -1072,16 +963,29 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     };
 
     // Initializing & clearing the charts
-    $scope.initChartingByMediaType = function (type) {
-        var arr = $scope.chartState[type];
-        for (var key in arr) {
-            var obj = arr[key];
-            $scope.pushData(key, type);
-        }
-    };
-    $scope.pushData = function (id, type) {
+    $scope.initChartingByMediaType = function (id, type) {
         switch(type) {
-            case "downloadingQuality":
+            // case "downloadingQuality":
+            //     var data = {
+            //         id: id,
+            //         data: $scope.chartState[type][id].data,
+            //         label: $scope.chartState[type][id].label,
+            //         color: $scope.chartState[type][id].color,
+            //         type: type
+            //     };
+            //     $scope.chartData_downloadingQuality.push(data);
+            //     break;
+            // case "playbackQuality":
+            //     var data = {
+            //         id: id,
+            //         data: $scope.chartState[type][id].data,
+            //         label: $scope.chartState[type][id].label,
+            //         color: $scope.chartState[type][id].color,
+            //         type: type
+            //     };
+            //     $scope.chartData_playbackQuality.push(data);
+            //     break;
+            case "bufferLevel":
                 var data = {
                     id: id,
                     data: $scope.chartState[type][id].data,
@@ -1089,78 +993,58 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     color: $scope.chartState[type][id].color,
                     type: type
                 };
-                $scope.chartData_downloadingQuality.push(data);
+                $scope.chartData_bufferLevel.push(data);
                 break;
-            case "playbackQuality":
-                var data = {
-                    id: id,
-                    data: $scope.chartState[type][id].data,
-                    label: $scope.chartState[type][id].label,
-                    color: $scope.chartState[type][id].color,
-                    type: type
-                };
-                $scope.chartData_playbackQuality.push(data);
-                break;
-            case "buffer":
-                var data = {
-                    id: id,
-                    data: $scope.chartState[type][id].data,
-                    label: $scope.chartState[type][id].label,
-                    color: $scope.chartState[type][id].color,
-                    type: type
-                };
-                $scope.chartData_buffer.push(data);
-                break;
-            case "throughput":
-                var data = {
-                    id: id,
-                    data: $scope.chartState[type][id].data,
-                    label: $scope.chartState[type][id].label,
-                    color: $scope.chartState[type][id].color,
-                    type: type
-                };
-                $scope.chartData_throughput.push(data);
-                break;
-            case "RTT":
-                var data = {
-                    id: id,
-                    data: $scope.chartState[type][id].data,
-                    label: $scope.chartState[type][id].label,
-                    color: $scope.chartState[type][id].color,
-                    type: type
-                };
-                $scope.chartData_RTT.push(data);
-                break;
-            case "requests":
-                var data = {
-                    id: id,
-                    data: $scope.chartState[type][id].data,
-                    label: $scope.chartState[type][id].label,
-                    color: $scope.chartState[type][id].color,
-                    type: type
-                };
-                $scope.chartData_requests.push(data);
-                break;
+            // case "throughput":
+            //     var data = {
+            //         id: id,
+            //         data: $scope.chartState[type][id].data,
+            //         label: $scope.chartState[type][id].label,
+            //         color: $scope.chartState[type][id].color,
+            //         type: type
+            //     };
+            //     $scope.chartData_throughput.push(data);
+            //     break;
+            // case "RTT":
+            //     var data = {
+            //         id: id,
+            //         data: $scope.chartState[type][id].data,
+            //         label: $scope.chartState[type][id].label,
+            //         color: $scope.chartState[type][id].color,
+            //         type: type
+            //     };
+            //     $scope.chartData_RTT.push(data);
+            //     break;
+            // case "requests":
+            //     var data = {
+            //         id: id,
+            //         data: $scope.chartState[type][id].data,
+            //         label: $scope.chartState[type][id].label,
+            //         color: $scope.chartState[type][id].color,
+            //         type: type
+            //     };
+            //     $scope.chartData_requests.push(data);
+            //     break;
         }
-        $scope.chartOptions_downloadingQuality.legend.noColumns = Math.min($scope.chartData_downloadingQuality.length, 7);
-        $scope.chartOptions_playbackQuality.legend.noColumns = Math.min($scope.chartData_playbackQuality.length, 7);
-        $scope.chartOptions_buffer.legend.noColumns = Math.min($scope.chartData_buffer.length, 7);
-        $scope.chartOptions_throughput.legend.noColumns = Math.min($scope.chartData_throughput.length, 7);
-        $scope.chartOptions_RTT.legend.noColumns = Math.min($scope.chartData_RTT.length, 7);
-        $scope.chartOptions_requests.legend.noColumns = Math.min($scope.chartData_requests.length, 7);
+        // $scope.chartOptions_downloadingQuality.legend.noColumns = Math.min($scope.chartData_downloadingQuality.length, 7);
+        // $scope.chartOptions_playbackQuality.legend.noColumns = Math.min($scope.chartData_playbackQuality.length, 7);
+        $scope.chartOptions_bufferLevel.legend.noColumns = Math.min($scope.chartData_bufferLevel.length, 7);
+        // $scope.chartOptions_throughput.legend.noColumns = Math.min($scope.chartData_throughput.length, 7);
+        // $scope.chartOptions_RTT.legend.noColumns = Math.min($scope.chartData_RTT.length, 7);
+        // $scope.chartOptions_requests.legend.noColumns = Math.min($scope.chartData_requests.length, 7);
     };
     $scope.clearchartData = function () {
-        $scope.maxDownloadingQualityBuffer = [];
-        $scope.maxPlaybackQualityBuffer = [];
-        $scope.maxBufferBuffer = [];
-        $scope.maxThroughputBuffer = [];
-        $scope.maxRTTBuffer = [];
-        $scope.maxDownloadingQuality = 0;
-        $scope.maxPlaybackQuality = 0;
-        $scope.maxBuffer = 0;
-        $scope.maxThroughput = 0;
-        $scope.maxRTT = 0;
-        $scope.maxRequests = 0;
+        // $scope.maxDownloadingQualityBuffer = [];
+        // $scope.maxPlaybackQualityBuffer = [];
+        $scope.maxBufferLevelBuffer = [];
+        // $scope.maxThroughputBuffer = [];
+        // $scope.maxRTTBuffer = [];
+        // $scope.maxDownloadingQuality = 0;
+        // $scope.maxPlaybackQuality = 0;
+        $scope.maxBufferLevel = 0;
+        // $scope.maxThroughput = 0;
+        // $scope.maxRTT = 0;
+        // $scope.maxRequests = 0;
         for (var key in $scope.chartState) {
             for (var i in $scope.chartState[key]) {
                 $scope.chartState[key][i].data.length = 0;
@@ -1169,61 +1053,66 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     };
 
     // Plotting data in charts
-    $scope.updateFigures = function () {
+    $scope.updateCharts = function () {
         let time = $scope.getTimeForPlot();
-        $scope.maxDownloadingQualityBuffer.push($scope.playerDownloadingQuality.reduce((a, b) => a > b ? a : b));
-        $scope.maxPlaybackQualityBuffer.push($scope.playerPlaybackQuality.reduce((a, b) => a > b ? a : b));
-        $scope.maxBufferBuffer.push($scope.playerBufferLength.reduce((a, b) => a > b ? a : b));
-        $scope.maxThroughputBuffer.push($scope.playerAverageThroughput.reduce((a, b) => a > b ? a : b));
-        $scope.maxRTTBuffer.push($scope.playerRTT.reduce((a, b) => a > b ? a : b));
-        if ($scope.maxDownloadingQualityBuffer.length > $scope.maxPointsToChart) {
-            $scope.maxDownloadingQualityBuffer.shift();
+
+        if ($scope.streamSourceBuffer["video"]) {
+            $scope.monitorBufferLevel.video = $scope.getBufferLevel("video");
         }
-        if ($scope.maxPlaybackQualityBuffer.length > $scope.maxPointsToChart) {
-            $scope.maxPlaybackQualityBuffer.shift();
+        if ($scope.streamSourceBuffer["audio"]) {
+            $scope.monitorBufferLevel.audio = $scope.getBufferLevel("audio");
         }
-        if ($scope.maxBufferBuffer.length > $scope.maxPointsToChart) {
-            $scope.maxBufferBuffer.shift();
+
+        // $scope.maxDownloadingQualityBuffer.push($scope.playerDownloadingQuality.reduce((a, b) => a > b ? a : b));
+        // $scope.maxPlaybackQualityBuffer.push($scope.playerPlaybackQuality.reduce((a, b) => a > b ? a : b));
+        $scope.maxBufferLevelBuffer.push(($scope.monitorBufferLevel.video > $scope.monitorBufferLevel.audio ? $scope.monitorBufferLevel.video : $scope.monitorBufferLevel.audio) || $scope.monitorBufferLevel.video || $scope.monitorBufferLevel.audio || 0);
+        // $scope.maxThroughputBuffer.push($scope.playerAverageThroughput.reduce((a, b) => a > b ? a : b));
+        // $scope.maxRTTBuffer.push($scope.playerRTT.reduce((a, b) => a > b ? a : b));
+        // if ($scope.maxDownloadingQualityBuffer.length > $scope.maxPointsToChart) {
+        //     $scope.maxDownloadingQualityBuffer.shift();
+        // }
+        // if ($scope.maxPlaybackQualityBuffer.length > $scope.maxPointsToChart) {
+        //     $scope.maxPlaybackQualityBuffer.shift();
+        // }
+        if ($scope.maxBufferLevelBuffer.length > $scope.maxPointsToChart) {
+            $scope.maxBufferLevelBuffer.shift();
         }
-        if ($scope.maxThroughputBuffer.length > $scope.maxPointsToChart) {
-            $scope.maxThroughputBuffer.shift();
+        // if ($scope.maxThroughputBuffer.length > $scope.maxPointsToChart) {
+        //     $scope.maxThroughputBuffer.shift();
+        // }
+        // if ($scope.maxRTTBuffer.length > $scope.maxPointsToChart) {
+        //     $scope.maxRTTBuffer.shift();
+        // }
+        // $scope.maxDownloadingQuality = $scope.maxDownloadingQualityBuffer.reduce((a, b) => a > b ? a : b);
+        // $scope.maxPlaybackQuality = $scope.maxPlaybackQualityBuffer.reduce((a, b) => a > b ? a : b);
+        $scope.maxBufferLevel = $scope.maxBufferLevelBuffer.reduce((a, b) => a > b ? a : b);
+        // $scope.maxThroughput = $scope.maxThroughputBuffer.reduce((a, b) => a > b ? a : b);
+        // $scope.maxRTT = $scope.maxRTTBuffer.reduce((a, b) => a > b ? a : b);
+        // $scope.chartOptions_downloadingQuality.yaxis.max = $scope.maxDownloadingQuality;
+        // $scope.chartOptions_playbackQuality.yaxis.max = $scope.maxPlaybackQuality;
+        $scope.chartOptions_bufferLevel.yaxis.max = $scope.maxBufferLevel;
+        // $scope.chartOptions_throughput.yaxis.max = $scope.maxThroughput / 1000;
+        // $scope.chartOptions_RTT.yaxis.max = $scope.maxRTT;
+        if ($scope.streamSourceBuffer.video) {
+            $scope.plotPoint("video", 'bufferLevel', $scope.monitorBufferLevel.video, time);
         }
-        if ($scope.maxRTTBuffer.length > $scope.maxPointsToChart) {
-            $scope.maxRTTBuffer.shift();
-        }
-        $scope.maxDownloadingQuality = $scope.maxDownloadingQualityBuffer.reduce((a, b) => a > b ? a : b);
-        $scope.maxPlaybackQuality = $scope.maxPlaybackQualityBuffer.reduce((a, b) => a > b ? a : b);
-        $scope.maxBuffer = $scope.maxBufferBuffer.reduce((a, b) => a > b ? a : b);
-        $scope.maxThroughput = $scope.maxThroughputBuffer.reduce((a, b) => a > b ? a : b);
-        $scope.maxRTT = $scope.maxRTTBuffer.reduce((a, b) => a > b ? a : b);
-        $scope.chartOptions_downloadingQuality.yaxis.max = $scope.maxDownloadingQuality;
-        $scope.chartOptions_playbackQuality.yaxis.max = $scope.maxPlaybackQuality;
-        $scope.chartOptions_buffer.yaxis.max = $scope.maxBuffer;
-        $scope.chartOptions_throughput.yaxis.max = $scope.maxThroughput / 1000;
-        $scope.chartOptions_RTT.yaxis.max = $scope.maxRTT;
-        for (let i = 0; i <= $scope.playerNum; i++) {
-            if ($scope.players[i] && $scope.startupTime != 0) {
-                $scope.plotPoint(i == $scope.playerNum ? "audio" : "video_" + i, 'downloadingQuality', $scope.playerDownloadingQuality[i], time);
-                $scope.plotPoint(i == $scope.playerNum ? "audio" : "video_" + i, 'playbackQuality', $scope.playerPlaybackQuality[i], time);
-                $scope.plotPoint(i == $scope.playerNum ? "audio" : "video_" + i, 'buffer', $scope.playerBufferLength[i], time);
-                $scope.plotPoint(i == $scope.playerNum ? "audio" : "video_" + i, 'throughput', $scope.playerAverageThroughput[i] / 1000, time);
-                $scope.plotPoint(i == $scope.playerNum ? "audio" : "video_" + i, 'RTT', $scope.playerRTT[i], time);
-            }
+        if ($scope.streamSourceBuffer.audio) {
+            $scope.plotPoint("audio", 'bufferLevel', $scope.monitorBufferLevel.audio, time);
         }
     };
-    $scope.updateRequestsFigures = function () {
+    $scope.updateRequestsCharts = function () {
         if ($scope.requestList.length > $scope.requestListLength) {
             // $scope.maxRequests = $scope.requestList.reduce((a, b) => a.request._quality > b ? a.request._quality : b);
             // $scope.chartOptions_requests.yaxis.max = $scope.maxRequests;
             $scope.plotPoint($scope.requestList[$scope.requestListLength].count == $scope.playerNum ? "audio" : "video_" + $scope.requestList[$scope.requestListLength].count, 'requests', $scope.requestList[$scope.requestListLength].request._quality, $scope.requestList[$scope.requestListLength].request.mediaStartTime);
             $scope.requestListLength++;
         } else if ($scope.requestList.length < $scope.requestListLength) {
-            console.log("RequestList figures wrong!")
+            console.log("RequestList charts wrong!")
         }
     };
     $scope.getTimeForPlot = function () {
         let now = new Date().getTime() / 1000  + $scope.clientServerTimeShift;
-        return Math.max(now - $scope.startupTime, 0);
+        return Math.max(now - ($scope.startupTime.getTime() / 1000), 0);
     };
     $scope.plotPoint = function (name, type, value, time) {
         var specificChart = $scope.chartState[type];
@@ -1327,12 +1216,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         $scope.isSeeking = NaN;
 
         if ($scope.streamSourceBuffer["video"]) {
-            $scope.streamSourceBuffer["video"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener);
+            $scope.streamSourceBuffer["video"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
             $scope.streamSourceBuffer["video"].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
             $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer["video"]);
         }
         if ($scope.streamSourceBuffer["audio"]) {
-            $scope.streamSourceBuffer["audio"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener);
+            $scope.streamSourceBuffer["audio"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
             $scope.streamSourceBuffer["audio"].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
             $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer["audio"]);
         }
@@ -1341,7 +1230,9 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             audio: null
         };
 
-        $scope.streamElement.removeEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
+        if ($scope.controllBar) {
+            $scope.streamElement.removeEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
+        }
         $scope.streamElement.src = "";
         $scope.streamElement = null;
 
@@ -1387,7 +1278,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
 
         // Load MPDs
-        $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen);
+        $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen());
 
     };
 
@@ -1400,23 +1291,23 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
 
         for (let i = 0; i < $scope.streamNum.video; i++) {
-            if (!$scope.videoURLs[i] || $scope.videoURLs[i] == "") {
-                window.alert("Wrong videoURLs[" + i + "]: Empty URL in a path of video!");
+            if (!$scope.streamURLs.video[i] || $scope.streamURLs.video[i] == "") {
+                window.alert("Wrong streamURLs.video[" + i + "]: Empty URL in a path of video!");
                 return false;
             }
-            if (!$scope.videoURLs[i] || $scope.videoURLs[i].slice(-4) !== ".mpd") {
-                window.alert("Wrong videoURLs[" + i + "]: Not a .mpd URL in a path of video!");
+            if (!$scope.streamURLs.video[i] || $scope.streamURLs.video[i].slice(-4) !== ".mpd") {
+                window.alert("Wrong streamURLs.video[" + i + "]: Not a .mpd URL in a path of video!");
                 return false;
             }
         }
 
         for (let i = 0; i < $scope.streamNum.audio; i++) {
-            if (!$scope.audioURLs[i] || $scope.audioURLs[i] == "") {
-                window.alert("Wrong audioURLs[" + i + "]: Empty URL in a path of audio!");
+            if (!$scope.streamURLs.audio[i] || $scope.streamURLs.audio[i] == "") {
+                window.alert("Wrong streamURLs.audio[" + i + "]: Empty URL in a path of audio!");
                 return false;
             }
-            if (!$scope.audioURLs[i] || $scope.audioURLs[i].slice(-4) !== ".mpd") {
-                window.alert("Wrong audioURLs[" + i + "]: Not a .mpd URL in a path of audio!");
+            if (!$scope.streamURLs.audio[i] || $scope.streamURLs.audio[i].slice(-4) !== ".mpd") {
+                window.alert("Wrong streamURLs.audio[" + i + "]: Not a .mpd URL in a path of audio!");
                 return false;
             }
         }
@@ -1428,39 +1319,47 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     // Triggered when mediaSoure is ready to open sources
     $scope.sourceOpen = function() {
 
-        for (let i = 0; i < $scope.streamNum.video; i++) {
-            $scope.fetchMpd($scope.videoURLs[i], (response) => {
-                $scope.requestList.push({
-                    urlType: $scope.TYPE_OF_MPD,
-                    contentType: "video",
-                    pathIndex: i,
-                    periodIndex: "-",
-                    adaptationSetIndex: "-",
-                    representationIndex: "-",
-                    segmentIndex: "-"
+        setTimeout(() => {
+            for (let i = 0; i < $scope.streamNum.video; i++) {
+                $scope.fetchMpd($scope.streamURLs.video[i], (response) => {
+                    $scope.requestList.push({
+                        urlType: $scope.TYPE_OF_MPD,
+                        contentType: "video",
+                        pathIndex: i,
+                        periodIndex: "-",
+                        adaptationSetIndex: "-",
+                        representationIndex: "-",
+                        segmentIndex: "-"
+                    });
+                    $scope.loadMpd(response, "video", i);
                 });
-                $scope.loadMpd(response, "video", i);
-            });
-        }
-
-        for (let i = 0; i < $scope.streamNum.audio; i++) {
-            $scope.fetchMpd($scope.audioURLs[i], (response) => {
-                $scope.requestList.push({
-                    urlType: $scope.TYPE_OF_MPD,
-                    contentType: "audio",
-                    pathIndex: i,
-                    periodIndex: "-",
-                    adaptationSetIndex: "-",
-                    representationIndex: "-",
-                    segmentIndex: "-"
+            }
+    
+            for (let i = 0; i < $scope.streamNum.audio; i++) {
+                $scope.fetchMpd($scope.streamURLs.audio[i], (response) => {
+                    $scope.requestList.push({
+                        urlType: $scope.TYPE_OF_MPD,
+                        contentType: "audio",
+                        pathIndex: i,
+                        periodIndex: "-",
+                        adaptationSetIndex: "-",
+                        representationIndex: "-",
+                        segmentIndex: "-"
+                    });
+                    $scope.loadMpd(response, "audio", i);
                 });
-                $scope.loadMpd(response, "audio", i);
-            });
-        }
+            }
 
-        if (!$scope.streamSourceBuffer) {
-            window.alert("All sources are unavaliable, please reload!")
-        }
+            // Add event listeners:  update playback time
+            $scope.streamElement.addEventListener($scope.EVENT_TIME_UPDATE, $scope.onPlaybackTimeUpdate);
+
+            // Add interval function: append buffers in intervals
+            $scope.intervalFunctions.push(setInterval($scope.appendBuffer, $scope.INTERVAL_OF_APPEND_BUFFER));
+
+            // Add interval function: update charts
+            $scope.intervalFunctions.push(setInterval($scope.updateCharts, $scope.INTERVAL_OF_UPDATE_CHARTS));
+
+        }, $scope.TIMEOUT_OF_SOURCE_OPEN);
 
     };
 
@@ -1488,7 +1387,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
         manifest = manifest.MPD;
 
-        var baseUrl = contentType == "video" ? $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.videoURLs[i]) : contentType == "audio" ? $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.audioURLs[i]) : NaN;
+        var baseUrl = $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.streamURLs[contentType][i]);
         manifest.baseUrl = baseUrl ? baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1) : NaN;
         if (!manifest.baseUrl || manifest.baseUrl == "") {
             window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No base URL available in the manifest!");
@@ -1639,8 +1538,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             }
             // Create and add track/bitrate/caption lists into control bar
             $scope.controllBar.onStreamActivated(contentType, i);
-            // Add eventListeners of control bar
-            $scope.streamElement.addEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
         } catch (e) {
             window.alert("Error when registerring " + contentType + " " + i + (e == "" ? e : ": " + e));
         }
@@ -1650,16 +1547,16 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     // Fetch the segments periodly if isFetchingSegment is false
     $scope.scheduleFetcher = function(contentType) {
         var bufferLevel = $scope.getBufferLevel(contentType);
-        if (!$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer) {
+        if (!$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer
+                && !isNaN($scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) 
+                && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
             // Adjust the streamInfo by ABR rules
             if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
                 $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo($scope.streamInfo[contentType], contentType);
             }
             // Fetch InitSegment and MediaSegment
             if ($scope.initCache[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex]) {
-                if (!isNaN($scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
-                    $scope.fetchSegment(contentType, $scope.TYPE_OF_MEDIA_SEGMENT);
-                }
+                $scope.fetchSegment(contentType, $scope.TYPE_OF_MEDIA_SEGMENT);
             } else {
                 $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
             }
@@ -1696,31 +1593,31 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     throw "No adaptation set is available in path " + i + ", period " + j + "!";
                 }
                 for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
+                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
                         $scope.streamBitrateLists[contentType][i][j][jj] = [];
                         $scope.initCache[contentType][i][j][jj] = [];
                         if (!manifest.Period[j].AdaptationSet[jj].Representation || manifest.Period[j].AdaptationSet[jj].Representation.length == 0) {
                             throw "No representation is available in path " + i + ", period " + j + ", adaptation set " + jj + "!";
                         }
                         for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
-                            let mimeFromMpd = manifest.Period[j].AdaptationSet[jj].Representation[jjj].mimeType;
-                            let codecsFromMpd = manifest.Period[j].AdaptationSet[jj].Representation[jjj].codecs;
+                            let mimeFromMpd = manifest.Period[j].AdaptationSet[jj].mimeType || manifest.Period[j].AdaptationSet[jj].Representation[jjj].mimeType;
+                            let codecsFromMpd = manifest.Period[j].AdaptationSet[jj].codecs || manifest.Period[j].AdaptationSet[jj].Representation[jjj].codecs;
                             if (mimeFromMpd && codecsFromMpd) {
                                 let mimeCodecsFromMpd = mimeFromMpd + ";codecs=\"" + codecsFromMpd + "\"";
                                 if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodecsFromMpd)) {
                                     $scope.streamBitrateLists[contentType][i][j][jj][jjj] = {
                                         // From Representration
-                                        id: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].id) ?
+                                        id: manifest.Period[j].AdaptationSet[jj].Representation[jjj].id != undefined ?
                                             manifest.Period[j].AdaptationSet[jj].Representation[jjj].id
                                             : NaN,
                                         mimeCodecs: mimeCodecsFromMpd,
-                                        bandwidth: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth) ?
+                                        bandwidth: manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth != undefined ?
                                             manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth
                                             : NaN,
-                                        width: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].width) ?
+                                        width: manifest.Period[j].AdaptationSet[jj].Representation[jjj].width != undefined ?
                                             manifest.Period[j].AdaptationSet[jj].Representation[jjj].width
                                             : NaN,
-                                        height: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].height) ?
+                                        height: manifest.Period[j].AdaptationSet[jj].Representation[jjj].height != undefined ?
                                             manifest.Period[j].AdaptationSet[jj].Representation[jjj].height
                                             : NaN,
                                         segmentNum: NaN,
@@ -1829,13 +1726,19 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                                         if (!isNaN(manifest.Period[j].duration)) {
                                             $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
                                         } else if (!isNaN(manifest.Period[j].start)) {
-                                            let temp = manifest.mediaPresentationDuration;
+                                            let end = manifest.mediaPresentationDuration;
                                             for (let k = 0; k < manifest.Period.length; k++) {
-                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < temp) {
-                                                    temp = manifest.Period[k].start;
+                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
+                                                    end = manifest.Period[k].start;
                                                 }
                                             }
-                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                        } else {
+                                            if (manifest.Period.length == 1) {
+                                                $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                            } else {
+                                                // TODO
+                                            }
                                         }
                                     }
                                     // Type 2: $Time$
@@ -1846,13 +1749,19 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                                         if (!isNaN(manifest.Period[j].duration)) {
                                             $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
                                         } else if (!isNaN(manifest.Period[j].start)) {
-                                            let temp = manifest.mediaPresentationDuration;
+                                            let end = manifest.mediaPresentationDuration;
                                             for (let k = 0; k < manifest.Period.length; k++) {
-                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < temp) {
-                                                    temp = manifest.Period[k].start;
+                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
+                                                    end = manifest.Period[k].start;
                                                 }
                                             }
-                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                        } else {
+                                            if (manifest.Period.length == 1) {
+                                                $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                            } else {
+                                                // TODO
+                                            }
                                         }
                                     }
                                 }
@@ -1873,28 +1782,28 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
         try {
             // Extract the current streamInfo
-            var tempStreamInfo = {};
+            var curStreamInfo = {};
             // baseUrl
             if (!manifest.baseUrl) {
                 throw "No base URL in the MPD of path " + i + "!";
             }
-            tempStreamInfo.baseUrl = manifest.baseUrl;
+            curStreamInfo.baseUrl = manifest.baseUrl;
             // pathIndex
-            tempStreamInfo.pathIndex = i;
+            curStreamInfo.pathIndex = i;
             // periodIndex
             if (!manifest.Period || manifest.Period.length == 0) {
                 throw "No period is available in path " + i + "!";
             }
             for (let j = 0; j < manifest.Period.length; j++) {
                 if ((manifest.Period[j].start != undefined && manifest.Period[j].start == 0) || (manifest.Period[j].start == undefined && manifest.Period[j].id != undefined && manifest.Period[j].id == 0) || (manifest.Period[j].start == undefined && manifest.Period[j].id == undefined)) {
-                    tempStreamInfo.periodIndex = j;
+                    curStreamInfo.periodIndex = j;
                     // adaptationSetIndex
                     if (!manifest.Period[j].AdaptationSet || manifest.Period[j].AdaptationSet.length == 0) {
                         throw "No adaptation set is available in path " + i + ", period " + j + "!";
                     }
                     for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
-                            tempStreamInfo.adaptationSetIndex = jj;
+                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
+                            curStreamInfo.adaptationSetIndex = jj;
                             // representationIndex
                             let firstsmall, secondsmall;
                             for (let jjj = 0; jjj < manifest.Period[j].AdaptationSet[jj].Representation.length; jjj++) {
@@ -1922,24 +1831,24 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                             }
                             if ($scope.lifeSignalEnabled && secondsmall) {
                                 if ($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs) {
-                                    tempStreamInfo.representationIndex = secondsmall.key;
+                                    curStreamInfo.representationIndex = secondsmall.key;
                                     // segmentIndex
-                                    tempStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber : 1;
+                                    curStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber : 1;
                                     // lastSegmentIndex
-                                    tempStreamInfo.lastSegmentIndex = NaN;
+                                    curStreamInfo.lastSegmentIndex = NaN;
                                     // mimeCodecs
-                                    tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs;
+                                    curStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs;
                                     break;
                                 }
                             } else if (firstsmall) {
                                 if ($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs) {
-                                    tempStreamInfo.representationIndex = firstsmall.key;
+                                    curStreamInfo.representationIndex = firstsmall.key;
                                     // segmentIndex
-                                    tempStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber : 1;
+                                    curStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber : 1;
                                     // lastSegmentIndex
-                                    tempStreamInfo.lastSegmentIndex = NaN;
+                                    curStreamInfo.lastSegmentIndex = NaN;
                                     // mimeCodecs
-                                    tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs;
+                                    curStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs;
                                     break;
                                 }
                             }
@@ -1955,10 +1864,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 }
             }
 
-            // Create SourceBuffer and initialize settings and parameters
             if ($scope.streamSourceBuffer[contentType]) {
                 throw "The registeration of path " + i + " is aborted by the existing SourceBuffer!";
             }
+
+            // Initialize settings and parameters
+            $scope.streamInfo[contentType] = curStreamInfo;
             if (!$scope.streamDuration) {
                 $scope.streamDuration = manifest.mediaPresentationDuration;
             }
@@ -1969,18 +1880,30 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default
             $scope.isFetchingSegment[contentType] = false;
             $scope.isSeeking = false;
-            $scope.streamInfo[contentType] = tempStreamInfo;
+
+            // Create SourceBuffer
             try {
-                $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer($scope.streamInfo[contentType].mimeCodecs);
+                $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer(curStreamInfo.mimeCodecs);
+                $scope.mediaSource.duration = $scope.streamDuration;
             } catch (e) {
                 throw "SourceBuffer is not initialized: " + e;
             }
+
+            // Set the startup time of the player
             $scope.startupTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000));
             $scope.startupTimeFormatted = $scope.startupTime.toLocaleString();
-            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener(contentType));
+
+            // Add event listeners:  1. append buffers from listeners   2. update buffer levels
+            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
             $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
-            $scope.intervalFunctions.push(setInterval($scope.appendBufferFromInterval, $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL));
-            $scope.mediaSource.duration = $scope.streamDuration;
+
+            // Initialize charts
+            $scope.chartState["bufferLevel"][contentType] = {
+                data: [],
+                color: $scope.chartColor[contentType == "video" ? 0 : 1],
+                label: contentType
+            };
+            $scope.initChartingByMediaType(contentType, "bufferLevel");
 
             return "SUCCESS";
         } catch (e) {
@@ -1994,6 +1917,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             $scope.controllBar.onBufferLevelUpdated();
         }
     };
+
+    $scope.onPlaybackTimeUpdate = function () {
+        if ($scope.controllBar && $scope.controllBar.onPlaybackTimeUpdate) {
+            $scope.controllBar.onPlaybackTimeUpdate();
+        }
+    }
 
     // Run when the segment need to be fetched from servers
     $scope.fetchSegment = function(contentType, urlType) {
@@ -2067,20 +1996,20 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             // Judge if continue, jump into the next period or end the stream
             if ($scope.streamInfo[contentType].segmentIndex > $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum + $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber - 1) {
                 let curPeriodIndex = $scope.streamInfo[contentType].periodIndex;
-                let temp = {
+                let periodEnd = {
                     value: $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].mediaPresentationDuration,
                     index: -1
                 };
                 for (let i = 0; i < $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period.length; i++) {
-                    if ($scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start != undefined && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start > $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[curPeriodIndex].start && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start < temp.value) {
-                        temp.value = $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start;
-                        temp.index = i;
+                    if ($scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start != undefined && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start > $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[curPeriodIndex].start && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start < periodEnd.value) {
+                        periodEnd.value = $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].start;
+                        periodEnd.index = i;
                     } else if ($scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].id != undefined && $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[i].id == $scope.streamMpds[contentType][$scope.streamInfo[contentType].pathIndex].Period[curPeriodIndex].id + 1) {
-                        temp.index = i;
+                        periodEnd.index = i;
                     }
                 }
-                if (temp.index != -1) {
-                    $scope.streamInfo[contentType].periodIndex = temp.index;
+                if (periodEnd.index != -1) {
+                    $scope.streamInfo[contentType].periodIndex = periodEnd.index;
                     $scope.streamInfo[contentType].segmentIndex = $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber;
                 }
             }
@@ -2125,7 +2054,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
+                    while (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
                         tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     }
                     return url + tempUrlExtend;
@@ -2151,21 +2080,19 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
+                    while (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
                         tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     }
                     // Type 1: $Number$ / $Number%xxd$
-                    if (tempUrlExtend.indexOf("$Number") != -1) {
-                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Number"), tempUrlExtend.lastIndexOf("$") + 1);
+                    while (tempUrlExtend.indexOf("$Number") != -1) {
+                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Number"), tempUrlExtend.indexOf("$", tempUrlExtend.indexOf("$Number") + 1) + 1);
+                        tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
                     }
                     // Type 2: $Time$
-                    else if (tempUrlExtend.indexOf("$Time") != -1) {
-                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Time"), tempUrlExtend.lastIndexOf("$") + 1);
+                    while (tempUrlExtend.indexOf("$Time") != -1) {
+                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Time"), tempUrlExtend.indexOf("$", tempUrlExtend.indexOf("$Time") + 1) + 1);
+                        tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
                     }
-                    else {
-                        throw "Wrong placeholder of segment number!";
-                    }
-                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
                     return url + tempUrlExtend;
                 } catch (e) {
                     window.alert("Error when resolving URL of MediaSegment: " + e);
@@ -2178,23 +2105,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
     };
 
-    // Triggered when updateend event happens
-    $scope.appendBufferFromListener = function(contentType) {
-        if ($scope.streamSourceBuffer[contentType].updating) {
-            return;
-        }
-        if ($scope.streamBufferToAppend[contentType].length > 0) {
-            let buffer = $scope.streamBufferToAppend[contentType].shift();
-            if ($scope.streamSourceBufferMimeCodecs[contentType] != buffer.mimeCodecs) {
-                $scope.streamSourceBuffer[contentType].changeType(buffer.mimeCodecs);
-            }
-            $scope.streamSourceBufferMimeCodecs[contentType] = buffer.mimeCodecs;
-            $scope.streamSourceBuffer[contentType].appendBuffer(buffer.content);
-        }
-    }
-
-    // Periodly check and append buffers
-    $scope.appendBufferFromInterval = function() {
+    // Periodly check and append buffers, or triggered when updateend event happens
+    $scope.appendBuffer = function() {
         if ($scope.streamSourceBuffer['video'] && !$scope.streamSourceBuffer['video'].updating && $scope.streamBufferToAppend['video'].length > 0) {
             let buffer = $scope.streamBufferToAppend['video'].shift();
             if ($scope.streamSourceBufferMimeCodecs['video'] != buffer.mimeCodecs) {
@@ -2233,9 +2145,21 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 noFile(xhr.status);
                 xhr.onreadystatechange = null;
             }
+        };
+        xhr.onprogress = function () {
+            console.log("DDDDDDDDDDD: " + xhr.status + " ------- " + (xhr.response ? xhr.response.byteLength : ""));
         }
         xhr.send();
 
+    };
+
+    $scope.convertToTimeCode = function (value) {
+        value = Math.max(value, 0);
+
+        let h = Math.floor(value / 3600);
+        let m = Math.floor((value % 3600) / 60);
+        let s = Math.floor((value % 3600) % 60);
+        return (h === 0 ? '' : (h < 10 ? '0' + h.toString() + ':' : h.toString() + ':')) + (m < 10 ? '0' + m.toString() : m.toString()) + ':' + (s < 10 ? '0' + s.toString() : s.toString());
     };
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -2282,8 +2206,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         for (let i = 0; i <= $scope.playerNum; i++) {
             if ($scope.players[i]) {
                 // Calculate bufferLength, averageThroughput, timeline, loadedTimeline and downloadingQuality for each path by APIs
-                $scope.playerBufferLength[i] = $scope.players[i].getBufferLength(i == $scope.playerNum ? "audio" : "video");
-                $scope.playerBufferLength[i] = $scope.playerBufferLength[i] > 0 ? $scope.playerBufferLength[i] : 0;
+                $scope.monitorBufferLevel[i] = $scope.players[i].getBufferLength(i == $scope.playerNum ? "audio" : "video");
+                $scope.monitorBufferLevel[i] = $scope.monitorBufferLevel[i] > 0 ? $scope.monitorBufferLevel[i] : 0;
                 $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput(i == $scope.playerNum ? "audio" : "video");
                 $scope.playerTime[i] = $scope.players[i].isDynamic() ? $scope.players[i].getVideoElement().currentTime : $scope.players[i].time();
                 $scope.loadedTime[i] = $scope.requestList.length > 0 ? $scope.requestList[$scope.requestList.length - 1].request.mediaStartTime + $scope.requestList[$scope.requestList.length - 1].request._mediaduration : NaN;
@@ -2304,13 +2228,13 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 // Push stats in the table
                 $scope.stats.push({
                     playerid : i == $scope.playerNum ? "audio" : "video " + (i + 1),
-                    bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
+                    bufferlevel : $scope.monitorBufferLevel[i].toFixed(2) + " s",
                     throughput : ($scope.playerAverageThroughput[i] / 1000).toFixed(0)+ " kbps",
                     time : $scope.playerTime[i].toFixed(2) + " s",
                     loadedtime : $scope.loadedTime[i].toFixed(2) + " s",
                     downloadingQuality : $scope.playerDownloadingQuality[i].toFixed(0),
                     playbackQuality: $scope.playerPlaybackQuality[i].toFixed(0),
-                    totaltime : ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s",
+                    totaltime : ($scope.monitorBufferLevel[i] + $scope.playerTime[i]).toFixed(2) + " s",
                     playerCatchUp : ($scope.playerCatchUp[i] ? "Catching up" : "Synchronizing"),
                     playerRTT : $scope.playerRTT[i].toFixed(1) + " ms"
                 });
