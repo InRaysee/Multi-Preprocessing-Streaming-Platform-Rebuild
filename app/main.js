@@ -7,13 +7,13 @@ TODOs:
     [x] 1.3. HighestBitrateRule.
     [x] 1.4. LowestBitrateRule.
     [x] 1.5. GlobalSwitchRule.
-  [ ] 2. Path switching.
-  [ ] 3. Reload.
+  [x] 2. Path switching.
+  [x] 3. Reload.
   [ ] 4. Forced switch quality.
   [ ] 5. Multiple stream URLs.
-  [ ] 6. Data monitors, figures and stats.
+  [-] 6. Data monitors, figures and stats.
   [ ] 7. Module spliting.
-  [ ] 8. Multiple periods and different segment indexs.
+  [x] 8. Multiple periods and different segment indexs.
   [ ] 9. Live mode with catchup.
   [ ] 10. VR mode.
 */
@@ -60,6 +60,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         globalSwitchRule: new GlobalSwitchRuleClass()
     };
 
+    $scope.intervalFunctions = [];  // Container for all interval functions
+
     $scope.mediaSource = null;  // Container for the MediaSource object
     $scope.streamElement = null;  // Container for video element in HTML page
     $scope.controllBar = null;  // Container for video control bar
@@ -71,15 +73,10 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         video: [],
         audio: []
     };
-    $scope.initCache = {  // Cache of init segments loaded
+    $scope.initCache = {  // Caches of init segments loaded
         video: [],
         audio: []
     };
-
-    $scope.streamNum = {  // Number of paths for fetching streams
-        video: 6,
-        audio: 1
-    }
     $scope.streamMpds = {  // Arrays of MPDs
         video: [],
         audio: []
@@ -88,6 +85,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         video: [],
         audio: []
     };
+    $scope.requestList = [];  // Data from all HTTPRequests
 
     $scope.streamInfo = {  // Information of streams selected
         video: {
@@ -111,6 +109,10 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             lastSegmentIndex: NaN
         }
     };
+    $scope.streamSourceBufferMimeCodecs = {  // Containers for SourceBuffers' mimeCodecs
+        video: NaN,
+        audio: NaN
+    };
 
     $scope.streamDuration = NaN;  // Total duration of the stream
     $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
@@ -126,55 +128,32 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         video: NaN,
         audio: NaN
     };
-    $scope.isSeeking = NaN;
+    $scope.isSeeking = NaN;  // Flag for identifying if seeking the segment
+    $scope.startupTime = 0;  // Startup time of streaming
+    $scope.startupTimeFormatted = null;  // Formatted startup time of streaming
 
+    $scope.streamNum = {  // Number of paths for fetching streams
+        video: 6,
+        audio: 1
+    }
+    $scope.optionButton = "Show Options";  // Save the state of option button
+    $scope.selectedRule = "myBufferRule";  // Save the selected ABR strategy
+    $scope.selectedMode = 'Multi-Path';  // Save the selected mode
     $scope.targetBuffer = 2;  // The buffer level desired to be fetched
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
     };
-/////////////////////////////////////////////////////////////////////////////////////
+    $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
 
-    //// Global variables (containers: cannot adjust mannually)
-
-    $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
-    $scope.startupTime = 0;  // Startup time of streaming
-    $scope.startupTimeFormatted = null;  // Formatted startup time of streaming
-    $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
-    $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
-    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
-    $scope.playerBufferLength = [];  // Data from monitor
-    $scope.playerAverageThroughput = [];  // Data from monitor
-    $scope.playerTime = [];  // Data from monitor
-    $scope.loadedTime = [];  // Data from monitor
-    $scope.playerDownloadingQuality = [];  // Data from monitor
-    $scope.playerPlaybackQuality = [];  // Data from monitor
-    $scope.playerPastDownloadingQuality = [];  // Data from monitor's playerDownloadingQuality
-    $scope.playerCatchUp = [];  // Data from playback controller
-    $scope.playerRTT = [];  // Data from monitor
-    $scope.playerBitrateList = [];  // Data from bitrate list
-    $scope.requestList = [];  // Data from all HTTPRequests
-    $scope.requestListLength = 0;  // Data from all HTTPRequests
-
-
-    //// Global variables (private: only adjust in codes)
-
-    $scope.IntervalOfSetNormalizedTime = 10;  // [For setting interval] Set the fastest mediaplayer's timeline as the normalized time
-    $scope.IntervalOfComputetotalThroughput = 1000;  // [For setting interval] Compute total throughput according to recent HTTP requests
-    $scope.IntervalOfComputeQoE = 1000;  // [For setting interval] Compute QoE
-    $scope.IntervalOfUpdateStats = 100;  // [For setting interval] Show the data in monitor
-    $scope.IntervalOfUpdateFigures = 500;  // [For setting interval] Show the data in figures
-    $scope.IntervalOfUpdateRequestsFigures = 100;  // [For setting interval] Show the requests data in figures
-    $scope.IntervalOfCaptures = 100;  // [For setting interval] Capture the pictures from mediaplayers
-    $scope.GET_SAMPLE_WINDOW_SIZE_FOR_RTT = 5;  // Set up the window size for calculating RTT
-    $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
-    $scope.requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
-    $scope.lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
-    $scope.qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
     $scope.availableStreams = [  // All the available preset media sources
         {
-            name:"VOD (Akamai BBB)",
+            name:"VOD (Akamai BBB $Number$)",
             url:"https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
+        },
+        {
+            name:"VOD (Elephant Dream $Time$)",
+            url:"https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/MultiResMPEG2.mpd"
         },
         {
             name:"VOD (Captions by WebVTT)",
@@ -182,7 +161,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         },
         {
             name:"VOD (Multi periods)",
-            url:"https://media.axprod.net/TestVectors/v8-MultiContent/Clear/Manifest.mpd"
+            url:"https://dash.akamaized.net/dash264/TestCases/5a/nomor/1.mpd"
         },
         {
             name:"VOD (Local CMPVP907)",
@@ -543,19 +522,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             name:"CUSTOM"
         }
     ];
-
-
-    //// Global variables (public: adjust by users)
-
-    $scope.optionButton = "Show Options";  // Save the state of option button
-    $scope.selectedRule = "myBufferRule";  // Save the selected ABR strategy
-    $scope.selectedMode = 'Multi-Path';  // Save the selected mode
-    $scope.targetLatency = 10;  // The live delay allowed
-    $scope.minDrift = 0.02;  // The minimal latency deviation allowed
-    $scope.maxDrift = 3;  // The maximal latency deviation allowed
-    $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
-    $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
-    $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
     $scope.videoURLs = [  // Save the selected media source
         "http://localhost:8080/apple/v9/stream.mpd",
         "http://localhost:8080/apple/v9/stream.mpd",
@@ -567,6 +533,46 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.audioURLs = [  // Save the selected media source
         "http://localhost:8080/apple/v9/stream.mpd"
     ];
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+    //// Global variables (containers: cannot adjust mannually)
+
+    $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
+    $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
+    $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
+    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
+    $scope.playerBufferLength = [];  // Data from monitor
+    $scope.playerAverageThroughput = [];  // Data from monitor
+    $scope.playerTime = [];  // Data from monitor
+    $scope.loadedTime = [];  // Data from monitor
+    $scope.playerDownloadingQuality = [];  // Data from monitor
+    $scope.playerPlaybackQuality = [];  // Data from monitor
+    $scope.playerPastDownloadingQuality = [];  // Data from monitor's playerDownloadingQuality
+    $scope.playerCatchUp = [];  // Data from playback controller
+    $scope.playerRTT = [];  // Data from monitor
+    $scope.requestListLength = 0;  // Data from all HTTPRequests
+
+
+    //// Global variables (private: only adjust in codes)
+
+    $scope.IntervalOfSetNormalizedTime = 10;  // [For setting interval] Set the fastest mediaplayer's timeline as the normalized time
+    $scope.IntervalOfComputetotalThroughput = 1000;  // [For setting interval] Compute total throughput according to recent HTTP requests
+    $scope.IntervalOfComputeQoE = 1000;  // [For setting interval] Compute QoE
+    $scope.IntervalOfUpdateStats = 100;  // [For setting interval] Show the data in monitor
+    $scope.IntervalOfUpdateFigures = 500;  // [For setting interval] Show the data in figures
+    $scope.IntervalOfUpdateRequestsFigures = 100;  // [For setting interval] Show the requests data in figures
+    $scope.GET_SAMPLE_WINDOW_SIZE_FOR_RTT = 5;  // Set up the window size for calculating RTT
+
+
+    //// Global variables (public: adjust by users)
+
+
+    $scope.targetLatency = 10;  // The live delay allowed
+    $scope.minDrift = 0.02;  // The minimal latency deviation allowed
+    $scope.maxDrift = 3;  // The maximal latency deviation allowed
+    $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
+    $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
 
 
     //// Global variables (stat & chart related)
@@ -916,15 +922,15 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     for (let i = 0; i < $scope.streamNum.video; i++) {
                         if ($scope.videoURLs[i] != "") {
                             for (let j = 0; j < $scope.streamNum.video; j++) {
-                                if (i != j) {
-                                    $scope.videoURLs[j] = $scope.videoURLs[i];
-                                }
+                                $scope.videoURLs[j] = $scope.videoURLs[i];
+                            }
+                            for (let j = 0; j < $scope.streamNum.audio; j++) {
+                                $scope.audioURLs[j] = $scope.audioURLs[i];
                             }
                             return;
                         }
                     }
-                } else {
-                    if (item.name == "CUSTOM") {
+                } else if (item.name == "CUSTOM") {
                         $scope.videoURLs[0] = "";
                         $scope.videoURLs[1] = "";
                         $scope.videoURLs[2] = "";
@@ -932,24 +938,23 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         $scope.videoURLs[4] = "";
                         $scope.videoURLs[5] = "";
                         $scope.audioURLs[0] = "";
+                } else {
+                    if (item.url) {
+                        $scope.videoURLs[0] = item.url;
+                        $scope.videoURLs[1] = item.url;
+                        $scope.videoURLs[2] = item.url;
+                        $scope.videoURLs[3] = item.url;
+                        $scope.videoURLs[4] = item.url;
+                        $scope.videoURLs[5] = item.url;
+                        $scope.audioURLs[0] = item.url;
                     } else {
-                        if (item.url) {
-                            $scope.videoURLs[0] = item.url;
-                            $scope.videoURLs[1] = item.url;
-                            $scope.videoURLs[2] = item.url;
-                            $scope.videoURLs[3] = item.url;
-                            $scope.videoURLs[4] = item.url;
-                            $scope.videoURLs[5] = item.url;
-                            $scope.audioURLs[0] = item.url;
-                        } else {
-                            $scope.videoURLs[0] = item.urls[0];
-                            $scope.videoURLs[1] = item.urls[1];
-                            $scope.videoURLs[2] = item.urls[2];
-                            $scope.videoURLs[3] = item.urls[3];
-                            $scope.videoURLs[4] = item.urls[4];
-                            $scope.videoURLs[5] = item.urls[5];
-                            $scope.audioURLs[0] = item.urls[6];
-                        }
+                        $scope.videoURLs[0] = item.urls[0];
+                        $scope.videoURLs[1] = item.urls[1];
+                        $scope.videoURLs[2] = item.urls[2];
+                        $scope.videoURLs[3] = item.urls[3];
+                        $scope.videoURLs[4] = item.urls[4];
+                        $scope.videoURLs[5] = item.urls[5];
+                        $scope.audioURLs[0] = item.urls[6];
                     }
                 }
                 break;
@@ -1232,13 +1237,16 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     };
 
 
+/////////////////////////////////////////////////////////////////////////////////////
+
     //// Functions: media players
 
-/////////////////////////////////////////////////////////////////////////////////////
     // Loading streams
     $scope.loadStream = function() {
 
-        document.getElementById( "MultiPathMode" ).disabled = "true";
+        document.getElementById("Load").style.display = "none";
+        document.getElementById("Reload").style.display = "inline-block";
+        document.getElementById("MultiPathMode").disabled = "true";
         switch ($scope.selectedMode) {
             case 'Multi-Path':
                 $scope.mse_init();
@@ -1246,6 +1254,107 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             default:
                 break;
         }
+
+    };
+
+    // Reloading streams
+    $scope.reloadStream = function() {
+
+        for (let i = 0; i < $scope.intervalFunctions.length; i++) {
+            clearInterval($scope.intervalFunctions[i]);
+        }
+        $scope.intervalFunctions = [];
+
+        $scope.streamBufferToAppend = {
+            video: [],
+            audio: []
+        };
+        $scope.initCache = {
+            video: [],
+            audio: []
+        };
+        $scope.streamMpds = {
+            video: [],
+            audio: []
+        };
+        $scope.streamBitrateLists = {
+            video: [],
+            audio: []
+        };
+        $scope.requestList = [];
+
+        $scope.streamInfo = {
+            video: {
+                pathIndex: NaN,
+                periodIndex: NaN,
+                adaptationSetIndex: NaN,
+                representationIndex: NaN,
+                segmentIndex: NaN,
+                baseUrl: NaN,
+                mimeCodecs: NaN,
+                lastSegmentIndex: NaN
+            },
+            audio: {
+                pathIndex: NaN,
+                periodIndex: NaN,
+                adaptationSetIndex: NaN,
+                representationIndex: NaN,
+                segmentIndex: NaN,
+                baseUrl: NaN,
+                mimeCodecs: NaN,
+                lastSegmentIndex: NaN
+            }
+        };
+        $scope.streamSourceBufferMimeCodecs = {
+            video: NaN,
+            audio: NaN
+        };
+
+        $scope.streamDuration = NaN;
+        $scope.streamIsDynamic = NaN;
+        $scope.autoSwitchTrack = {
+            video: NaN,
+            audio: NaN
+        };
+        $scope.autoSwitchBitrate = {
+            video: NaN,
+            audio: NaN
+        };
+        $scope.isFetchingSegment = {
+            video: NaN,
+            audio: NaN
+        };
+        $scope.isSeeking = NaN;
+
+        if ($scope.streamSourceBuffer["video"]) {
+            $scope.streamSourceBuffer["video"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener);
+            $scope.streamSourceBuffer["video"].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
+            $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer["video"]);
+        }
+        if ($scope.streamSourceBuffer["audio"]) {
+            $scope.streamSourceBuffer["audio"].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener);
+            $scope.streamSourceBuffer["audio"].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
+            $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer["audio"]);
+        }
+        $scope.streamSourceBuffer = {
+            video: null,
+            audio: null
+        };
+
+        $scope.streamElement.removeEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
+        $scope.streamElement.src = "";
+        $scope.streamElement = null;
+
+        $scope.mediaSource.removeEventListener('sourceopen', $scope.sourceOpen);
+        // $scope.mediaSource.endOfStream();
+        $scope.mediaSource = null;
+
+        $scope.controllBar.destroy();
+        $scope.controllBar = null;
+
+        $scope.clearchartData();
+        
+        $scope.mse_init();
 
     };
 
@@ -1519,7 +1628,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 }
                 // Fetch the first init segment and the first media segment
                 $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
-                setInterval($scope.scheduleFetcher.bind(this, contentType), $scope.INTERVAL_OF_SCHEDULE_FETCHER);
+                $scope.intervalFunctions.push(setInterval($scope.scheduleFetcher.bind(this, contentType), $scope.INTERVAL_OF_SCHEDULE_FETCHER));
             }
 
             // Create and initialize control bar
@@ -1542,9 +1651,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.scheduleFetcher = function(contentType) {
         var bufferLevel = $scope.getBufferLevel(contentType);
         if (!$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer) {
+            // Adjust the streamInfo by ABR rules
             if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
                 $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo($scope.streamInfo[contentType], contentType);
             }
+            // Fetch InitSegment and MediaSegment
             if ($scope.initCache[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex]) {
                 if (!isNaN($scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateLists[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
                     $scope.fetchSegment(contentType, $scope.TYPE_OF_MEDIA_SEGMENT);
@@ -1585,7 +1696,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     throw "No adaptation set is available in path " + i + ", period " + j + "!";
                 }
                 for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType) {
+                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
                         $scope.streamBitrateLists[contentType][i][j][jj] = [];
                         $scope.initCache[contentType][i][j][jj] = [];
                         if (!manifest.Period[j].AdaptationSet[jj].Representation || manifest.Period[j].AdaptationSet[jj].Representation.length == 0) {
@@ -1598,28 +1709,150 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                                 let mimeCodecsFromMpd = mimeFromMpd + ";codecs=\"" + codecsFromMpd + "\"";
                                 if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodecsFromMpd)) {
                                     $scope.streamBitrateLists[contentType][i][j][jj][jjj] = {
-                                        id: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].id) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].id : NaN,
+                                        // From Representration
+                                        id: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].id) ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].id
+                                            : NaN,
                                         mimeCodecs: mimeCodecsFromMpd,
-                                        bandwidth: manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth : NaN,
-                                        duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration / 1000000 : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].duration / 1000000 : NaN,
-                                        initialization: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].initialization : NaN,
-                                        media: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media : NaN : manifest.Period[j].AdaptationSet[jj].Representation[jjj].media ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].media : NaN,
-                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ? !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber : NaN : !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].startNumber : NaN,
-                                        width: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].width) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].width : NaN,
-                                        height: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].height) ? manifest.Period[j].AdaptationSet[jj].Representation[jjj].height : NaN,
-                                        segmentNum: NaN
+                                        bandwidth: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth) ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].bandwidth
+                                            : NaN,
+                                        width: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].width) ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].width
+                                            : NaN,
+                                        height: !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].height) ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].height
+                                            : NaN,
+                                        segmentNum: NaN,
+                                        // From SegmentTemplate
+                                        duration: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration) ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].duration
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].duration) ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].duration
+                                                    : NaN
+                                                :NaN,
+                                        timescale: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].timescale) ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].timescale
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].timescale) ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].timescale
+                                                    : NaN
+                                                :NaN,
+                                        initialization: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].initialization
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].initialization ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].initialization
+                                                    : NaN
+                                                :NaN,
+                                        media: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].media
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].media ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].media
+                                                    : NaN
+                                                :NaN,
+                                        startNumber: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber) ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].startNumber
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].startNumber) ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].startNumber
+                                                    : NaN
+                                                :NaN,
+                                        // From SegmentTimeline of SegmentTemplate
+                                        d: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                    !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].d) ?
+                                                        manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].d
+                                                        : NaN
+                                                    : NaN
+                                                : NaN 
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                        !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].d) ?
+                                                            manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].d
+                                                            : NaN
+                                                        : NaN
+                                                    : NaN
+                                                : NaN,
+                                        r: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                    !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].r) ?
+                                                        manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].r
+                                                        : NaN
+                                                    : NaN
+                                                : NaN 
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                        !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].r) ?
+                                                            manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].r
+                                                            : NaN
+                                                        : NaN
+                                                    : NaN
+                                                : NaN,
+                                        t: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                    !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].t) ?
+                                                        manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline[0].S[0].t
+                                                        : 0
+                                                    : 0
+                                                : NaN 
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S ?
+                                                        !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].t) ?
+                                                            manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].SegmentTimeline[0].S[0].t
+                                                            : 0
+                                                        : 0
+                                                    : NaN
+                                                : NaN,
                                     };
-                                    if ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration) {
-                                        if (manifest.Period[j].duration) {
-                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
-                                        } else if (manifest.Period[j].start != undefined) {
+                                    // Get segmentNum
+                                    // Type 1: $Number$
+                                    if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration) && !isNaN($scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale)) {
+                                        if (!isNaN(manifest.Period[j].duration)) {
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                        } else if (!isNaN(manifest.Period[j].start)) {
                                             let temp = manifest.mediaPresentationDuration;
                                             for (let k = 0; k < manifest.Period.length; k++) {
                                                 if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < temp) {
                                                     temp = manifest.Period[k].start;
                                                 }
                                             }
-                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / $scope.streamBitrateLists[contentType][i][j][jj][jjj].duration);
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].duration / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                        }
+                                    }
+                                    // Type 2: $Time$
+                                    else if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][jjj].r) && $scope.streamBitrateLists[contentType][i][j][jj][jjj].r != -1) {
+                                        $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = $scope.streamBitrateLists[contentType][i][j][jj][jjj].r;
+                                    }
+                                    else if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][jjj].d) && !isNaN($scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale)) {
+                                        if (!isNaN(manifest.Period[j].duration)) {
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
+                                        } else if (!isNaN(manifest.Period[j].start)) {
+                                            let temp = manifest.mediaPresentationDuration;
+                                            for (let k = 0; k < manifest.Period.length; k++) {
+                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < temp) {
+                                                    temp = manifest.Period[k].start;
+                                                }
+                                            }
+                                            $scope.streamBitrateLists[contentType][i][j][jj][jjj].segmentNum = Math.ceil((temp - manifest.Period[j].start) / ($scope.streamBitrateLists[contentType][i][j][jj][jjj].d / $scope.streamBitrateLists[contentType][i][j][jj][jjj].timescale));
                                         }
                                     }
                                 }
@@ -1660,7 +1893,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         throw "No adaptation set is available in path " + i + ", period " + j + "!";
                     }
                     for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType && manifest.Period[j].AdaptationSet[jj].Representation != undefined) {
+                        if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
                             tempStreamInfo.adaptationSetIndex = jj;
                             // representationIndex
                             let firstsmall, secondsmall;
@@ -1688,25 +1921,25 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                                 }
                             }
                             if ($scope.lifeSignalEnabled && secondsmall) {
-                                if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber) && $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration) {
+                                if ($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs) {
                                     tempStreamInfo.representationIndex = secondsmall.key;
                                     // segmentIndex
-                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber;
+                                    tempStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].startNumber : 1;
+                                    // lastSegmentIndex
+                                    tempStreamInfo.lastSegmentIndex = NaN;
                                     // mimeCodecs
                                     tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][secondsmall.key].mimeCodecs;
-                                    // duration
-                                    tempStreamInfo.duration = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration;
                                     break;
                                 }
                             } else if (firstsmall) {
-                                if (!isNaN($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber) && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs && $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration) {
+                                if ($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs) {
                                     tempStreamInfo.representationIndex = firstsmall.key;
                                     // segmentIndex
-                                    tempStreamInfo.segmentIndex = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber;
+                                    tempStreamInfo.segmentIndex = !isNaN($scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber) ? $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].startNumber : 1;
+                                    // lastSegmentIndex
+                                    tempStreamInfo.lastSegmentIndex = NaN;
                                     // mimeCodecs
                                     tempStreamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].mimeCodecs;
-                                    // duration
-                                    tempStreamInfo.duration = $scope.streamBitrateLists[contentType][i][j][jj][firstsmall.key].duration;
                                     break;
                                 }
                             }
@@ -1737,7 +1970,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             $scope.isFetchingSegment[contentType] = false;
             $scope.isSeeking = false;
             $scope.streamInfo[contentType] = tempStreamInfo;
-            $scope.streamInfo[contentType].mimeCodecs = $scope.streamBitrateLists[contentType][i][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].mimeCodecs;
             try {
                 $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer($scope.streamInfo[contentType].mimeCodecs);
             } catch (e) {
@@ -1746,12 +1978,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             $scope.startupTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000));
             $scope.startupTimeFormatted = $scope.startupTime.toLocaleString();
             $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBufferFromListener(contentType));
-            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, () => {
-                if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
-                    $scope.controllBar.onBufferLevelUpdated();
-                }
-            });
-            setInterval($scope.appendBufferFromInterval, $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL);
+            $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
+            $scope.intervalFunctions.push(setInterval($scope.appendBufferFromInterval, $scope.INTERVAL_OF_APPEND_BUFFER_FROM_INTERVAL));
             $scope.mediaSource.duration = $scope.streamDuration;
 
             return "SUCCESS";
@@ -1759,6 +1987,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             return "registerFirstStreamInfo: " + e;
         }
 
+    };
+
+    $scope.onBufferLevelUpdated = function () {
+        if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
+            $scope.controllBar.onBufferLevelUpdated();
+        }
     };
 
     // Run when the segment need to be fetched from servers
@@ -1771,7 +2005,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             representationIndex: $scope.streamInfo[contentType].representationIndex,
             segmentIndex: $scope.streamInfo[contentType].segmentIndex,
             baseUrl: $scope.streamInfo[contentType].baseUrl,
-            mimeCodecs: $scope.streamInfo[contentType].mimeCodecs
+            mimeCodecs: $scope.streamInfo[contentType].mimeCodecs,
+            lastSegmentIndex: $scope.streamInfo[contentType].mimeCodecs
         };
         if (urlType == $scope.TYPE_OF_INIT_SEGMENT && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
             console.log("Init segment of " + contentType + " " + curStreamInfo.pathIndex + " period " + curStreamInfo.periodIndex + " adaptationSet " + curStreamInfo.adaptationSetIndex + " representation " + curStreamInfo.representationIndex + " is in the initCache!");
@@ -1780,6 +2015,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
         var paramForResolveUrl = {
             id: $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].id,
+            t: $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].t,
+            d: $scope.streamBitrateLists[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].d,
             segmentIndex: curStreamInfo.segmentIndex
         };
         var url = curStreamInfo.baseUrl;
@@ -1815,9 +2052,15 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     // Load segments from responses and append to queue
     $scope.loadSegment = function(buffer, contentType, curStreamInfo, urlType) {
 
-        $scope.streamBufferToAppend[contentType].push(buffer);
+        $scope.streamBufferToAppend[contentType].push({
+            content: buffer,
+            mimeCodecs: curStreamInfo.mimeCodecs
+        });
         if (urlType == $scope.TYPE_OF_INIT_SEGMENT) {  // Save in the cache if InitSegment
-            $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = buffer;
+            $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = {
+                content: buffer,
+                mimeCodecs: curStreamInfo.mimeCodecs
+            };
         } else if (urlType == $scope.TYPE_OF_MEDIA_SEGMENT) {    // Add buffered time if MediaSegment
             $scope.streamInfo[contentType].lastSegmentIndex = $scope.streamInfo[contentType].segmentIndex;
             $scope.streamInfo[contentType].segmentIndex++;
@@ -1882,10 +2125,9 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) == -1) {
-                        throw "Wrong placeholder of representation ID!";
+                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
+                        tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     }
-                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     return url + tempUrlExtend;
                 } catch (e) {
                     window.alert("Error when resolving URL of InitSegment: " + e);
@@ -1893,12 +2135,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 }
             case $scope.TYPE_OF_MEDIA_SEGMENT:
                 try {
-                    let numberMatcher = function (num, lenstr) {
+                    let numberMatcher = function (param, lenstr) {
+                        let result = $scope.TAG_OF_SEGMENT_INDEX.indexOf("$Number") != -1 ? param.segmentIndex.toString() : (param.t + param.d * (param.segmentIndex - 1)).toString();
                         if (lenstr.indexOf("%") == -1) {
-                            return num.toString();
+                            return result;
                         }
                         let len = parseInt(lenstr.slice(lenstr.indexOf("%") + 1, lenstr.indexOf("%") + 3));
-                        let result = num.toString();
                         while (result.length < len) {
                             result = "0" + result;
                         }
@@ -1909,15 +2151,21 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         throw "No base URL!";
                     }
                     let tempUrlExtend = urlExtend;
-                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) == -1) {
-                        throw "Wrong placeholder of representation ID!";
+                    if (tempUrlExtend.indexOf($scope.TAG_OF_REPRESENTATION_ID) != -1) {
+                        tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
                     }
-                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_REPRESENTATION_ID, paramForResolveUrl.id);  // Replace representation ID in the URL
-                    $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Number"), tempUrlExtend.lastIndexOf("$") + 1);
-                    if (tempUrlExtend.indexOf($scope.TAG_OF_SEGMENT_INDEX) == -1) { /////////////////////////
+                    // Type 1: $Number$ / $Number%xxd$
+                    if (tempUrlExtend.indexOf("$Number") != -1) {
+                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Number"), tempUrlExtend.lastIndexOf("$") + 1);
+                    }
+                    // Type 2: $Time$
+                    else if (tempUrlExtend.indexOf("$Time") != -1) {
+                        $scope.TAG_OF_SEGMENT_INDEX = tempUrlExtend.slice(tempUrlExtend.indexOf("$Time"), tempUrlExtend.lastIndexOf("$") + 1);
+                    }
+                    else {
                         throw "Wrong placeholder of segment number!";
                     }
-                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl.segmentIndex, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
+                    tempUrlExtend = tempUrlExtend.replace($scope.TAG_OF_SEGMENT_INDEX, numberMatcher(paramForResolveUrl, $scope.TAG_OF_SEGMENT_INDEX));  // Replace segment number in the URL
                     return url + tempUrlExtend;
                 } catch (e) {
                     window.alert("Error when resolving URL of MediaSegment: " + e);
@@ -1937,7 +2185,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         }
         if ($scope.streamBufferToAppend[contentType].length > 0) {
             let buffer = $scope.streamBufferToAppend[contentType].shift();
-            $scope.streamSourceBuffer[contentType].appendBuffer(buffer);
+            if ($scope.streamSourceBufferMimeCodecs[contentType] != buffer.mimeCodecs) {
+                $scope.streamSourceBuffer[contentType].changeType(buffer.mimeCodecs);
+            }
+            $scope.streamSourceBufferMimeCodecs[contentType] = buffer.mimeCodecs;
+            $scope.streamSourceBuffer[contentType].appendBuffer(buffer.content);
         }
     }
 
@@ -1945,11 +2197,19 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.appendBufferFromInterval = function() {
         if ($scope.streamSourceBuffer['video'] && !$scope.streamSourceBuffer['video'].updating && $scope.streamBufferToAppend['video'].length > 0) {
             let buffer = $scope.streamBufferToAppend['video'].shift();
-            $scope.streamSourceBuffer['video'].appendBuffer(buffer);
+            if ($scope.streamSourceBufferMimeCodecs['video'] != buffer.mimeCodecs) {
+                $scope.streamSourceBuffer['video'].changeType(buffer.mimeCodecs);
+            }
+            $scope.streamSourceBufferMimeCodecs['video'] = buffer.mimeCodecs;
+            $scope.streamSourceBuffer['video'].appendBuffer(buffer.content);
         }
         if ($scope.streamSourceBuffer['audio'] && !$scope.streamSourceBuffer['audio'].updating && $scope.streamBufferToAppend['audio'].length > 0) {
             let buffer = $scope.streamBufferToAppend['audio'].shift();
-            $scope.streamSourceBuffer['audio'].appendBuffer(buffer);
+            if ($scope.streamSourceBufferMimeCodecs['audio'] != buffer.mimeCodecs) {
+                $scope.streamSourceBuffer['audio'].changeType(buffer.mimeCodecs);
+            }
+            $scope.streamSourceBufferMimeCodecs['audio'] = buffer.mimeCodecs;
+            $scope.streamSourceBuffer['audio'].appendBuffer(buffer.content);
         }
     }
 
@@ -1977,13 +2237,8 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         xhr.send();
 
     };
-/////////////////////////////////////////////////////////////////////////////////////
 
-    // Reloading streams
-    $scope.reloadStream = function() {
-        $scope.clearchartData();
-        /////////////////////////
-    };
+/////////////////////////////////////////////////////////////////////////////////////
 
 
     //// Functions: intervals
@@ -2013,80 +2268,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
     // Compute total throughput according to recent HTTP requests (Total data in ONE second)
     $scope.computetotalThroughput = function() {
-        const precurTime = new Date().getTime() + $scope.clientServerTimeShift * 1000;  // Get current time
-        const curTime = precurTime - $scope.requestLayBack;
-        let TotalDataInAnInterval = 0;  // Byte
-        let TotalTimeInAnInterval = $scope.requestDuration;  // ms
-        let requestListLength = $scope.requestList.length;
-        let requestListIndex = requestListLength - 1;
-        let requestTimeIndex = curTime;
-        while (requestListLength > 0 && requestListIndex >= 0) {
-            let requestFinishTime = $scope.requestList[requestListIndex].request._tfinish.getTime();
-            let requestResponseTime = $scope.requestList[requestListIndex].request.tresponse.getTime();
-            if (requestFinishTime > curTime - $scope.requestDuration && requestResponseTime < curTime) {
-                // Accumulate the downloaded data (Byte)
-                let requestDownloadBytes = $scope.requestList[requestListIndex].request.trace.reduce((a, b) => a + b.b[0], 0);
-                if (requestResponseTime > curTime - $scope.requestDuration) {
-                    if (requestFinishTime <= curTime) {
-                        TotalDataInAnInterval += requestDownloadBytes;
-                    } else {
-                        TotalDataInAnInterval += ( requestDownloadBytes * ( ( curTime - requestResponseTime ) / ( requestFinishTime - requestResponseTime ) ) );
-                    }
-                } else {
-                    if (requestFinishTime <= curTime) {
-                        TotalDataInAnInterval += ( requestDownloadBytes * ( ( requestFinishTime - (curTime - $scope.requestDuration) ) / ( requestFinishTime - requestResponseTime ) ) );
-                    } else {
-                        TotalDataInAnInterval += ( requestDownloadBytes * ( $scope.requestDuration / ( requestFinishTime - requestResponseTime ) ) );
-                    }
-                }
-                // Subtract the free time (ms)
-                if (requestTimeIndex > requestFinishTime) {
-                    TotalTimeInAnInterval -= (requestTimeIndex - requestFinishTime);
-                }
-                // More the time index forward
-                if (requestTimeIndex > requestResponseTime) {
-                    requestTimeIndex = requestResponseTime;
-                }
-            }
-            requestListIndex--;
-        }
-        if (curTime - $scope.requestDuration < requestTimeIndex) {
-            TotalTimeInAnInterval -= (requestTimeIndex - (curTime - $scope.requestDuration));
-        }
-        if (TotalDataInAnInterval != 0 && TotalTimeInAnInterval != 0) {
-            $scope.totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
-        }
+
     };
 
     // Compute QoE
     $scope.computeQoE = function() {
-        if ($scope.playerPastDownloadingQuality.length == 0 || $scope.playerDownloadingQuality.length == 0) {
-            $scope.totalQOE = NaN;
-            $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
-            return;
-        }
-        let pretotalQOE = 0;  // = Quality - miu * Stalls - lambda * Quality switches
-        let temptotalQOE = 0;
-        for (let i = 0; i < $scope.playerNum; i++) {
-            ////////////////////////////////// Regardless of stall, only totalQOE //////////////////////////////////
-            if ($scope.playerBitrateList[i] && $scope.playerDownloadingQuality[i] && $scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]] && $scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate) {
-                switch ($scope.qQOE) {
-                    case 'linear':
-                        temptotalQOE = ($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate);
-                        break;
-                    case 'log':
-                        temptotalQOE = Math.log(($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (temptotalQOE > pretotalQOE) {
-                pretotalQOE = temptotalQOE;
-            }
-        }
-        $scope.totalQOE = pretotalQOE;
-        $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
+
     };
 
     // Show the data in monitor

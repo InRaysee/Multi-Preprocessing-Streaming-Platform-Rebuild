@@ -26,6 +26,8 @@ var HighestBitrateRuleClass = function () {
                                 streamInfo.periodIndex = j;
                                 streamInfo.adaptationSetIndex = jj;
                                 streamInfo.representationIndex = jjj;
+                                streamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].mimeCodecs;
+                                streamInfo.baseUrl = $scope.streamMpds[contentType][streamInfo.pathIndex].baseUrl;
                             }
                         }
                     }

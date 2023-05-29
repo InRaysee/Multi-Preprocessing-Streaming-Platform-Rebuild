@@ -91,6 +91,8 @@ var LowestBitrateRuleClass = function () {
             streamInfo.adaptationSetIndex = firstsmall.adaptationSetIndex;
             streamInfo.representationIndex = firstsmall.representationIndex;
         }
+        streamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].mimeCodecs;
+        streamInfo.baseUrl = $scope.streamMpds[contentType][streamInfo.pathIndex].baseUrl;
 
         return streamInfo;
         

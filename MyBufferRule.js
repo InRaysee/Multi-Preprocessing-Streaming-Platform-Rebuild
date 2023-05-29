@@ -95,7 +95,9 @@ var MyBufferRuleClass = function () {
         streamInfo.periodIndex = bitrateLists[contentType][TargetQuality].indexes[0].periodIndex;
         streamInfo.adaptationSetIndex = bitrateLists[contentType][TargetQuality].indexes[0].adaptationSetIndex;
         streamInfo.representationIndex = bitrateLists[contentType][TargetQuality].indexes[0].representationIndex;
-
+        streamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].mimeCodecs;
+        streamInfo.baseUrl = $scope.streamMpds[contentType][streamInfo.pathIndex].baseUrl;
+        
         return streamInfo;
 
     }

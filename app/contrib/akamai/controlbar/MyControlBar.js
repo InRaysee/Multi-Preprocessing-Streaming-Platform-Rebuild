@@ -41,6 +41,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             }
             initControls();
             element.controls = false;
+            setPlayBtn();
             // addPlayerEventsListeners();
             playPauseBtn.addEventListener('click', onPlayPauseClick);
             muteBtn.addEventListener('click', onMuteClick);
@@ -308,7 +309,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         //     seekTarget = time;
         //     eventBus.trigger(Events.PLAYBACK_SEEK_ASKED);
         // }
-        element.currentTime = value;
         let contentType = [];
         if ($scope.streamSourceBuffer["video"]) {
             contentType.push("video");
@@ -321,7 +321,15 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             return;
         }
         for (let i = 0; i < contentType.length; i++) {
-            let segDuration = $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].duration;
+            let segDuration = NaN;
+            if (!isNaN($scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].duration) && !isNaN($scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].timescale)) {
+                segDuration = $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].duration / $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].timescale;
+            } else if (!isNaN($scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].d) && !isNaN($scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].timescale)) {
+                segDuration = $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].d / $scope.streamBitrateLists[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].timescale;
+            } else {
+                window.alert("Error when seek: cannot calculate duration of each segment!");
+                return;
+            }
             let segmentIndex = Math.floor(value / segDuration);
             let bufferLevelAsArray = getBufferLevelasArray(contentType[i]);
             for (let j = 0; j < bufferLevelAsArray.length; j++) {
@@ -333,6 +341,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             }
             $scope.streamInfo[contentType[i]].segmentIndex = segmentIndex;
         }
+        element.currentTime = value;
     }
 
     var getBufferLevelasArray = function (contentType) {  //////////////////////
@@ -585,7 +594,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             if (menu) {
                 videoController.removeChild(menu);
                 menu = null;
-                btn.classList.add('hide');
+                // btn.classList.add('hide');
             }
         } catch (e) {
         }
