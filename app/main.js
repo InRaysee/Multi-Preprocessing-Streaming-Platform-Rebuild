@@ -10,7 +10,7 @@ TODOs:
   [x] 2. Path switching.
   [x] 3. Reload.
   [ ] 4. Forced switch quality.
-  [-] 5. Multiple stream URLs.
+  [x] 5. Multiple stream URLs.
   [-] 6. Data monitors, charts and stats.
   [ ] 7. Module spliting.
   [x] 8. Multiple periods and different segment indexs.
@@ -939,14 +939,14 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     };
 
     // Change the number of streams
-    $scope.changeStreamNumber = function (contentType, num) {
-        while ($scope.streamNum[contentType] < num) {
-            document.getElementById(contentType + 'Source_' + $scope.streamNum[contentType]).style = "display: block";
-            $scope.streamNum[contentType]++;
+    $scope.changeStreamNumber = function (contentType) {
+        while ($scope.streamURLs[contentType].length < $scope.streamNum[contentType]) {
+            document.getElementById(contentType + 'Source_' + $scope.streamURLs[contentType].length).style = "display: block";
+            $scope.streamURLs[contentType].push($scope.streamURLs.video[0]);
         }
-        while ($scope.streamNum[contentType] > num) {
-            document.getElementById(contentType + 'Source_' + ($scope.streamNum[contentType] - 1)).style = "display: none";
-            $scope.streamNum[contentType]--;
+        while ($scope.streamURLs[contentType].length > $scope.streamNum[contentType]) {
+            document.getElementById(contentType + 'Source_' + ($scope.streamURLs[contentType].length - 1)).style = "display: none";
+            $scope.streamURLs[contentType].pop();
         }
     };
 
@@ -1321,7 +1321,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
         setTimeout(() => {
             for (let i = 0; i < $scope.streamNum.video; i++) {
-                $scope.fetchMpd($scope.streamURLs.video[i], (response) => {
+                $scope.fetchMpd($scope.streamURLs.video[i], (response, requestTime) => {
                     $scope.requestList.push({
                         urlType: $scope.TYPE_OF_MPD,
                         contentType: "video",
@@ -1329,14 +1329,17 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         periodIndex: "-",
                         adaptationSetIndex: "-",
                         representationIndex: "-",
-                        segmentIndex: "-"
+                        segmentIndex: "-",
+                        trequest: requestTime.trequest.getTime(),
+                        tresponse: requestTime.tresponse.getTime(),
+                        tfinish: requestTime.tfinish.getTime() 
                     });
                     $scope.loadMpd(response, "video", i);
                 });
             }
     
             for (let i = 0; i < $scope.streamNum.audio; i++) {
-                $scope.fetchMpd($scope.streamURLs.audio[i], (response) => {
+                $scope.fetchMpd($scope.streamURLs.audio[i], (response, requestTime) => {
                     $scope.requestList.push({
                         urlType: $scope.TYPE_OF_MPD,
                         contentType: "audio",
@@ -1344,7 +1347,10 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                         periodIndex: "-",
                         adaptationSetIndex: "-",
                         representationIndex: "-",
-                        segmentIndex: "-"
+                        segmentIndex: "-",
+                        trequest: requestTime.trequest.getTime(),
+                        tresponse: requestTime.tresponse.getTime(),
+                        tfinish: requestTime.tfinish.getTime() 
                     });
                     $scope.loadMpd(response, "audio", i);
                 });
@@ -1954,7 +1960,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         $scope.isFetchingSegment[contentType] = true;
         console.log("Fetching " + urlType + ": Type " + contentType + ", Path " + curStreamInfo.pathIndex + ", Period " + curStreamInfo.periodIndex + ", AdaptationSet " + curStreamInfo.adaptationSetIndex + ", Representation " + curStreamInfo.representationIndex + (urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? ", Segment " + curStreamInfo.segmentIndex + "." : "."));
         $scope.fetchBuffer(urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT, 
-            (buffer) => {
+            (buffer, requestTime) => {
                 $scope.requestList.push({
                     urlType: urlType,
                     contentType: contentType,
@@ -1962,7 +1968,10 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     periodIndex: curStreamInfo.periodIndex,
                     adaptationSetIndex: curStreamInfo.adaptationSetIndex,
                     representationIndex: curStreamInfo.representationIndex,
-                    segmentIndex: curStreamInfo.segmentIndex
+                    segmentIndex: curStreamInfo.segmentIndex,
+                    trequest: requestTime.trequest.getTime(),
+                    tresponse: requestTime.tresponse.getTime(),
+                    tfinish: requestTime.tfinish.getTime()                    
                 });
                 $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
                 $scope.isFetchingSegment[contentType] = false;
@@ -2132,12 +2141,21 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             window.alert("The URL is invalid: " + url);
             return;
         }
+
+        var requestTime = {
+            trequest: null,
+            tresponse: null,
+            tfinish: null
+        };
+        var firstByteReceived = false;
+
         var xhr = new XMLHttpRequest();
         xhr.open($scope.HTTP_REQUEST_METHOD, url);
         xhr.responseType = responseType;  // 'text', 'arraybuffer'
         xhr.onload = function () {
             if (xhr.status == 200) {
-                callback(xhr.response);
+                requestTime.tfinish = new Date();
+                callback(xhr.response, requestTime);
             }
         };
         xhr.onreadystatechange = function () {
@@ -2147,8 +2165,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             }
         };
         xhr.onprogress = function () {
-            console.log("DDDDDDDDDDD: " + xhr.status + " ------- " + (xhr.response ? xhr.response.byteLength : ""));
+            if (!firstByteReceived) {
+                requestTime.tresponse = new Date();
+                firstByteReceived = true;
+            }
         }
+        requestTime.trequest = new Date();
         xhr.send();
 
     };

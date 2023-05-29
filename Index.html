@@ -174,6 +174,58 @@
 						<input type="text" class="form-control" ng-model="streamURLs.audio[1]" ng-change ="">
 					</div>
 				</div>
+				<div class="row" id="audioSource_2" style="display: none;">
+					<div class="input-group">
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+								Change URL for Audio 3 <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 2)">{{item.name}}</a></li>
+							</ul>
+						</div>
+						<input type="text" class="form-control" ng-model="streamURLs.audio[2]" ng-change ="">
+					</div>
+				</div>
+				<div class="row" id="audioSource_3" style="display: none;">
+					<div class="input-group">
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+								Change URL for Audio 4 <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 3)">{{item.name}}</a></li>
+							</ul>
+						</div>
+						<input type="text" class="form-control" ng-model="streamURLs.audio[3]" ng-change ="">
+					</div>
+				</div>
+				<div class="row" id="audioSource_4" style="display: none;">
+					<div class="input-group">
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+								Change URL for Audio 5 <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 4)">{{item.name}}</a></li>
+							</ul>
+						</div>
+						<input type="text" class="form-control" ng-model="streamURLs.audio[4]" ng-change ="">
+					</div>
+				</div>
+				<div class="row" id="audioSource_5" style="display: none;">
+					<div class="input-group">
+						<div class="input-group-btn">
+							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+								Change URL for Audio 6 <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 5)">{{item.name}}</a></li>
+							</ul>
+						</div>
+						<input type="text" class="form-control" ng-model="streamURLs.audio[5]" ng-change ="">
+					</div>
+				</div>
 			</div>
 
 			<!-- Control buttons -->
@@ -221,52 +273,14 @@
 							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
 								<div class="options-item-title">Number of Paths</div>
 								<div class="options-item-body">
-									<div class="row">
-										<b>Videos</b>
-										<form>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_1" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 1)">
-												1
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_2" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 2)">
-												2
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_3" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 3)">
-												3
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_4" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 4)">
-												4
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_5" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 5)">
-												5
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="video_num" id="video_num_6" type="radio" autocomplete="off" ng-click="changeStreamNumber('video', 6)" checked="true">
-												6
-											</label>
-										</form>
-									</div>
-									<div class="row">
-										<b>Audios</b>
-										<form>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="audio_num" id="audio_num_0" type="radio" autocomplete="off" ng-click="changeStreamNumber('audio', 0)">
-												0
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="audio_num" id="audio_num_1" type="radio" autocomplete="off" ng-click="changeStreamNumber('audio', 1)">
-												1
-											</label>
-											<label data-toggle="tooltip" data-placement="right">
-												<input name="audio_num" id="audio_num_2" type="radio" autocomplete="off" ng-click="changeStreamNumber('audio', 2)" checked="true">
-												2
-											</label>
-										</form>
-									</div>
+									<label data-toggle="tooltip" data-placement="right">
+										Number of videos
+										<input style="width: 200px;" step="1" max="6" min="1" type="number" id="video-number" ng-model="streamNum.video" ng-change="changeStreamNumber('video')">
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										Number of audios
+										<input style="width: 200px;" step="1" max="6" min="0" type="number" id="audio-number" ng-model="streamNum.audio" ng-change="changeStreamNumber('audio')">
+									</label>
 								</div>
 							</div>
 
@@ -527,6 +541,9 @@
 							<th style="text-align: center;">AdaptationSet</th>
 							<th style="text-align: center;">Representation</th>
 							<th style="text-align: center;">Segment</th>
+							<th style="text-align: center;">Trequest</th>
+							<th style="text-align: center;">Tresponse</th>
+							<th style="text-align: center;">Tfinish</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -538,6 +555,9 @@
 							<td>{{item.adaptationSetIndex}}</td>
 							<td>{{item.representationIndex}}</td>
 							<td>{{item.segmentIndex}}</td>
+							<td>{{item.trequest}}</td>
+							<td>{{item.tresponse}}</td>
+							<td>{{item.tfinish}}</td>
 						</tr>
 						</tbody>
 					</table>
