@@ -24,7 +24,7 @@ var MyBufferRuleClass = function () {
         bitrateLists[contentType] = [];
         for (let i = 0; i < $scope.streamBitrateLists[contentType].length; i++) {
             let j = streamInfo.periodIndex;
-            if ($scope.streamBitrateLists[contentType][i][j]) {
+            if ($scope.streamBitrateLists[contentType][i] && $scope.streamBitrateLists[contentType][i][j]) {
                 for (let jj = 0; jj < $scope.streamBitrateLists[contentType][i][j].length; jj++) {
                     if ($scope.streamBitrateLists[contentType][i][j][jj]) {
                         for (let jjj = 0; jjj < $scope.streamBitrateLists[contentType][i][j][jj].length; jjj++) {

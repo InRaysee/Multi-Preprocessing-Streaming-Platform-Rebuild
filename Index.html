@@ -449,42 +449,6 @@
 				
 			</div>
 
-			<!-- Status of all paths -->
-			<div class="row" style="background-color: #ffffff">
-				<div id="statstable" class="table-striped" style="margin: 15px;">
-					<table class="table table-striped" style="border: 3px solid #136bfb; padding-left: 5px;padding-right: 5px;text-align: center;">
-						<thead>
-						<tr>
-							<th style="text-align: center;">Player ID</th>
-							<th style="text-align: center;">Player RTT</th>
-							<th style="text-align: center;">Downloading Quality</th>
-							<th style="text-align: center;">Playback Quality</th>
-							<th style="text-align: center;">Buffer Level</th>
-							<th style="text-align: center;">Playback Timeline</th>
-							<th style="text-align: center;">Loaded Time</th>
-							<th style="text-align: center;">Total Time</th>
-							<th style="text-align: center;">Average Throughput</th>
-							<th style="text-align: center;">Catchup State</th>
-						</tr>
-						</thead>
-						<tbody>
-						<tr ng-repeat="item in stats">
-							<td>{{item.playerid}}</td>
-							<td>{{item.playerRTT}}</td>
-							<td>{{item.downloadingQuality}}</td>
-							<td>{{item.playbackQuality}}</td>
-							<td>{{item.bufferlevel}}</td>
-							<td>{{item.time}}</td>
-							<td>{{item.loadedtime}}</td>
-							<td>{{item.totaltime}}</td>
-							<td>{{item.throughput}}</td>
-							<td>{{item.playerCatchUp}}</td>
-						</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-
 			<!-- Charting -->
 			<div class="chart-panel">
 
@@ -500,30 +464,30 @@
 
 				<!-- Charts -->
 				<div id="chart-wrapper">
-					<span style="text-align: center; display: block; margin-top: 20px;">Player RTT</span>
+					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_RTT" options="chartOptions_RTT"></flot>
-					</div>
-					<span style="text-align: center; display: block; margin-top: 20px;">Downloading Quality</span>
+					</div> -->
+					<span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Downloading Quality</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_downloadingQuality" options="chartOptions_downloadingQuality"></flot>
 					</div>
-					<span style="text-align: center; display: block; margin-top: 20px;">Playback Quality</span>
+					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_playbackQuality" options="chartOptions_playbackQuality"></flot>
-					</div>
-					<span style="text-align: center; display: block; margin-top: 20px;">Buffer Level</span>
+					</div> -->
+					<span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_bufferLevel" options="chartOptions_bufferLevel"></flot>
 					</div>
-					<span style="text-align: center; display: block; margin-top: 20px;">Average Throughput</span>
+					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Average Throughput</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_throughput" options="chartOptions_throughput"></flot>
-					</div>
-					<span style="text-align: center; display: block; margin-top: 20px;">Requests</span>
+					</div> -->
+					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Requests</span>
 					<div class="chart-inventory">
 						<flot dataset="chartData_requests" options="chartOptions_requests"></flot>
-					</div>
+					</div> -->
 				</div>
 
 			</div>
@@ -541,9 +505,9 @@
 							<th style="text-align: center;">AdaptationSet</th>
 							<th style="text-align: center;">Representation</th>
 							<th style="text-align: center;">Segment</th>
-							<th style="text-align: center;">Trequest</th>
-							<th style="text-align: center;">Tresponse</th>
-							<th style="text-align: center;">Tfinish</th>
+							<th style="text-align: center;">tresponse_trequest</th>
+							<th style="text-align: center;">tfinish_tresponse</th>
+							<th style="text-align: center;">tfinish_trequest</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -555,9 +519,9 @@
 							<td>{{item.adaptationSetIndex}}</td>
 							<td>{{item.representationIndex}}</td>
 							<td>{{item.segmentIndex}}</td>
-							<td>{{item.trequest}}</td>
-							<td>{{item.tresponse}}</td>
-							<td>{{item.tfinish}}</td>
+							<td>{{item.tresponse_trequest}}</td>
+							<td>{{item.tfinish_tresponse}}</td>
+							<td>{{item.tfinish_trequest}}</td>
 						</tr>
 						</tbody>
 					</table>
