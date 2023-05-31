@@ -176,11 +176,15 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                     "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
                     "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
                     "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
                 ],
                 audio: [
-                    "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/audio/output/stream.mpd"
+                    "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
+                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
                 ]
             }
         },
@@ -217,7 +221,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                    "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
                 ]
             }
         },
@@ -234,7 +242,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.108:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6001/ffz/tokyo/v10/stream.mpd"
+                    "http://222.20.126.108:6003/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.108:6005/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.108:6007/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.108:6009/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.108:6011/ffz/tokyo/v10/stream.mpd"
                 ]
             }
         },
@@ -251,7 +263,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.108:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6001/ffz/apple/v10/stream.mpd"
+                    "http://222.20.126.108:6003/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.108:6005/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.108:6007/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.108:6009/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.108:6011/ffz/apple/v10/stream.mpd"
                 ]
             }
         },
@@ -280,7 +296,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                    "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
                 ]
             }
         },
@@ -297,7 +317,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.109:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6001/ffz/tokyo/v10/stream.mpd"
+                    "http://222.20.126.109:6003/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.109:6005/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.109:6007/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.109:6009/ffz/tokyo/v10/stream.mpd",
+                    "http://222.20.126.109:6011/ffz/tokyo/v10/stream.mpd"
                 ]
             }
         },
@@ -314,7 +338,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd"
+                    "http://222.20.126.109:6003/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.109:6005/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.109:6007/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.109:6009/ffz/apple/v10/stream.mpd",
+                    "http://222.20.126.109:6011/ffz/apple/v10/stream.mpd"
                 ]
             }
         },
@@ -343,7 +371,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                    "http://172.28.0.53:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.53:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
                 ]
             }
         },
@@ -360,7 +392,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.53:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6001/ffz/tokyo/v10/stream.mpd"
+                    "http://172.28.0.53:6003/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.53:6005/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.53:6007/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.53:6009/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.53:6011/ffz/tokyo/v10/stream.mpd"
                 ]
             }
         },
@@ -377,7 +413,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.53:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6001/ffz/apple/v10/stream.mpd"
+                    "http://172.28.0.53:6003/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.53:6005/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.53:6007/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.53:6009/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.53:6011/ffz/apple/v10/stream.mpd"
                 ]
             }
         },
@@ -406,7 +446,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                    "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
+                    "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
                 ]
             }
         },
@@ -423,7 +467,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.54:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6001/ffz/tokyo/v10/stream.mpd"
+                    "http://172.28.0.54:6003/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.54:6005/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.54:6007/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.54:6009/ffz/tokyo/v10/stream.mpd",
+                    "http://172.28.0.54:6011/ffz/tokyo/v10/stream.mpd"
                 ]
             }
         },
@@ -440,7 +488,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://172.28.0.54:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6001/ffz/apple/v10/stream.mpd"
+                    "http://172.28.0.54:6003/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.54:6005/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.54:6007/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.54:6009/ffz/apple/v10/stream.mpd",
+                    "http://172.28.0.54:6011/ffz/apple/v10/stream.mpd"
                 ]
             }
         },
@@ -473,7 +525,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 ],
                 audio: [
                     "http://222.20.126.108:8000/face0/stream.mpd",
-                    "http://222.20.126.108:8000/face0/stream.mpd"
+                    "http://222.20.126.108:8000/face1/stream.mpd",
+                    "http://222.20.126.108:8000/face2/stream.mpd",
+                    "http://222.20.126.109:8000/face3/stream.mpd",
+                    "http://222.20.126.109:8000/face4/stream.mpd",
+                    "http://222.20.126.109:8000/face5/stream.mpd"
                 ]
             }
         },
@@ -486,16 +542,16 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     ];
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd"
+            "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6003/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6005/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6007/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6009/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6011/ffz/apple/v10/stream.mpd"
         ],
         audio: [
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd"
+            "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd",
+            "http://222.20.126.109:6003/ffz/apple/v10/stream.mpd"
         ]
     };
 
@@ -2235,5 +2291,19 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     setInterval(() => {
         $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
     }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
+
+    setInterval(() => {
+        try {
+            const po = new PerformanceObserver((list) => {
+                let temp = list.getEntries();
+                for (const entry of temp) {
+                    console.log('Time to first byte', entry.responseStart);
+                }
+            });
+            po.observe({type: 'resource', buffered: true});
+        } catch (e) {
+            console.log('No supported Performance Observer!');
+        }
+    }, 1000);
 
 }]);
