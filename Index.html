@@ -7,6 +7,7 @@
 		<meta charset="utf-8"/>
 
 		<title>Multi-Processing Streaming Platform</title>
+		<link rel="icon" type="image/jpg" href="../inraysee.jpg">
 
 		<!-- Import css files -->
 		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap.min.css">
@@ -16,7 +17,7 @@
 		<link rel="stylesheet" href="app/contrib/akamai/controlbar/controlbar.css">
 
 		<!-- Import src files -->
-		<script src="app/lib/jquery/jquery-3.1.1.min.js"></script>
+		<script src="app/lib/jquery/jquery-3.7.0.js"></script>
 		<script src="app/lib/angular/angular.min.js"></script>
 		<script src="app/lib/angular/angular-resource.min.js"></script>
 		<script src="app/lib/angular/angular-flot.js"></script>
@@ -37,6 +38,7 @@
 		<script src="app/contrib/dash.js/externals/StringMatcher.js"></script>
 
 		<!-- Import ABR rules -->
+		<script src="MyThroughputRule.js"></script>
 		<script src="MyBufferRule.js"></script>
 		<script src="HighestBitrateRule.js"></script>
 		<script src="LowestBitrateRule.js"></script>
@@ -305,7 +307,7 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myThroughputRule')" disabled>
+											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myThroughputRule')">
 											MyThroughputRule
 										</label>
 										
@@ -435,6 +437,9 @@
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time : </label> {{startupTimeFormatted}}
 							</div>
 							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Timeline : </label> {{(streamElement.currentTime || 0).toFixed(1)}}
+							</div>
+							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
 							</div>
 							<div class="text-success">
@@ -458,35 +463,47 @@
 						<button id="disable-chart-btn" class="btn btn-primary" ng-click="clearchartData()" ng-cloak>Clear
 						</button>
 					</div>
-					<div id="legend-wrapper" class="legend-row">
-					</div>
 				</div>
 
 				<!-- Charts -->
 				<div id="chart-wrapper">
-					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_RTT" options="chartOptions_RTT"></flot>
-					</div> -->
-					<span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Downloading Quality</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_downloadingQuality" options="chartOptions_downloadingQuality"></flot>
+					<div id="legend-wrapper_downloadingQuality" class="legend-wrapper">
 					</div>
-					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_playbackQuality" options="chartOptions_playbackQuality"></flot>
-					</div> -->
-					<span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_bufferLevel" options="chartOptions_bufferLevel"></flot>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Downloading Quality</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.downloadingQuality" options="chartOptions.downloadingQuality"></flot>
 					</div>
-					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Average Throughput</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_throughput" options="chartOptions_throughput"></flot>
+					<!-- <div id="legend-wrapper_playbackQuality" class="legend-wrapper">
 					</div> -->
-					<!-- <span style="text-align: center; display: block; margin-top: 20px; font: bold normal 16px sans-serif;">Requests</span>
-					<div class="chart-inventory">
-						<flot dataset="chartData_requests" options="chartOptions_requests"></flot>
+					<!-- <span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.playbackQuality" options="chartOptions.playbackQuality"></flot>
+					</div> -->
+					<div id="legend-wrapper_bufferLevel" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.bufferLevel" options="chartOptions.bufferLevel"></flot>
+					</div>
+					<div id="legend-wrapper_throughput" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Average Throughput</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.throughput" options="chartOptions.throughput"></flot>
+					</div>
+					<div id="legend-wrapper_rtt" class="legend-wrapper">
+					</div>
+					<div class="">
+						<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
+					</div>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.rtt" options="chartOptions.rtt"></flot>
+					</div>
+					<!-- <div id="legend-wrapper_requests" class="legend-wrapper">
+					</div> -->
+					<!-- <span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Requests</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.requests" options="chartOptions.requests"></flot>
 					</div> -->
 				</div>
 
@@ -505,9 +522,13 @@
 							<th style="text-align: center;">AdaptationSet</th>
 							<th style="text-align: center;">Representation</th>
 							<th style="text-align: center;">Segment</th>
-							<th style="text-align: center;">tresponse_trequest</th>
+							<!-- <th style="text-align: center;">tresponse_trequest</th>
 							<th style="text-align: center;">tfinish_tresponse</th>
 							<th style="text-align: center;">tfinish_trequest</th>
+							<th style="text-align: center;">tsize</th> -->
+							<th style="text-align: center;">RTT</th>
+							<th style="text-align: center;">Throughput</th>
+							<th style="text-align: center;">Throughput Expect</th>
 						</tr>
 						</thead>
 						<tbody>
@@ -519,9 +540,13 @@
 							<td>{{item.adaptationSetIndex}}</td>
 							<td>{{item.representationIndex}}</td>
 							<td>{{item.segmentIndex}}</td>
-							<td>{{item.tresponse_trequest}}</td>
+							<!-- <td>{{item.tresponse_trequest}}</td>
 							<td>{{item.tfinish_tresponse}}</td>
 							<td>{{item.tfinish_trequest}}</td>
+							<td>{{item.tsize}}</td> -->
+							<td>{{item.rtt}}</td>
+							<td>{{item.throughput}}</td>
+							<td>{{item.throughputExpect}}</td>
 						</tr>
 						</tbody>
 					</table>

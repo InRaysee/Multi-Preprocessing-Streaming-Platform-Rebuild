@@ -10,9 +10,6 @@ var MyBufferRuleClass = function () {
         audio: []
     };
 
-    function setup() {
-    }
-
     // Always select the possible bitrate based on buffer level
     function setStreamInfo(streamInfo, contentType) {
 
@@ -78,23 +75,34 @@ var MyBufferRuleClass = function () {
         }
 
         // Fetch the current buffer level and select quality according to exp function
-        let TargetQuality = bitrateLists[contentType].length - 1;
+        let targetQuality = bitrateLists[contentType].length - 1;
         let elementBuffered = $scope.getBufferLevel(contentType);
         let expFactor = Math.exp(elementBuffered) - 1;
         let expMax = Math.exp($scope.targetBuffer) - 1;
-        let expRange = $scope.lifeSignalEnabled ? bitrateLists[contentType].length - 1 : bitrateLists[contentType].length;
+        let expRange = bitrateLists[contentType].length;
         for (let i = 0; i < expRange; i++) {
             if (expFactor >= (expMax / expRange) * i && expFactor < (expMax / expRange) * (i + 1)) {
-                TargetQuality = $scope.lifeSignalEnabled ? i + 1 : i;
+                targetQuality = i;
                 break;
             }
         }
 
+        // Choose the path according to RTT
+        let targetPath = 0;
+        if ($scope.monitorRtt && $scope.monitorRtt[contentType] && $scope.monitorRtt[contentType].length > 0) {
+            for (let i = 1; i < bitrateLists[contentType][targetQuality].indexes.length; i++) {
+                if (!isNaN($scope.monitorRtt[contentType][bitrateLists[contentType][targetQuality].indexes[targetPath].pathIndex]) && !isNaN($scope.monitorRtt[contentType][bitrateLists[contentType][targetQuality].indexes[i].pathIndex]) 
+                    && $scope.monitorRtt[contentType][bitrateLists[contentType][targetQuality].indexes[i].pathIndex] < $scope.monitorRtt[contentType][bitrateLists[contentType][targetQuality].indexes[targetPath].pathIndex]) {
+                    targetPath = i;
+                }
+            }
+        }
+
         // Select the first choice in the list with the same bandwidth
-        streamInfo.pathIndex = bitrateLists[contentType][TargetQuality].indexes[0].pathIndex;
-        streamInfo.periodIndex = bitrateLists[contentType][TargetQuality].indexes[0].periodIndex;
-        streamInfo.adaptationSetIndex = bitrateLists[contentType][TargetQuality].indexes[0].adaptationSetIndex;
-        streamInfo.representationIndex = bitrateLists[contentType][TargetQuality].indexes[0].representationIndex;
+        streamInfo.pathIndex = bitrateLists[contentType][targetQuality].indexes[targetPath].pathIndex;
+        streamInfo.periodIndex = bitrateLists[contentType][targetQuality].indexes[targetPath].periodIndex;
+        streamInfo.adaptationSetIndex = bitrateLists[contentType][targetQuality].indexes[targetPath].adaptationSetIndex;
+        streamInfo.representationIndex = bitrateLists[contentType][targetQuality].indexes[targetPath].representationIndex;
         streamInfo.mimeCodecs = $scope.streamBitrateLists[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].mimeCodecs;
         streamInfo.baseUrl = $scope.streamMpds[contentType][streamInfo.pathIndex].baseUrl;
         
@@ -106,7 +114,6 @@ var MyBufferRuleClass = function () {
         setStreamInfo: setStreamInfo
     };
 
-    setup();
-
     return instance;
-}
+
+};

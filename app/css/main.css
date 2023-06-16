@@ -311,6 +311,11 @@ div#legend-wrapper {
     float: right;
 }
 
+.legend-wrapper {
+    margin: 10px;
+    float: right;
+}
+
 /****************************
         FOOTER SECTION
 *****************************/

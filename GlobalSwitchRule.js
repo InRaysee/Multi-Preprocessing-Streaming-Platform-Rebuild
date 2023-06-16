@@ -10,9 +10,6 @@ var GlobalSwitchRuleClass = function () {
         audio: []
     };
 
-    function setup() {
-    }
-
     // Always manually select the bitrate
     function setStreamInfo(streamInfo, contentType) {
 
@@ -78,8 +75,8 @@ var GlobalSwitchRuleClass = function () {
         }
 
         // Adjust the selected global quality according to length of bitrate lists and life-signal settings
-        if ($scope.globalQuality[contentType] < ($scope.lifeSignalEnabled ? 1 : 0)) {
-            $scope.globalQuality[contentType] = $scope.lifeSignalEnabled ? 1 : 0;
+        if ($scope.globalQuality[contentType] < 0) {
+            $scope.globalQuality[contentType] = 0;
         }
         if ($scope.globalQuality[contentType] >= bitrateLists[contentType].length - 1) {
             $scope.globalQuality[contentType] = bitrateLists[contentType].length - 1;
@@ -101,7 +98,6 @@ var GlobalSwitchRuleClass = function () {
         setStreamInfo: setStreamInfo
     };
 
-    setup();
-
     return instance;
-}
+
+};

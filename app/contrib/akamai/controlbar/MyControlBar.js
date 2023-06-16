@@ -260,9 +260,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         } else if (!isNaN(value)) {
             timeDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : convertToTimeCode(value);
         }
-        if (!isNaN(value)) {
-            timeDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : convertToTimeCode(value);
-        }
     };
 
     var formatUTC = function (time, locales, hour12, withDate = false) {
@@ -960,6 +957,8 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         destroyAllMenus: destroyAllMenus,
         changeBitrateListbyTrack: changeBitrateListbyTrack,
         removeMenu: removeMenu,
+        setPlayBtn: setPlayBtn,
+        setPauseBtn: setPauseBtn,
 
         show: function () {
             videoController.classList.remove('hide');
