@@ -17,7 +17,7 @@ More details about features, modifications and TODOs can be found in our release
 Adaptive bitrate algorithms can help you select the appropriate bitrate version to stream according to your environment and requirement.
 
 - DefaultRule - Using default ABR rules by dash.js (observing each path's stats independently). 
-- MyThroughputRule - Switching bitrate according to real-time throughput.
+- RttThroughputRule - Switching bitrate according to real-time throughput.
 - MultiPathRule - Appropriate bitrate for the highest throughput, otherwise the lowest bitrate.
    - Keep highest with same MPD.
    - Buffer-based with same MPD.

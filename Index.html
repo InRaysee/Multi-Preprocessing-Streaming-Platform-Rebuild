@@ -26,7 +26,7 @@
 		<script src="app/lib/flot/jquery.flot.resize.min.js"></script>
 		<script src="app/lib/flot/jquery.flot.axislabels.js"></script>
 		<script src="app/contrib/cast_sender.js"></script>
-		<script src="app/contrib/akamai/controlbar/MyControlBar.js"></script>
+		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
 		<script src="app/contrib/dash.js/dist/dash.all.debug.js"></script>
 		<script src="app/main.js"></script>
 		<script src="app/contrib/dash.js/externals/Constants.js"></script>
@@ -38,11 +38,11 @@
 		<script src="app/contrib/dash.js/externals/StringMatcher.js"></script>
 
 		<!-- Import ABR rules -->
-		<script src="MyThroughputRule.js"></script>
-		<script src="MyBufferRule.js"></script>
+		<script src="RttThroughputRule.js"></script>
+		<script src="RttBufferRule.js"></script>
 		<script src="HighestBitrateRule.js"></script>
 		<script src="LowestBitrateRule.js"></script>
-		<script src="MyThroughputRule.js"></script>
+		<script src="RttThroughputRule.js"></script>
 		<script src="GlobalSwitchRule.js"></script>
 
 		<style>
@@ -63,6 +63,160 @@
 			<div class="row title-header">
 				<div class="branding">
 					<span>Multi-Processing Streaming Platform</span>
+				</div>
+			</div>
+
+			<!-- Control buttons -->
+			<div class="row">
+				<div class="input-group">
+					<span class="input-group-btn">
+
+						<!-- URL change list -->
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+							Change URL for All Streams <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item)">{{item.name}}</a></li>
+						</ul>
+						
+						<!-- Option show/hide button -->
+						<button class="btn btn-default" ng-click="showoption()" style="width: 120px;" ng-cloak>{{optionButton}}</button>
+						
+						<!-- Reset button -->
+						<button class="btn btn-default" type="button" style="width: 70px;" onclick="location.reload();">Reset</button>
+						
+						<!-- Load button -->
+						<button id="Load" class="btn btn-primary" type="button" style="width: 70px;" ng-click="loadStream();">Load</button>
+						
+						<!-- Reload button -->
+						<button id="Reload" class="btn btn-primary" type="button" style="width: 70px; display: none;" ng-click="reloadStream();">Reload</button>
+						
+						<!-- Option panel -->
+						<div id="option" class="row" style="display: none;">
+
+							<!-- Streaming mode -->
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
+								<div class="options-item-title">Streaming Mode</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="modes" id="MultiPathMode" type="radio" autocomplete="off" ng-click="changeMode('Multi-Path')" checked="true">
+											Multi-Path
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Video/audio path settings -->
+							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
+								<div class="options-item-title">Number of Paths</div>
+								<div class="options-item-body">
+									<label data-toggle="tooltip" data-placement="right">
+										Number of videos
+										<input style="width: 200px;" step="1" max="6" min="1" type="number" id="video-number" ng-model="streamNum.video" ng-change="changeStreamNumber('video')">
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										Number of audios
+										<input style="width: 200px;" step="1" max="6" min="0" type="number" id="audio-number" ng-model="streamNum.audio" ng-change="changeStreamNumber('audio')">
+									</label>
+								</div>
+							</div>
+
+							<!-- Initial settings -->
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
+								<div class="options-item-title">Initial Settings</div>
+								<div class="options-item-body">
+									<label data-toggle="tooltip" data-placement="right">
+										Target buffer length (s)
+										<input style="width: 200px;" step="1" min="0" type="number" id="target-buffer" ng-model="targetBuffer">
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										Schedule Interval (ms)
+										<input style="width: 200px;" step="10" min="0" type="number" id="schedule-interval" ng-model="INTERVAL_OF_SCHEDULE_FETCHER">
+									</label>
+								</div>
+							</div>
+
+							<!-- ABR strategies -->
+							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
+								<div class="options-item-title">ABR Strategies</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="RttThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttThroughputRule')">
+											RttThroughputRule
+										</label>
+										
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="RttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')">
+											RttBufferRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
+											HighestBitrateRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('lowestBitrateRule')">
+											LowestBitrateRule
+										</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('globalSwitchRule')">
+											GlobalSwitchRule
+										</label>
+											<label data-toggle="tooltip" data-placement="right" id="label-preferred-quality-seleceted-video" style="margin-left: 10px;">
+												<div class="row">
+													<span style="line-height: 25px;">Video quality</span>
+													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-video" ng-model="globalQuality.video" disabled>	
+												</div>
+												<div class="row">
+													<span style="line-height: 25px;">Audio quality</span>
+													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-audio" ng-model="globalQuality.audio" disabled>	
+												</div>
+											</label>
+
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled" checked>
+											Life signal enabled
+										</label>
+									</form>
+								</div>
+							</div>
+
+							<!-- Catchup settings -->
+							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
+								<div class="options-item-title">Catchup Settings</div>
+								<div class="options-item-body">
+									<form>
+										<label data-toggle="tooltip" data-placement="right">
+											Target latency (s)
+											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency" disabled>
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Minimal drift (s)
+											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift" disabled>
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Maximal drift (s)
+											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift" disabled>
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Catchup playback rate (%)
+											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate" disabled>
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											Catchup latency threshold (s)
+											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold" disabled>
+										</label>
+									</form>
+								</div>
+							</div>
+
+						</div>
+
+					</span>
 				</div>
 			</div>
 
@@ -230,160 +384,6 @@
 				</div>
 			</div>
 
-			<!-- Control buttons -->
-			<div class="row">
-				<div class="input-group">
-					<span class="input-group-btn">
-
-						<!-- URL change list -->
-						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-							Change URL for All Streams <span class="caret"></span>
-						</button>
-						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item)">{{item.name}}</a></li>
-						</ul>
-						
-						<!-- Option show/hide button -->
-						<button class="btn btn-default" ng-click="showoption()" style="width: 120px;" ng-cloak>{{optionButton}}</button>
-						
-						<!-- Reset button -->
-						<button class="btn btn-default" type="button" style="width: 70px;" onclick="location.reload();">Reset</button>
-						
-						<!-- Load button -->
-						<button id="Load" class="btn btn-primary" type="button" style="width: 70px;" ng-click="loadStream();">Load</button>
-						
-						<!-- Reload button -->
-						<button id="Reload" class="btn btn-primary" type="button" style="width: 70px; display: none;" ng-click="reloadStream();">Reload</button>
-						
-						<!-- Option panel -->
-						<div id="option" class="row" style="display: none;">
-
-							<!-- Streaming mode -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Streaming Mode</div>
-								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="MultiPathMode" type="radio" autocomplete="off" ng-click="changeMode('Multi-Path')" checked="true">
-											Multi-Path
-										</label>
-									</form>
-								</div>
-							</div>
-
-							<!-- Video/audio path settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Number of Paths</div>
-								<div class="options-item-body">
-									<label data-toggle="tooltip" data-placement="right">
-										Number of videos
-										<input style="width: 200px;" step="1" max="6" min="1" type="number" id="video-number" ng-model="streamNum.video" ng-change="changeStreamNumber('video')">
-									</label>
-									<label data-toggle="tooltip" data-placement="right">
-										Number of audios
-										<input style="width: 200px;" step="1" max="6" min="0" type="number" id="audio-number" ng-model="streamNum.audio" ng-change="changeStreamNumber('audio')">
-									</label>
-								</div>
-							</div>
-
-							<!-- Initial settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Initial Settings</div>
-								<div class="options-item-body">
-									<label data-toggle="tooltip" data-placement="right">
-										Target buffer length (s)
-										<input style="width: 200px;" step="1" min="0" type="number" id="target-buffer" ng-model="targetBuffer">
-									</label>
-									<label data-toggle="tooltip" data-placement="right">
-										Schedule Interval (ms)
-										<input style="width: 200px;" step="10" min="0" type="number" id="schedule-interval" ng-model="INTERVAL_OF_SCHEDULE_FETCHER">
-									</label>
-								</div>
-							</div>
-
-							<!-- ABR strategies -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #ececec; width: 20%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">ABR Strategies</div>
-								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MyThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myThroughputRule')">
-											MyThroughputRule
-										</label>
-										
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="MyBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('myBufferRule')">
-											MyBufferRule
-										</label>
-
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
-											HighestBitrateRule
-										</label>
-
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('lowestBitrateRule')">
-											LowestBitrateRule
-										</label>
-
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('globalSwitchRule')">
-											GlobalSwitchRule
-										</label>
-											<label data-toggle="tooltip" data-placement="right" id="label-preferred-quality-seleceted-video" style="margin-left: 10px;">
-												<div class="row">
-													<span style="line-height: 25px;">Video quality</span>
-													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-video" ng-model="globalQuality.video" disabled>	
-												</div>
-												<div class="row">
-													<span style="line-height: 25px;">Audio quality</span>
-													<input style="width: 40px;" value="0" step="1" min="0" max="100" type="number" id="global-quality-audio" ng-model="globalQuality.audio" disabled>	
-												</div>
-											</label>
-
-										<label data-toggle="tooltip" data-placement="right">
-											<input name="life_signal" id="life_signal" type="checkbox" autocomplete="off" ng-model="lifeSignalEnabled" checked>
-											Life signal enabled
-										</label>
-									</form>
-								</div>
-							</div>
-
-							<!-- Catchup settings -->
-							<div style="float: left; border: 0px; margin: 0px; background-color: #d8e6ff; width: 20%; min-width: max-content; height: 335px;">
-								<div class="options-item-title">Catchup Settings</div>
-								<div class="options-item-body">
-									<form>
-										<label data-toggle="tooltip" data-placement="right">
-											Target latency (s)
-											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency" disabled>
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											Minimal drift (s)
-											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift" disabled>
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											Maximal drift (s)
-											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift" disabled>
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											Catchup playback rate (%)
-											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate" disabled>
-										</label>
-										<label data-toggle="tooltip" data-placement="right">
-											Catchup latency threshold (s)
-											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold" disabled>
-										</label>
-									</form>
-								</div>
-							</div>
-
-						</div>
-
-					</span>
-				</div>
-			</div>
-
 			<!-- Player and status -->
 			<div class="row">
 
@@ -467,23 +467,29 @@
 
 				<!-- Charts -->
 				<div id="chart-wrapper">
+					<div id="legend-wrapper_bufferLevel" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.bufferLevel" options="chartOptions.bufferLevel"></flot>
+					</div>
 					<div id="legend-wrapper_downloadingQuality" class="legend-wrapper">
 					</div>
 					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Downloading Quality</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.downloadingQuality" options="chartOptions.downloadingQuality"></flot>
 					</div>
-					<!-- <div id="legend-wrapper_playbackQuality" class="legend-wrapper">
-					</div> -->
-					<!-- <span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
+					<div id="legend-wrapper_playbackQuality" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.playbackQuality" options="chartOptions.playbackQuality"></flot>
-					</div> -->
-					<div id="legend-wrapper_bufferLevel" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
+					<div id="legend-wrapper_rtt" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
-						<flot dataset="chartData.bufferLevel" options="chartOptions.bufferLevel"></flot>
+						<flot dataset="chartData.rtt" options="chartOptions.rtt"></flot>
 					</div>
 					<div id="legend-wrapper_throughput" class="legend-wrapper">
 					</div>
@@ -491,20 +497,6 @@
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.throughput" options="chartOptions.throughput"></flot>
 					</div>
-					<div id="legend-wrapper_rtt" class="legend-wrapper">
-					</div>
-					<div class="">
-						<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
-					</div>
-					<div class="chart-inventory" style="margin-bottom: 30px;">
-						<flot dataset="chartData.rtt" options="chartOptions.rtt"></flot>
-					</div>
-					<!-- <div id="legend-wrapper_requests" class="legend-wrapper">
-					</div> -->
-					<!-- <span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Requests</span>
-					<div class="chart-inventory" style="margin-bottom: 30px;">
-						<flot dataset="chartData.requests" options="chartOptions.requests"></flot>
-					</div> -->
 				</div>
 
 			</div>
