@@ -124,6 +124,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
     $scope.AVERAGE_THROUGHPUT_WINDOW = 5;
+    $scope.LEGEND_COLUMN_LENGTH = 10;
     $scope.TYPE_OF_MPD = "MPD";
     $scope.TYPE_OF_INIT_SEGMENT = "InitSegment";
     $scope.TYPE_OF_MEDIA_SEGMENT = "MediaSegment";
@@ -663,7 +664,12 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     //   red        purple     blue       yellow     green
         '#FF0033', '#CC00FF', '#3366CC', '#FF9900', '#009900',
         '#990033', '#993399', '#0033CC', '#996600', '#006633',
-        '#FF6699', '#CC66FF', '#3399FF', '#FFCC00', '#66CC33'
+        '#FF6699', '#CC66FF', '#3399FF', '#FFCC00', '#66CC33',
+        '#FF6699', '#FF66FF', '#6666CC', '#FFFFCC', '#00CC99',
+        '#CC0033', '#CC33CC', '#6699FF', '#FF6600', '#999900',
+        '#993366', '#FF33FF', '#3399CC', '#FFCCCC', '#006600',
+        '#FF0099', '#CC99FF', '#CCCCFF', '#CC6600', '#99CC00',
+        '#FF99CC', '#CC66CC', '#0099CC', '#FFFF33', '#669966'
     ];
     $scope.chartData = {  // Save the buffer level data needs to put on the charts
         bufferLevel: [],
@@ -943,7 +949,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             } else if (item.name == "CUSTOM") {
                 $scope.streamURLs[contentType][num] = "";
             } else {
-                $scope.streamURLs[contentType][num] = item.url ? item.url : item.urls[contentType][num];
+                $scope.streamURLs[contentType][num] = item.url ? item.url : item.urls[contentType][num % item.urls[contentType].length];
             }
         } else {
             if (item.name == "COPY") {
@@ -968,7 +974,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 } else {
                     for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                         for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
-                            $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.urls[$scope.CONTENT_TYPE[i]][j];
+                            $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.urls[$scope.CONTENT_TYPE[i]][j % item.urls[$scope.CONTENT_TYPE[i]].length];
                         }                    
                     }
                 }
@@ -1009,11 +1015,9 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.changeStreamNumber = function (contentType) {
 
         while ($scope.streamURLs[contentType].length < $scope.streamNum[contentType]) {
-            document.getElementById(contentType + 'Source_' + $scope.streamURLs[contentType].length).style = "display: block";
             $scope.streamURLs[contentType].push($scope.streamURLs.video[0]);
         }
         while ($scope.streamURLs[contentType].length > $scope.streamNum[contentType]) {
-            document.getElementById(contentType + 'Source_' + ($scope.streamURLs[contentType].length - 1)).style = "display: none";
             $scope.streamURLs[contentType].pop();
         }
 
@@ -1065,11 +1069,17 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 $scope.chartData.throughput.push(data);
                 break;
         }
-        $scope.chartOptions.bufferLevel.legend.noColumns = Math.min($scope.chartData.bufferLevel.length, 16);
-        $scope.chartOptions.downloadingQuality.legend.noColumns = Math.min($scope.chartData.downloadingQuality.length, 16);
-        $scope.chartOptions.playbackQuality.legend.noColumns = Math.min($scope.chartData.playbackQuality.length, 16);
-        $scope.chartOptions.rtt.legend.noColumns = Math.min($scope.chartData.rtt.length, 16);
-        $scope.chartOptions.throughput.legend.noColumns = Math.min($scope.chartData.throughput.length, 16);
+        $scope.chartOptions.bufferLevel.legend.noColumns = Math.min($scope.chartData.bufferLevel.length, $scope.LEGEND_COLUMN_LENGTH);
+        $scope.chartOptions.downloadingQuality.legend.noColumns = Math.min($scope.chartData.downloadingQuality.length, $scope.LEGEND_COLUMN_LENGTH);
+        $scope.chartOptions.playbackQuality.legend.noColumns = Math.min($scope.chartData.playbackQuality.length, $scope.LEGEND_COLUMN_LENGTH);
+        $scope.chartOptions.rtt.legend.noColumns = Math.min($scope.chartData.rtt.length, $scope.LEGEND_COLUMN_LENGTH);
+        $scope.chartOptions.throughput.legend.noColumns = Math.min($scope.chartData.throughput.length, $scope.LEGEND_COLUMN_LENGTH);
+        if (document.getElementById('rtt-title')) {
+            document.getElementById('rtt-title').style.marginBottom = (Math.ceil($scope.chartData.rtt.length / $scope.LEGEND_COLUMN_LENGTH) * 20 - 10) + 'px';
+        }
+        if (document.getElementById('throughput-title')) {
+            document.getElementById('throughput-title').style.marginBottom = (Math.ceil($scope.chartData.throughput.length / $scope.LEGEND_COLUMN_LENGTH) * 20 - 10) + 'px';
+        }
 
     };
 
@@ -1868,7 +1878,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
             $scope.isSeeking = false;
 
             // Set the startup time of the player
-            $scope.startupTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000));
+            $scope.startupTime = new Date(parseInt(new Date().getTime()));
             $scope.startupTimeFormatted = $scope.startupTime.toLocaleString();
 
             // Initialize charts
@@ -2480,7 +2490,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
 
     // Other platform intervals
     setInterval(() => {
-        $scope.UTCTime = new Date(parseInt(new Date().getTime() + $scope.clientServerTimeShift * 1000)).toLocaleString();
+        $scope.UTCTime = new Date(parseInt(new Date().getTime())).toLocaleString();
     }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
 
     // setInterval(() => {

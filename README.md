@@ -14,7 +14,7 @@ Our early sample [Multi-Preprocessing-Streaming-Platform](https://github.com/InR
 
 ## Paths we allow
 
-6 paths of both videos and audios as maximum are allowed.
+20 paths of both videos and audios as maximum are allowed.
 
 ## Initial settings we provide
 

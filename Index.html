@@ -113,11 +113,11 @@
 								<div class="options-item-body">
 									<label data-toggle="tooltip" data-placement="right">
 										Number of videos
-										<input style="width: 200px;" step="1" max="6" min="1" type="number" id="video-number" ng-model="streamNum.video" ng-change="changeStreamNumber('video')">
+										<input style="width: 200px;" step="1" max="20" min="1" type="number" id="video-number" ng-model="streamNum.video" ng-change="changeStreamNumber('video')">
 									</label>
 									<label data-toggle="tooltip" data-placement="right">
 										Number of audios
-										<input style="width: 200px;" step="1" max="6" min="0" type="number" id="audio-number" ng-model="streamNum.audio" ng-change="changeStreamNumber('audio')">
+										<input style="width: 200px;" step="1" max="20" min="0" type="number" id="audio-number" ng-model="streamNum.audio" ng-change="changeStreamNumber('audio')">
 									</label>
 								</div>
 							</div>
@@ -222,164 +222,34 @@
 
 			<!-- Video Source URLs -->
 			<div id="videoSource">
-				<div class="row" id="videoSource_0">
+				<div class="row" ng-repeat="url in streamURLs.video track by $index">
 					<div class="input-group">
 						<div class="input-group-btn">
 							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 1 <span class="caret"></span>
+								Change URL for Video {{$index + 1}} <span class="caret"></span>
 							</button>
 							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 0)">{{item.name}}</a></li>
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', $index)">{{item.name}}</a></li>
 							</ul>
 						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[0]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="videoSource_1">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 2 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 1)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[1]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="videoSource_2">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 3 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 2)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[2]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="videoSource_3">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 4 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 3)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[3]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="videoSource_4">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 5 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 4)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[4]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="videoSource_5">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Video 6 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', 5)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.video[5]" ng-change ="">
+						<input type="text" class="form-control" ng-model="url" ng-change ="">
 					</div>
 				</div>
 			</div>
 
 			<!-- Audio Source URLs -->
 			<div id="audioSource">
-				<div class="row" id="audioSource_0">
+				<div class="row" ng-repeat="url in streamURLs.audio track by $index">
 					<div class="input-group">
 						<div class="input-group-btn">
 							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 1 <span class="caret"></span>
+								Change URL for Audio {{$index + 1}} <span class="caret"></span>
 							</button>
 							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 0)">{{item.name}}</a></li>
+								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', $index)">{{item.name}}</a></li>
 							</ul>
 						</div>
 						<input type="text" class="form-control" ng-model="streamURLs.audio[0]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="audioSource_1">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 2 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 1)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.audio[1]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="audioSource_2" style="display: none;">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 3 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 2)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.audio[2]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="audioSource_3" style="display: none;">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 4 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 3)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.audio[3]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="audioSource_4" style="display: none;">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 5 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 4)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.audio[4]" ng-change ="">
-					</div>
-				</div>
-				<div class="row" id="audioSource_5" style="display: none;">
-					<div class="input-group">
-						<div class="input-group-btn">
-							<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
-								Change URL for Audio 6 <span class="caret"></span>
-							</button>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', 5)">{{item.name}}</a></li>
-							</ul>
-						</div>
-						<input type="text" class="form-control" ng-model="streamURLs.audio[5]" ng-change ="">
 					</div>
 				</div>
 			</div>
@@ -391,7 +261,7 @@
 				<div class="">
 
 					<!-- Flat -->
-					<div id="videoContainer" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 320px); height:565px; float:left;">
+					<div id="videoContainer" class="videoContainer" style="background-color:#3a3d42; width:calc(100% - 420px); height:565px; float:left;">
 						<video id="video" style="display: flex; width:100%; height:530px;"></video>
 						<div id="videoController" class="video-controller unselectable" style="display: block;">
 							<div id="playPauseBtn" class="btn-play-pause" title="Play/Pause">
@@ -427,19 +297,28 @@
 				</div>
 
 				<!-- Tab panes -->
-				<div class="tabs-section" style="width:300px; height:565px; float:left; margin-left:20px;">
+				<div class="tabs-section" style="width:400px; height:565px; float:left; margin-left:20px;">
 					<div class="tab-content">
 						<div class="panel-body panel-stats" style="height: 565px;" ng-cloak>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">UTC Time : </label> {{UTCTime}}
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">UTC Time: </label> {{UTCTime}}
 							</div>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time : </label> {{startupTimeFormatted}}
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time: </label> {{startupTimeFormatted || UTCTime}}
 							</div>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Timeline : </label> {{(streamElement.currentTime || 0).toFixed(1)}}
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Timeline: </label> {{(streamElement.currentTime || 0).toFixed(1)}} s
 							</div>
 							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Buffer Level: </label> {{(monitorBufferLevel.video || 0).toFixed(1)}} s | {{(monitorBufferLevel.audio || 0).toFixed(1)}} s
+							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Downloading Quality: </label> {{((monitorDownloadingQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorDownloadingQuality.audio || 0) / 1000).toFixed(0)}} kbps
+							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Quality: </label> {{((monitorPlaybackQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorPlaybackQuality.audio || 0) / 1000).toFixed(0)}} kbps
+							</div>
+							<!-- <div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
 							</div>
 							<div class="text-success">
@@ -447,7 +326,7 @@
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Total QOE : </label> {{totalQOE.toFixed(2)}}
-							</div>
+							</div> -->
 						</div>
 					</div>
 				</div>
@@ -467,33 +346,35 @@
 
 				<!-- Charts -->
 				<div id="chart-wrapper">
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+					</div>
 					<div id="legend-wrapper_bufferLevel" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Buffer Level</span>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="buffer-level-title">Buffer Level</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.bufferLevel" options="chartOptions.bufferLevel"></flot>
 					</div>
 					<div id="legend-wrapper_downloadingQuality" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Downloading Quality</span>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="downloading-quality-title">Downloading Quality</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.downloadingQuality" options="chartOptions.downloadingQuality"></flot>
 					</div>
 					<div id="legend-wrapper_playbackQuality" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Playback Quality</span>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="playback-quality-title">Playback Quality</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.playbackQuality" options="chartOptions.playbackQuality"></flot>
 					</div>
 					<div id="legend-wrapper_rtt" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Player RTT</span>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="rtt-title">Path RTT</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.rtt" options="chartOptions.rtt"></flot>
 					</div>
 					<div id="legend-wrapper_throughput" class="legend-wrapper">
 					</div>
-					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;">Average Throughput</span>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="throughput-title">Path Throughput</span>
 					<div class="chart-inventory" style="margin-bottom: 30px;">
 						<flot dataset="chartData.throughput" options="chartOptions.throughput"></flot>
 					</div>
