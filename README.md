@@ -4,9 +4,9 @@ More details about features, modifications and TODOs can be found in our release
 
 ## Inspiration and reference
 
-Since Dynamic Adaptive Streaming over HTTP (DASH) protocol is widely used for massive user video streaming, we build up this multi-preprocessing streaming platform to validate our throughts and idea about how to improve users' quality of experience (QoE) when streaming via DASH.
+Since Dynamic Adaptive Streaming over HTTP (DASH) protocol is widely used for massive user video streaming, we build up this multi-preprocessing streaming platform to validate our throughts and ideas about how to improve users' quality of experience (QoE) when streaming via DASH.
 
-Our early trial [Multi-Preprocessing-Streaming-Platform](https://github.com/InRaysee/Multi-Preprocessing-Streaming-Platform) was built based on [dash.js](https://github.com/Dash-Industry-Forum/dash.js). However, a self-made and light-weighted platform is more necessary for us to explore more possibilties of optimizations. Therefore, a rebuilt version, without the framework from dash.js, is published here.
+Our early sample [Multi-Preprocessing-Streaming-Platform](https://github.com/InRaysee/Multi-Preprocessing-Streaming-Platform) was built based on [dash.js](https://github.com/Dash-Industry-Forum/dash.js). However, a self-made and light-weighted platform is more necessary for us to explore more possibilties of optimizations. Therefore, a rebuilt version, without the framework from dash.js, is published here.
    
 ## Modes we provide
 
