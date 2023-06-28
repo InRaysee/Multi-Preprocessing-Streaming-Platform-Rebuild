@@ -20,11 +20,26 @@ TODOs:
 */
 /////////////////////////////////////////////////////////////////////////////////////
 
-var app = angular.module('DashPlayer', ['angular-flot']);
+var app = angular.module('DashPlayer', ['DashSourcesService', 'angular-flot']);
 
-app.controller('DashController', ['$scope', '$interval', function ($scope, $interval) {
+// Fetch sources.json
+angular.module('DashSourcesService', ['ngResource']).factory('sources', function ($resource) {
+    return $resource('app/sources.json', {}, {
+        query: {
+            method: 'GET',
+            isArray: true
+        }
+    });
+});
+
+app.controller('DashController', ['$scope', '$interval', 'sources', function ($scope, $interval, sources) {
 
     $interval(function () {}, 1);
+
+    // Load the list of available streams
+    sources.query(function (data) {
+        $scope.availableStreams = data;
+    });
 
 /////////////////////////////////////////////////////////////////////////////////////
 /*             Global variables (containers: cannot adjust mannually)              */
@@ -119,7 +134,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     $scope.CONTENT_TYPE = ["video", "audio"];
     $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT = 10;
     $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
-    $scope.INTERVAL_OF_APPEND_BUFFER = 100;
+    $scope.INTERVAL_OF_APPEND_BUFFER = 10;
     $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 5000;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
@@ -187,396 +202,6 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     };
     $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
 
-    $scope.availableStreams = [  // All the available preset media sources
-        {
-            name: "VOD (Akamai BBB $Number$)",
-            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
-        },
-        {
-            name: "VOD (Elephant Dream $Time$)",
-            url: "https://dash.akamaized.net/dash264/TestCases/2c/qualcomm/1/MultiResMPEG2.mpd"
-        },
-        {
-            name: "VOD (Captions by WebVTT)",
-            url: "https://dash.akamaized.net/akamai/test/caption_test/ElephantsDream/elephants_dream_480p_heaac5_1_https.mpd"
-        },
-        {
-            name: "VOD (Multi periods)",
-            url: "https://dash.akamaized.net/dash264/TestCases/5a/nomor/1.mpd"
-        },
-        {
-            name: "VOD (Local CMPVP907)",
-            urls: {
-                video: [
-                    "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
-                ],
-                audio: [
-                    "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                    "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Local tokyo)",
-            url: "http://localhost:8080/datasets/tokyo/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Local apple)",
-            url: "http://localhost:8080/datasets/apple/v10/stream.mpd"
-        },
-        {
-            name: "VOD (File BBB)",
-            url: "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-        },
-        {
-            name: "VOD (File tokyo)",
-            url: "http://222.20.126.108:8080/ffz/tokyo/v10/stream.mpd"
-        },
-        {
-            name: "VOD (File apple)",
-            url: "http://222.20.126.108:8080/ffz/apple/v10/stream.mpd"
-        },
-        {
-            name: "VOD (File Docker BBB)",
-            urls: {
-                video: [
-                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.108:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.108:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (File Docker tokyo)",
-            urls: {
-                video: [
-                    "http://222.20.126.108:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6011/ffz/tokyo/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.108:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.108:6011/ffz/tokyo/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (File Docker apple)",
-            urls: {
-                video: [
-                    "http://222.20.126.108:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6003/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6005/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6007/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6009/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6011/ffz/apple/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.108:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6003/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6005/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6007/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6009/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.108:6011/ffz/apple/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Edge BBB)",
-            url: "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-        },
-        {
-            name: "VOD (Edge tokyo)",
-            url: "http://222.20.126.109:8080/ffz/tokyo/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Edge apple)",
-            url: "http://222.20.126.109:8080/ffz/apple/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Edge Docker BBB)",
-            urls: {
-                video: [
-                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.109:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://222.20.126.109:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Edge Docker tokyo)",
-            urls: {
-                video: [
-                    "http://222.20.126.109:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6011/ffz/tokyo/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.109:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://222.20.126.109:6011/ffz/tokyo/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Edge Docker apple)",
-            urls: {
-                video: [
-                    "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6003/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6005/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6007/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6009/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6011/ffz/apple/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.109:6001/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6003/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6005/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6007/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6009/ffz/apple/v10/stream.mpd",
-                    "http://222.20.126.109:6011/ffz/apple/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier File BBB)",
-            url: "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-        },
-        {
-            name: "VOD (Zerotier File tokyo)",
-            url: "http://172.28.0.53:8080/ffz/tokyo/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Zerotier File apple)",
-            url: "http://172.28.0.53:8080/ffz/apple/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Zerotier File Docker BBB)",
-            urls: {
-                video: [
-                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.53:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.53:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier File Docker tokyo)",
-            urls: {
-                video: [
-                    "http://172.28.0.53:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6011/ffz/tokyo/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.53:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.53:6011/ffz/tokyo/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier File Docker apple)",
-            urls: {
-                video: [
-                    "http://172.28.0.53:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6003/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6005/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6007/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6009/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6011/ffz/apple/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.53:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6003/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6005/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6007/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6009/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.53:6011/ffz/apple/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier Edge BBB)",
-            url: "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-        },
-        {
-            name: "VOD (Zerotier Edge tokyo)",
-            url: "http://172.28.0.54:8080/ffz/tokyo/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Zerotier Edge apple)",
-            url: "http://172.28.0.54:8080/ffz/apple/v10/stream.mpd"
-        },
-        {
-            name: "VOD (Zerotier Edge Docker BBB)",
-            urls: {
-                video: [
-                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.54:6001/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6003/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6005/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6007/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6009/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                    "http://172.28.0.54:6011/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier Edge Docker tokyo)",
-            urls: {
-                video: [
-                    "http://172.28.0.54:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6011/ffz/tokyo/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.54:6001/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6003/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6005/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6007/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6009/ffz/tokyo/v10/stream.mpd",
-                    "http://172.28.0.54:6011/ffz/tokyo/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "VOD (Zerotier Edge Docker apple)",
-            urls: {
-                video: [
-                    "http://172.28.0.54:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6003/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6005/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6007/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6009/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6011/ffz/apple/v10/stream.mpd"
-                ],
-                audio: [
-                    "http://172.28.0.54:6001/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6003/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6005/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6007/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6009/ffz/apple/v10/stream.mpd",
-                    "http://172.28.0.54:6011/ffz/apple/v10/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "LIVE (Livesim Single Rate)",
-            url: "https://livesim.dashif.org/livesim/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd"
-        },
-        {
-            name: "LIVE (Cmafref Multi Rates)",
-            url: "https://cmafref.akamaized.net/cmaf/live-ull/2006350/akambr/out.mpd"
-        },
-        {
-            name: "LIVE (FileServer)",
-            url: "http://222.20.126.108:8000/dash/stream.mpd"
-        },
-        {
-            name: "LIVE (EdgeServer)",
-            url: "http://222.20.126.109:8000/dash/stream.mpd"
-        },
-        {
-            name: "LIVE (FS & ES)",
-            urls: {
-                video: [
-                    "http://222.20.126.108:8000/face0/stream.mpd",
-                    "http://222.20.126.108:8000/face1/stream.mpd",
-                    "http://222.20.126.108:8000/face2/stream.mpd",
-                    "http://222.20.126.109:8000/face3/stream.mpd",
-                    "http://222.20.126.109:8000/face4/stream.mpd",
-                    "http://222.20.126.109:8000/face5/stream.mpd"
-                ],
-                audio: [
-                    "http://222.20.126.108:8000/face0/stream.mpd",
-                    "http://222.20.126.108:8000/face1/stream.mpd",
-                    "http://222.20.126.108:8000/face2/stream.mpd",
-                    "http://222.20.126.109:8000/face3/stream.mpd",
-                    "http://222.20.126.109:8000/face4/stream.mpd",
-                    "http://222.20.126.109:8000/face5/stream.mpd"
-                ]
-            }
-        },
-        {
-            name: "COPY"
-        },
-        {
-            name: "CUSTOM"
-        }
-    ];
     $scope.streamURLs = {  // Save the selected media sources
         video: [
             "http://localhost:8080/apple/v10/stream.mpd",
@@ -1069,16 +694,9 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 $scope.chartData.throughput.push(data);
                 break;
         }
-        $scope.chartOptions.bufferLevel.legend.noColumns = Math.min($scope.chartData.bufferLevel.length, $scope.LEGEND_COLUMN_LENGTH);
-        $scope.chartOptions.downloadingQuality.legend.noColumns = Math.min($scope.chartData.downloadingQuality.length, $scope.LEGEND_COLUMN_LENGTH);
-        $scope.chartOptions.playbackQuality.legend.noColumns = Math.min($scope.chartData.playbackQuality.length, $scope.LEGEND_COLUMN_LENGTH);
-        $scope.chartOptions.rtt.legend.noColumns = Math.min($scope.chartData.rtt.length, $scope.LEGEND_COLUMN_LENGTH);
-        $scope.chartOptions.throughput.legend.noColumns = Math.min($scope.chartData.throughput.length, $scope.LEGEND_COLUMN_LENGTH);
-        if (document.getElementById('rtt-title')) {
-            document.getElementById('rtt-title').style.marginBottom = (Math.ceil($scope.chartData.rtt.length / $scope.LEGEND_COLUMN_LENGTH) * 20 - 10) + 'px';
-        }
-        if (document.getElementById('throughput-title')) {
-            document.getElementById('throughput-title').style.marginBottom = (Math.ceil($scope.chartData.throughput.length / $scope.LEGEND_COLUMN_LENGTH) * 20 - 10) + 'px';
+        $scope.chartOptions[type].legend.noColumns = Math.min($scope.chartData[type].length, $scope.LEGEND_COLUMN_LENGTH);
+        if (document.getElementById(type + '-title')) {
+            document.getElementById(type + '-title').style.marginBottom = (Math.ceil($scope.chartData[type].length / $scope.LEGEND_COLUMN_LENGTH) * 20 - 10) + 'px';
         }
 
     };
@@ -1869,7 +1487,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
                 $scope.streamDuration = manifest.mediaPresentationDuration;
                 $scope.mediaSource.duration = manifest.mediaPresentationDuration;
             }
-            if (!$scope.streamIsDynamic) {
+            if (isNaN($scope.streamIsDynamic)) {
                 $scope.streamIsDynamic = manifest.type == "static" ? false : manifest.type == "dynamic" ? true : false;
             }
             $scope.autoSwitchTrack[contentType] = true;  // Use path switching as default
@@ -1911,6 +1529,11 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     // Run when the segment need to be fetched from servers
     $scope.fetchSegment = function(contentType, urlType) {
 
+        if ($scope.isFetchingSegment[contentType]) {
+            return;
+        }
+        $scope.isFetchingSegment[contentType] = true;
+
         var curStreamInfo = {
             pathIndex: $scope.streamInfo[contentType].pathIndex,
             periodIndex: $scope.streamInfo[contentType].periodIndex,
@@ -1935,9 +1558,7 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
         var url = curStreamInfo.baseUrl;
         var urlExtend = urlType == $scope.TYPE_OF_INIT_SEGMENT ? $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].initialization : urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].media : "";
         var urlResolved = $scope.resolveUrl(urlType, url, urlExtend, paramForResolveUrl);
-        
-        $scope.isFetchingSegment[contentType] = true;
-        
+                
         console.log("Fetching " + urlType + ": Type " + contentType + ", Path " + curStreamInfo.pathIndex + ", Period " + curStreamInfo.periodIndex + ", AdaptationSet " + curStreamInfo.adaptationSetIndex + ", Representation " + curStreamInfo.representationIndex + (urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? ", Segment " + curStreamInfo.segmentIndex + "." : "."));
         $scope.monitorDownloadingQuality[contentType] = $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].bandwidth;
         
@@ -2422,8 +2043,15 @@ app.controller('DashController', ['$scope', '$interval', function ($scope, $inte
     // Fetch the segments periodly if isFetchingSegment is false
     $scope.scheduleFetcher = function(contentType) {
     
-        var bufferLevel = $scope.getBufferLevel(contentType);
-        if ($scope.streamSourceBuffer[contentType] && !$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && bufferLevel < $scope.targetBuffer
+        let bufferLevel = $scope.getBufferLevel(contentType);
+        let bufferToAppend = 0;
+        for (let i = 0; i < $scope.streamBufferToAppend[contentType].length; i++) {
+            let buffer = $scope.streamBufferToAppend[contentType][i];
+            bufferToAppend += ($scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].duration
+                || $scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].d)
+                / $scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].timescale;
+        }
+        if ($scope.streamSourceBuffer[contentType] && !$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && (bufferLevel + bufferToAppend) < $scope.targetBuffer
                 && !isNaN($scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) 
                 && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
             // Adjust the streamInfo by ABR rules

@@ -76,7 +76,14 @@
 							Change URL for All Streams <span class="caret"></span>
 						</button>
 						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item)">{{item.name}}</a></li>
+							<li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
+								<a tabindex="-1" href="#">{{item.type}}</a>
+								<ul class="dropdown-menu">
+									<li ng-repeat="subitem in item.submenu">
+										<a ng-click="setStream(subitem)">{{subitem.name}}</a>
+									</li>
+								</ul>
+							</li>
 						</ul>
 						
 						<!-- Option show/hide button -->
@@ -229,7 +236,14 @@
 								Change URL for Video {{$index + 1}} <span class="caret"></span>
 							</button>
 							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'video', $index)">{{item.name}}</a></li>
+								<li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
+									<a tabindex="-1" href="#">{{item.type}}</a>
+									<ul class="dropdown-menu">
+										<li ng-repeat="subitem in item.submenu">
+											<a ng-click="setStream(subitem, 'video', $index)">{{subitem.name}}</a>
+										</li>
+									</ul>
+								</li>
 							</ul>
 						</div>
 						<input type="text" class="form-control" ng-model="url" ng-change ="">
@@ -246,7 +260,14 @@
 								Change URL for Audio {{$index + 1}} <span class="caret"></span>
 							</button>
 							<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
-								<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item, 'audio', $index)">{{item.name}}</a></li>
+								<li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
+									<a tabindex="-1" href="#">{{item.type}}</a>
+									<ul class="dropdown-menu">
+										<li ng-repeat="subitem in item.submenu">
+											<a ng-click="setStream(subitem, 'audio', $index)">{{subitem.name}}</a>
+										</li>
+									</ul>
+								</li>
 							</ul>
 						</div>
 						<input type="text" class="form-control" ng-model="streamURLs.audio[0]" ng-change ="">
