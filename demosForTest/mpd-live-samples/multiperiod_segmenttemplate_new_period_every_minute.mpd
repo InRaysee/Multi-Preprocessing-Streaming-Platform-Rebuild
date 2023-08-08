@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" availabilityStartTime="1970-01-01T00:00:00Z" id="Config part of url maybe?" maxSegmentDuration="PT2S" minBufferTime="PT2S" minimumUpdatePeriod="PT25S" profiles="urn:mpeg:dash:profile:isoff-live:2011,http://dashif.org/guidelines/dash-if-simple" publishTime="2023-06-21T00:58:02Z" timeShiftBufferDepth="PT5M" type="dynamic" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd">
+   <ProgramInformation>
+      <Title>Media Presentation Description from DASH-IF live simulator</Title>
+   </ProgramInformation>
+   <BaseURL>https://livesim.dashif.org/livesim/sts_1687309082/sid_e1467ccb/periods_60/continuous_1/testpic_2s/</BaseURL>
+<Period id="p28121813" start="PT1687308780S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308780" startNumber="843654390" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308780" startNumber="843654390" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+<Period id="p28121814" start="PT1687308840S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121813" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308840" startNumber="843654420" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121813" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308840" startNumber="843654420" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+<Period id="p28121815" start="PT1687308900S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121814" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308900" startNumber="843654450" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121814" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308900" startNumber="843654450" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+<Period id="p28121816" start="PT1687308960S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121815" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308960" startNumber="843654480" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121815" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687308960" startNumber="843654480" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+<Period id="p28121817" start="PT1687309020S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121816" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687309020" startNumber="843654510" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121816" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687309020" startNumber="843654510" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+<Period id="p28121818" start="PT1687309080S">
+      <AdaptationSet contentType="audio" lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121817" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687309080" startNumber="843654540" />
+         <Representation audioSamplingRate="48000" bandwidth="48000" codecs="mp4a.40.2" id="A48">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2" />
+         </Representation>
+      </AdaptationSet>
+      <AdaptationSet contentType="video" maxFrameRate="60/2" maxHeight="360" maxWidth="640" mimeType="video/mp4" minHeight="360" minWidth="640" par="16:9" segmentAlignment="true" startWithSAP="1">
+         <SupplementalProperty schemeIdUri="urn:mpeg:dash:period_continuity:2014" value="p28121817" />
+<Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+         <SegmentTemplate duration="2" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.m4s" presentationTimeOffset="1687309080" startNumber="843654540" />
+         <Representation bandwidth="300000" codecs="avc1.64001e" frameRate="60/2" height="360" id="V300" sar="1:1" width="640" />
+      </AdaptationSet>
+   </Period>
+</MPD>

@@ -103,7 +103,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         audio: NaN
     };
 
-    $scope.streamDuration = NaN;  // Total duration of the stream
+    $scope.streamDuration = NaN;  // Total duration of the VOD stream
+    $scope.streamStartTime = NaN;  // Availability start time of the live stream
+    $scope.streamTimeShiftDepth = NaN;  // The valid time of segments
     $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
     $scope.autoSwitchTrack = {  // Flags for judging if the tracks are auto switched
         video: NaN,
@@ -217,7 +219,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         ]
     };
 
-    // $scope.targetLatency = 10;  // The live delay allowed
+    $scope.targetLatency = 10;  // The live delay allowed
     // $scope.minDrift = 0.02;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
     // $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
@@ -956,6 +958,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         };
 
         $scope.streamDuration = NaN;
+        $scope.streamStartTime = NaN;
+        $scope.streamTimeShiftDepth = NaN;
         $scope.streamIsDynamic = NaN;
         $scope.autoSwitchTrack = {
             video: NaN,
@@ -1115,7 +1119,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
         manifest = manifest.MPD;
 
-        var baseUrl = $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.streamURLs[contentType][i]);
+        var baseUrl = manifest.BaseURL ? manifest.BaseURL[0].undefined[0] : $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.streamURLs[contentType][i]);
         manifest.baseUrl = baseUrl ? baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1) : NaN;
         if (!manifest.baseUrl || manifest.baseUrl == "") {
             window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No base URL available in the manifest!");
@@ -1132,14 +1136,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.register = function(manifest, contentType, pathIndex) {
 
         try {
-            // Check if the duration is equal
-            if (!manifest.mediaPresentationDuration || ($scope.streamDuration && manifest.mediaPresentationDuration != $scope.streamDuration)) {
-                throw "Unequal duration!";
-            }
-
             // Check if the type is the same
             if (!manifest.type || ($scope.streamIsDynamic && (manifest.type == "dynamic") != $scope.streamIsDynamic)) {
                 throw "Different type of manifest!";
+            }
+            
+            // Check if the duration is equal
+            if ((manifest.type == "static" && (!manifest.mediaPresentationDuration || ($scope.streamDuration && manifest.mediaPresentationDuration != $scope.streamDuration)))
+                || (manifest.type == "dynamic" && (!manifest.availabilityStartTime || ($scope.streamStartTime && manifest.availabilityStartTime.getTime() != $scope.streamStartTime.getTime())))
+            ) {
+                throw "Unequal duration or start time!";
             }
 
             // Register bitrate lists
@@ -1195,7 +1201,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     throw "No adaptation set is available in path " + i + ", period " + j + "!";
                 }
                 for (let jj = 0; jj < manifest.Period[j].AdaptationSet.length; jj++) {
-                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
+                    if (manifest.Period[j].AdaptationSet[jj].contentType == contentType
+                            || (manifest.Period[j].AdaptationSet[jj].Representation != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType != undefined && manifest.Period[j].AdaptationSet[jj].Representation[0].mimeType.slice(0, 5) == contentType)) {
                         $scope.streamBitrateList[contentType][i][j][jj] = [];
                         $scope.initCache[contentType][i][j][jj] = [];
                         if (!manifest.Period[j].AdaptationSet[jj].Representation || manifest.Period[j].AdaptationSet[jj].Representation.length == 0) {
@@ -1269,6 +1276,24 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                                                     manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].startNumber
                                                     : NaN
                                                 :NaN,
+                                        availabilityTimeComplete: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].availabilityTimeComplete) ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].availabilityTimeComplete
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].availabilityTimeComplete) ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].availabilityTimeComplete
+                                                    : NaN
+                                                :NaN,
+                                        availabilityTimeOffset: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
+                                            !isNaN(manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].availabilityTimeOffset) ?
+                                                manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].availabilityTimeOffset
+                                                : NaN
+                                            : manifest.Period[j].AdaptationSet[jj].SegmentTemplate ?
+                                                !isNaN(manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].availabilityTimeOffset) ?
+                                                    manifest.Period[j].AdaptationSet[jj].SegmentTemplate[0].availabilityTimeOffset
+                                                    : NaN
+                                                :NaN,
                                         // From SegmentTimeline of SegmentTemplate
                                         d: manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate ?
                                             manifest.Period[j].AdaptationSet[jj].Representation[jjj].SegmentTemplate[0].SegmentTimeline ?
@@ -1321,48 +1346,56 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                                                         : 0
                                                     : NaN
                                                 : NaN,
+                                        // From manifest
+                                        availabilityStartTime: manifest.availabilityStartTime || NaN,
+                                        minimumUpdatePeriod: manifest.minimumUpdatePeriod || NaN,
+                                        timeShiftBufferDepth: manifest.timeShiftBufferDepth || NaN
                                     };
                                     // Get segmentNum
-                                    // Type 1: $Number$
-                                    if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].duration) && !isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].timescale)) {
-                                        if (!isNaN(manifest.Period[j].duration)) {
-                                            $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
-                                        } else if (!isNaN(manifest.Period[j].start)) {
-                                            let end = manifest.mediaPresentationDuration;
-                                            for (let k = 0; k < manifest.Period.length; k++) {
-                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
-                                                    end = manifest.Period[k].start;
+                                    if (manifest.type == "dynamic") {
+                                        $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Infinity;
+                                    } else {
+                                        // Type 1: $Number$
+                                        if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].duration) && !isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].timescale)) {
+                                            if (!isNaN(manifest.Period[j].duration)) {
+                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                            } else if (!isNaN(manifest.Period[j].start)) {
+                                                let end = manifest.mediaPresentationDuration;
+                                                for (let k = 0; k < manifest.Period.length; k++) {
+                                                    if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
+                                                        end = manifest.Period[k].start;
+                                                    }
                                                 }
-                                            }
-                                            $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
-                                        } else {
-                                            if (manifest.Period.length == 1) {
-                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
                                             } else {
-                                                // TODO
+                                                if (manifest.Period.length == 1) {
+                                                    $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].duration / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                                } else {
+                                                    // TODO
+                                                }
                                             }
                                         }
-                                    }
-                                    // Type 2: $Time$
-                                    else if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].r) && $scope.streamBitrateList[contentType][i][j][jj][jjj].r != -1) {
-                                        $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = $scope.streamBitrateList[contentType][i][j][jj][jjj].r;
-                                    }
-                                    else if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].d) && !isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].timescale)) {
-                                        if (!isNaN(manifest.Period[j].duration)) {
-                                            $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
-                                        } else if (!isNaN(manifest.Period[j].start)) {
-                                            let end = manifest.mediaPresentationDuration;
-                                            for (let k = 0; k < manifest.Period.length; k++) {
-                                                if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
-                                                    end = manifest.Period[k].start;
+                                        // Type 2: $Time$
+                                        else if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].r) && $scope.streamBitrateList[contentType][i][j][jj][jjj].r != -1) {
+                                            $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = $scope.streamBitrateList[contentType][i][j][jj][jjj].r;
+                                        }
+                                        else if (!isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].d) && !isNaN($scope.streamBitrateList[contentType][i][j][jj][jjj].timescale)) {
+                                            if (!isNaN(manifest.Period[j].duration)) {
+                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.Period[j].duration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                            } else if (!isNaN(manifest.Period[j].start)) {
+                                                let end = manifest.mediaPresentationDuration;
+                                                for (let k = 0; k < manifest.Period.length; k++) {
+                                                    if (manifest.Period[k].start > manifest.Period[j].start && manifest.Period[k].start < end) {
+                                                        end = manifest.Period[k].start;
+                                                    }
                                                 }
-                                            }
-                                            $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
-                                        } else {
-                                            if (manifest.Period.length == 1) {
-                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                                $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil((end - manifest.Period[j].start) / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
                                             } else {
-                                                // TODO
+                                                if (manifest.Period.length == 1) {
+                                                    $scope.streamBitrateList[contentType][i][j][jj][jjj].segmentNum = Math.ceil(manifest.mediaPresentationDuration / ($scope.streamBitrateList[contentType][i][j][jj][jjj].d / $scope.streamBitrateList[contentType][i][j][jj][jjj].timescale));
+                                                } else {
+                                                    // TODO
+                                                }
                                             }
                                         }
                                     }
@@ -1437,7 +1470,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                                 if ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].mimeCodecs) {
                                     curStreamInfo.representationIndex = firstsmall.key;
                                     // segmentIndex
-                                    curStreamInfo.segmentIndex = !isNaN($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber) ? $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber : 1;
+                                    if (manifest.type == "static") {
+                                        curStreamInfo.segmentIndex = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber || 0;  /////////////////
+                                    } else if (manifest.type == "dynamic") {
+                                        let availabilityStartTime = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].availabilityStartTime.getTime();
+                                        let timeShiftBufferDepth = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timeShiftBufferDepth;
+                                        let targetLatency = $scope.targetLatency > timeShiftBufferDepth ? timeShiftBufferDepth : $scope.targetLatency;
+                                        let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                                        let duration = ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].duration || $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].d) / $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timescale;
+                                        curStreamInfo.segmentIndex = Math.floor(targetTime / (duration * 1000)) + ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber || 0);  /////////////////
+                                    }
                                     // lastSegmentIndex
                                     curStreamInfo.lastSegmentIndex = NaN;
                                     // mimeCodecs
@@ -1483,9 +1525,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Initialize settings and parameters
             $scope.streamInfo[contentType] = curStreamInfo;
-            if (!$scope.streamDuration) {
+            if (!$scope.streamDuration && manifest.mediaPresentationDuration) {
                 $scope.streamDuration = manifest.mediaPresentationDuration;
                 $scope.mediaSource.duration = manifest.mediaPresentationDuration;
+            }
+            if (!$scope.streamStartTime && manifest.availabilityStartTime && !$scope.streamTimeShiftDepth && manifest.timeShiftBufferDepth) {
+                $scope.streamStartTime = manifest.availabilityStartTime;
+                $scope.streamTimeShiftDepth = manifest.timeShiftBufferDepth;
+                $scope.mediaSource.duration = Infinity;
             }
             if (isNaN($scope.streamIsDynamic)) {
                 $scope.streamIsDynamic = manifest.type == "static" ? false : manifest.type == "dynamic" ? true : false;
@@ -2053,7 +2100,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
         if ($scope.streamSourceBuffer[contentType] && !$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && (bufferLevel + bufferToAppend) < $scope.targetBuffer
                 && !isNaN($scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) 
-                && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
+                && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum
+                && (!$scope.streamIsDynamic || 1)) {  ////////////
             // Adjust the streamInfo by ABR rules
             if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
                 $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo($scope.streamInfo[contentType], contentType);

@@ -92,7 +92,19 @@ var ControlBar = function (displayUTCTimeCodes = false) {
 
     var onPlayPauseClick = function () {
         togglePlayPauseBtnState();
-        element.paused ? element.play() : element.pause();
+        if (!$scope.streamIsDynamic) {
+            element.paused ? element.play() : element.pause();
+        } else {
+            if (!element.paused) {
+                element.pause();
+            } else {
+                let availabilityStartTime = $scope.streamStartTime.getTime();
+                let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
+                let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                element.currentTime = targetTime;
+                element.play();
+            }
+        }
     };
 
     var togglePlayPauseBtnState = function () {
