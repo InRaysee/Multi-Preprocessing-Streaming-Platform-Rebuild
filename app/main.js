@@ -204,16 +204,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd"
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd"
         ],
         audio: [
-            "http://localhost:8080/apple/v10/stream.mpd",
-            "http://localhost:8080/apple/v10/stream.mpd"
+            "http://localhost:8080/apple/v11/stream.mpd",
+            "http://localhost:8080/apple/v11/stream.mpd"
         ]
     };
 
