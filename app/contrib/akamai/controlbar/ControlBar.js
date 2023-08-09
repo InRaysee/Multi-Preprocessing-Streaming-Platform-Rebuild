@@ -14,7 +14,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
     var lastVolumeLevel = NaN;
     var videoControllerVisibleTimeout = null;
-    var liveThresholdSecs = 12;
+    var liveThresholdSecs = $scope.streamTimeShiftDepth;  //////////////
     var textTrackList = {};
     var forceQuality = false;
 
@@ -95,12 +95,23 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         if (!$scope.streamIsDynamic) {
             element.paused ? element.play() : element.pause();
         } else {
+            // Find the available buffer if dynamic
             if (!element.paused) {
                 element.pause();
             } else {
                 let availabilityStartTime = $scope.streamStartTime.getTime();
                 let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
                 let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                let array = $scope.getBufferLevelAsArray();
+                for (let i = 0; i < array.length; i++) {
+                    if (targetTime >= array[i].start && targetTime < array[i].end) {
+                        element.currentTime = targetTime;
+                        break;
+                    } else if (targetTime < array[i].start || (i == array.length - 1 && targetTime >= array[i].end)) {
+                        element.currentTime = array[i].start;
+                        break;
+                    }
+                }
                 element.currentTime = targetTime;
                 element.play();
             }
@@ -271,7 +282,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
 
     var calculateTimeByEvent = function (event) {
         var seekbarRect = seekbar.getBoundingClientRect();
-        return Math.floor(element.duration * (event.clientX - seekbarRect.left) / seekbarRect.width);
+        return playerDuration() * (event.clientX - seekbarRect.left) / seekbarRect.width;
     };
 
     var onSeeked = function (event) {
@@ -290,16 +301,13 @@ var ControlBar = function (displayUTCTimeCodes = false) {
         $scope.isSeeking = false;
     };
 
-    var seek = function (value) {   ///////////// TODO: isDynamic
-        // let time = $scope.streamIsDynamic ? getDVRSeekOffset(value) : value;
+    var seek = function (value) {
         let time = value;
+        if ($scope.streamIsDynamic) {
+            time = (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 - (playerDuration() - value);
+        }
         let currentTime = element.currentTime;
         if (time === currentTime) return;
-        // internalSeek = (internal === true);
-        // if (!internalSeek) {
-        //     seekTarget = time;
-        //     eventBus.trigger(Events.PLAYBACK_SEEK_ASKED);
-        // }
         let contentType = [];
         if ($scope.streamSourceBuffer["video"]) {
             contentType.push("video");
@@ -321,10 +329,10 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                 window.alert("Error when seek: cannot calculate duration of each segment!");
                 return;
             }
-            let segmentIndex = Math.floor(value / segDuration);
-            let bufferLevelAsArray = getBufferLevelasArray(contentType[i]);
+            let segmentIndex = Math.floor(time / segDuration) + ($scope.streamBitrateList[contentType[i]][$scope.streamInfo[contentType[i]].pathIndex][$scope.streamInfo[contentType[i]].periodIndex][$scope.streamInfo[contentType[i]].adaptationSetIndex][$scope.streamInfo[contentType[i]].representationIndex].startNumber || 0);  /////////////////
+            let bufferLevelAsArray = $scope.getBufferLevelAsArray(contentType[i]);
             for (let j = 0; j < bufferLevelAsArray.length; j++) {
-                if (bufferLevelAsArray[j].start <= value && bufferLevelAsArray[j].end >= value) {
+                if (bufferLevelAsArray[j].start <= time && bufferLevelAsArray[j].end >= time) {
                     while ((segmentIndex + 1) * segDuration <= bufferLevelAsArray[j].end) {
                         segmentIndex++;
                     }
@@ -332,7 +340,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             }
             $scope.streamInfo[contentType[i]].segmentIndex = segmentIndex;
         }
-        element.currentTime = value;
+        element.currentTime = time;
     }
 
     var setTime = function (value) {
@@ -346,9 +354,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             } else {
                 durationDisplay.classList.remove('live');
             }
-            timeDisplay.textContent = '- ' + convertToTimeCode(liveDelay);
+            timeDisplay.textContent = '- ' + $scope.convertToTimeCode(liveDelay);
         } else if (!isNaN(value)) {
-            timeDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : convertToTimeCode(value);
+            timeDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : $scope.convertToTimeCode(value);
         }
     };
 
@@ -359,27 +367,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             hour12: hour12
         });
         return withDate ? t + ' ' + d : t;
-    };
-
-    var convertToTimeCode = function (value) {
-        value = Math.max(value, 0);
-
-        let h = Math.floor(value / 3600);
-        let m = Math.floor((value % 3600) / 60);
-        let s = Math.floor((value % 3600) % 60);
-        return (h === 0 ? '' : (h < 10 ? '0' + h.toString() + ':' : h.toString() + ':')) + (m < 10 ? '0' + m.toString() : m.toString()) + ':' + (s < 10 ? '0' + s.toString() : s.toString());
-    };
-
-    var getBufferLevelasArray = function (contentType) {  //////////////////////
-        var elementBuffered = $scope.streamSourceBuffer[contentType].buffered;
-        var result = [];
-        if (elementBuffered.length == 0) {
-            return result;
-        }
-        for (let i = 0; i < elementBuffered.length; i++) {
-            result.push({ start: elementBuffered.start(i), end: elementBuffered.end(i) });
-        }
-        return result;
     };
 
     // var onSeekBarMouseMove = function (event) {};
@@ -393,13 +380,14 @@ var ControlBar = function (displayUTCTimeCodes = false) {
                 durationDisplay.classList.add('live-icon');
             }
         } else if (!isNaN(value)) {
-            durationDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : convertToTimeCode(value);
+            durationDisplay.textContent = displayUTCTimeCodes ? formatUTC(value) : $scope.convertToTimeCode(value);
             durationDisplay.classList.remove('live-icon');
         }
     };
 
     var seekLive = function () {
-        seek(playerDuration());
+        let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
+        seek(playerDuration() - targetLatency);
     }
 
     var updateDuration = function () {
@@ -439,10 +427,17 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     var playerDuration = function () {   
         let d = element.duration;
         if ($scope.streamIsDynamic) {
-            ///////////// TODO: isDynamic
-            // const type = streamController && streamController.hasVideoTrack() ? Constants.VIDEO : Constants.AUDIO;
-            // let metric = dashMetrics.getCurrentDVRInfo(type);
-            // d = metric ? (metric.range.end - metric.range.start) : 0;
+            // Dynamic
+            let array = $scope.getBufferLevelAsArray();
+            for (let i = array.length - 1; i >= 0; i--) {
+                if (element.currentTime >= array[i].start) {
+                    d = (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 - array[i].start;
+                    break;
+                }
+                if (i == 0 && element.currentTime < array[i].start) {
+                    d = (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 - element.currentTime;
+                }
+            }
         }
         return d;
     }
@@ -450,9 +445,8 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     var playerTime = function () {
         let t = element.currentTime;
         if ($scope.streamIsDynamic) {
-            // const type = streamController && streamController.hasVideoTrack() ? Constants.VIDEO : Constants.AUDIO;
-            // let metric = dashMetrics.getCurrentDVRInfo(type);
-            // t = (metric === null || t === 0) ? 0 : Math.max(0, (t - metric.range.start));
+            // Dynamic
+            t = playerDuration() - (((new Date().getTime() - $scope.streamStartTime.getTime()) / 1000) - element.currentTime);
         }
         return t;
     }
@@ -834,12 +828,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
 /*                         Functions: events and interface                         */
 /////////////////////////////////////////////////////////////////////////////////////
 
-    var onPlaybackStart = function () {
-        setTime(displayUTCTimeCodes ? timeAsUTC(playerTime()) : playerTime());
-        updateDuration();
-        togglePlayPauseBtnState();
-    }
-
     var onPlaybackPaused = function () {
         togglePlayPauseBtnState();
     }
@@ -1058,7 +1046,6 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             document.removeEventListener('webkitfullscreenchange', onFullScreenChange);
         },
 
-        onPlaybackStart: onPlaybackStart,
         onPlaybackPaused: onPlaybackPaused,
         onPlaybackTimeUpdate: onPlaybackTimeUpdate,
         onStreamActivated: onStreamActivated,

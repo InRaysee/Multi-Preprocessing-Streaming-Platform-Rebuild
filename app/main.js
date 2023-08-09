@@ -120,8 +120,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         audio: NaN
     };
     $scope.isSeeking = NaN;  // Flag for identifying if seeking the segment
-    $scope.startupTime = 0;  // Startup time of streaming
-    $scope.startupTimeFormatted = null;  // Formatted startup time of streaming
+    $scope.utcTime = null;  // UTC time
+    $scope.startupTime = null;  // Startup time of streaming
+    $scope.baselineTime = null;  // Baseline time of live stream
+    $scope.isStartup = NaN;  // Flag for identifying if the player starts up
 
     // $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
     // $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
@@ -974,6 +976,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             audio: NaN
         };
         $scope.isSeeking = NaN;
+        $scope.utcTime = null;
+        $scope.startupTime = null;
+        $scope.baselineTime = null;
+        $scope.isStartup = NaN;
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
             if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
@@ -1541,10 +1547,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default
             $scope.isFetchingSegment[contentType] = false;
             $scope.isSeeking = false;
+            $scope.isStartup = false;
 
             // Set the startup time of the player
-            $scope.startupTime = new Date(parseInt(new Date().getTime()));
-            $scope.startupTimeFormatted = $scope.startupTime.toLocaleString();
+            $scope.startupTime = new Date().toLocaleString();
 
             // Initialize charts
             $scope.chartState["bufferLevel"][contentType] = {
@@ -1760,6 +1766,21 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
         }
         return 0;
+
+    };
+
+    // Get the buffer level of videos/audios as array
+    $scope.getBufferLevelAsArray = function (contentType) {  //////////////////////
+
+        var elementBuffered = contentType ? $scope.streamSourceBuffer[contentType].buffered : $scope.streamElement.buffered;
+        var result = [];
+        if (elementBuffered.length == 0) {
+            return result;
+        }
+        for (let i = 0; i < elementBuffered.length; i++) {
+            result.push({ start: elementBuffered.start(i), end: elementBuffered.end(i) });
+        }
+        return result;
 
     };
 
@@ -2090,6 +2111,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Fetch the segments periodly if isFetchingSegment is false
     $scope.scheduleFetcher = function(contentType) {
     
+        // Autoplay
+        if ($scope.isStartup === false) {
+            let array = $scope.getBufferLevelAsArray();
+            if (array.length > 0) {
+                $scope.streamElement.currentTime = array[0].start;
+                try {
+                    $scope.streamElement.play();
+                    $scope.isStartup = true;
+                } catch (e) {
+                    console.log("Wrong when autoplay: " + e);
+                }
+            }
+        }
+
         let bufferLevel = $scope.getBufferLevel(contentType);
         let bufferToAppend = 0;
         for (let i = 0; i < $scope.streamBufferToAppend[contentType].length; i++) {
@@ -2100,8 +2135,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
         if ($scope.streamSourceBuffer[contentType] && !$scope.isSeeking && !$scope.isFetchingSegment[contentType] && !isNaN(bufferLevel) && (bufferLevel + bufferToAppend) < $scope.targetBuffer
                 && !isNaN($scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) 
-                && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum
-                && (!$scope.streamIsDynamic || 1)) {  ////////////
+                && $scope.streamInfo[contentType].segmentIndex <= $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].segmentNum) {
             // Adjust the streamInfo by ABR rules
             if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
                 $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo($scope.streamInfo[contentType], contentType);
@@ -2152,10 +2186,6 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     };
 
-    // Set the fastest mediaplayer's timeline as the normalized time
-    $scope.setNormalizedTime = function() {
-    };
-
     // Compute total throughput according to recent HTTP requests (Total data in ONE second)
     $scope.computetotalThroughput = function() {
     };
@@ -2166,7 +2196,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     // Other platform intervals
     setInterval(() => {
-        $scope.UTCTime = new Date(parseInt(new Date().getTime())).toLocaleString();
+
+        $scope.utcTime = new Date().toLocaleString();
+        $scope.baselineTime = $scope.streamStartTime ? (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 : null;
+
     }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
 
     // setInterval(() => {

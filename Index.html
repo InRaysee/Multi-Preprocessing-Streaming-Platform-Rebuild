@@ -199,7 +199,7 @@
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
 											Target latency (s)
-											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency" disabled>
+											<input style="width: 200px;" value="10" step="0.1" min="0" type="number" id="target-latency" ng-model="targetLatency">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Minimal drift (s)
@@ -322,13 +322,16 @@
 					<div class="tab-content">
 						<div class="panel-body panel-stats" style="height: 565px;" ng-cloak>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">UTC Time: </label> {{UTCTime}}
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">UTC Time: </label> {{utcTime}}
 							</div>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time: </label> {{startupTimeFormatted || UTCTime}}
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Startup Time: </label> {{startupTime || utcTime}}
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Timeline: </label> {{(streamElement.currentTime || 0).toFixed(1)}} s
+							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Baseline: </label> {{(baselineTime || streamElement.currentTime || 0).toFixed(1)}} s
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Buffer Level: </label> {{(monitorBufferLevel.video || 0).toFixed(1)}} s | {{(monitorBufferLevel.audio || 0).toFixed(1)}} s
