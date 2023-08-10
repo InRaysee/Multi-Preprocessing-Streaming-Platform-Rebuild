@@ -103,6 +103,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         audio: NaN
     };
 
+    $scope.streamURLsForLifeSignals = {  // Save the stream URLs for life signals
+        video: [],
+        audio: []
+    };
+
     $scope.streamDuration = NaN;  // Total duration of the VOD stream
     $scope.streamStartTime = NaN;  // Availability start time of the live stream
     $scope.streamTimeShiftDepth = NaN;  // The valid time of segments
@@ -140,6 +145,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
     $scope.INTERVAL_OF_APPEND_BUFFER = 10;
     $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 5000;
+    $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
     $scope.AVERAGE_THROUGHPUT_WINDOW = 5;
@@ -204,8 +210,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         video: 0,
         audio: 0
     };
-    $scope.lifeSignalEnabled = true;  // Whether discard the lowest bitrate as life signals or not
-
+    $scope.lifeSignalEnabled = true;  // Whether send life signals or not
+    $scope.catchupEnabled = true;  // Whether catch up when playback or not
+    
     $scope.streamURLs = {  // Save the selected media sources
         video: [
             "http://localhost:8080/apple/v11/stream.mpd",
@@ -222,9 +229,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
 
     $scope.targetLatency = 10;  // The live delay allowed
-    // $scope.minDrift = 0.02;  // The minimal latency deviation allowed
+    $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
+    $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
-    // $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
 
 
@@ -959,6 +966,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             audio: NaN
         };
 
+        $scope.streamURLsForLifeSignals = {
+            video: [],
+            audio: []
+        };
+
         $scope.streamDuration = NaN;
         $scope.streamStartTime = NaN;
         $scope.streamTimeShiftDepth = NaN;
@@ -1031,6 +1043,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             return;
         }
 
+        // Copy stream URLs for life signals
+        for (let i = 0; i < $scope.streamURLs.video.length; i++) {
+            $scope.streamURLsForLifeSignals.video[i] = $scope.streamURLs.video[i];
+        }
+        for (let i = 0; i < $scope.streamURLs.audio.length; i++) {
+            $scope.streamURLsForLifeSignals.audio[i] = $scope.streamURLs.audio[i];
+        }
+
         // Attach view & source
         $scope.streamElement = document.getElementById('video');
         if (!$scope.streamElement) {
@@ -1096,6 +1116,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Add interval function: update charts
             $scope.intervalFunctions.push(setInterval($scope.updateCharts, $scope.INTERVAL_OF_UPDATE_CHARTS));
+
+            // Add interval function: set playback rate
+            $scope.intervalFunctions.push(setInterval($scope.setPlaybackRate, $scope.INTERVAL_OF_SET_PLAYBACK_RATE));
 
         }, $scope.TIMEOUT_OF_SOURCE_OPEN);
 
@@ -1647,7 +1670,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 if (status == 404) {
                     console.log("No file(" + status + "): " + urlResolved);
                     $scope.isFetchingSegment[contentType] = false;
-                    $scope.streamInfo[contentType].segmentIndex = $scope.streamInfo[contentType].lastSegmentIndex;
+                    // $scope.streamInfo[contentType].segmentIndex = $scope.streamInfo[contentType].lastSegmentIndex;
                 }
             }
         );
@@ -1686,7 +1709,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
                 if (periodEnd.index != -1) {
                     $scope.streamInfo[contentType].periodIndex = periodEnd.index;
-                    $scope.streamInfo[contentType].segmentIndex = $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber;
+                    $scope.streamInfo[contentType].segmentIndex = $scope.streamBitrateList[contentType][$scope.streamInfo[contentType].pathIndex][$scope.streamInfo[contentType].periodIndex][$scope.streamInfo[contentType].adaptationSetIndex][$scope.streamInfo[contentType].representationIndex].startNumber || 0;  //////////
                 }
             }
         }
@@ -2074,7 +2097,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.lifeSignalFetcher = function(contentType, pathIndex) {
         
         if ($scope.monitorRttForLifeSignal[contentType][pathIndex] == $scope.monitorRtt[contentType][pathIndex]) {
-            $scope.fetchBuffer(contentType, $scope.streamURLs[contentType][pathIndex], $scope.RESPONSE_TYPE_OF_LIFE_SIGNAL,
+            $scope.fetchBuffer(contentType, $scope.streamURLsForLifeSignals[contentType][pathIndex], $scope.RESPONSE_TYPE_OF_LIFE_SIGNAL,
                 (buffer, requestInfo) => {
                     // $scope.monitorThroughputBuffer[contentType][pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
                     // $scope.monitorThroughput[contentType][pathIndex] = $scope.calculateAverageThroughput(contentType, pathIndex);
@@ -2146,6 +2169,23 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             } else {
                 $scope.fetchSegment(contentType, $scope.TYPE_OF_INIT_SEGMENT);
             }
+        }
+
+    };
+
+    // Observe latency and adjust playback rate to catch up
+    $scope.setPlaybackRate = function () {
+
+        if (!$scope.streamIsDynamic) {
+            return;
+        }
+
+        if ($scope.streamElement.currentTime < $scope.baselineTime - $scope.targetLatency - $scope.minDrift) {
+            $scope.streamElement.playbackRate = 1 + $scope.catchupPlaybackRate;
+        } else if ($scope.streamElement.currentTime > $scope.baselineTime - $scope.targetLatency + $scope.minDrift) {
+            $scope.streamElement.playbackRate = 1 - $scope.catchupPlaybackRate;
+        } else {
+            $scope.streamElement.playbackRate = 1;
         }
 
     };

@@ -203,7 +203,7 @@
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Minimal drift (s)
-											<input style="width: 200px;" value="0.02" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift" disabled>
+											<input style="width: 200px;" value="0.1" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Maximal drift (s)
@@ -211,11 +211,15 @@
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Catchup playback rate (%)
-											<input style="width: 200px;" value="0.5" min="0.0" max="0.5" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate" disabled>
+											<input style="width: 200px;" value="0.5" min="0.0" max="1.0" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Catchup latency threshold (s)
 											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold" disabled>
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="catch_up" id="catch_up" type="checkbox" autocomplete="off" ng-model="catchupEnabled" checked>
+											Catchup enabled
 										</label>
 									</form>
 								</div>
@@ -240,7 +244,7 @@
 									<a tabindex="-1" href="#">{{item.type}}</a>
 									<ul class="dropdown-menu">
 										<li ng-repeat="subitem in item.submenu">
-											<a ng-click="setStream(subitem, 'video', $index)">{{subitem.name}}</a>
+											<a ng-click="setStream(subitem, 'video', this.$parent.$parent.$parent.$index)">{{subitem.name}}</a>
 										</li>
 									</ul>
 								</li>
@@ -341,6 +345,9 @@
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Quality: </label> {{((monitorPlaybackQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorPlaybackQuality.audio || 0) / 1000).toFixed(0)}} kbps
+							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Rate: </label> {{streamElement ? streamElement.playbackRate || 1 : 1}}
 							</div>
 							<!-- <div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
