@@ -205,7 +205,7 @@
 											Minimal drift (s)
 											<input style="width: 200px;" value="0.1" min="0.0" max="0.5" step="0.01" type="number" id="min-drift" ng-model="minDrift">
 										</label>
-										<label data-toggle="tooltip" data-placement="right">
+										<label data-toggle="tooltip" data-placement="right" style="display: none;">
 											Maximal drift (s)
 											<input style="width: 200px;" value="3" min="1" max="20" step="1" type="number" id="max-drift" ng-model="maxDrift" disabled>
 										</label>
@@ -213,13 +213,17 @@
 											Catchup playback rate (%)
 											<input style="width: 200px;" value="0.5" min="0.0" max="1.0" step="0.01" type="number" id="catchup-playback-rate" ng-model="catchupPlaybackRate">
 										</label>
-										<label data-toggle="tooltip" data-placement="right">
+										<label data-toggle="tooltip" data-placement="right" style="display: none;">
 											Catchup latency threshold (s)
 											<input style="width: 200px;" value="60" min="0" type="number" id="catchup-threshold" ng-model="liveCatchupLatencyThreshold" disabled>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="catch_up" id="catch_up" type="checkbox" autocomplete="off" ng-model="catchupEnabled" checked>
 											Catchup enabled
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="low_latency_dash" id="low_latency_dash" type="checkbox" autocomplete="off" ng-model="llDashEnabled" checked>
+											LL-DASH enabled
 										</label>
 									</form>
 								</div>

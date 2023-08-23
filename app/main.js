@@ -212,6 +212,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
     $scope.catchupEnabled = true;  // Whether catch up when playback or not
+    $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
@@ -1131,7 +1132,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             window.alert("Empty URL when fetching MPD!");
             return;
         }
-        $scope.fetchBuffer(contentType, $scope.resolveUrl($scope.TYPE_OF_MPD, url), $scope.RESPONSE_TYPE_OF_MPD, callback);
+        $scope.xmlLoader(contentType, $scope.resolveUrl($scope.TYPE_OF_MPD, url), $scope.RESPONSE_TYPE_OF_MPD, callback);
 
     };
 
@@ -1638,52 +1639,115 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         console.log("Fetching " + urlType + ": Type " + contentType + ", Path " + curStreamInfo.pathIndex + ", Period " + curStreamInfo.periodIndex + ", AdaptationSet " + curStreamInfo.adaptationSetIndex + ", Representation " + curStreamInfo.representationIndex + (urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? ", Segment " + curStreamInfo.segmentIndex + "." : "."));
         $scope.monitorDownloadingQuality[contentType] = $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].bandwidth;
         
-        $scope.fetchBuffer(contentType, urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT, 
-            (buffer, requestInfo) => {
-                $scope.monitorThroughputBuffer[contentType][curStreamInfo.pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
-                // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
-                $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
-                $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex] = !isNaN(requestInfo.bufferLevel) ? (requestInfo.tsize / requestInfo.bufferLevel).toFixed(0) : Infinity;
-                $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
-                clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
-                $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
-                $scope.requestList.unshift({
-                    urlType: urlType,
-                    contentType: contentType,
-                    pathIndex: curStreamInfo.pathIndex,
-                    periodIndex: curStreamInfo.periodIndex,
-                    adaptationSetIndex: curStreamInfo.adaptationSetIndex,
-                    representationIndex: curStreamInfo.representationIndex,
-                    segmentIndex: curStreamInfo.segmentIndex,
-                    tresponse_trequest: requestInfo.tresponse - requestInfo.trequest,
-                    tfinish_tresponse: requestInfo.tfinish - requestInfo.tresponse,
-                    tfinish_trequest: requestInfo.tfinish - requestInfo.trequest,
-                    tsize: requestInfo.tsize,
-                    rtt: $scope.monitorRtt[contentType][curStreamInfo.pathIndex],
-                    throughput: $scope.monitorThroughput[contentType][curStreamInfo.pathIndex],
-                    throughputExpect: $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex]
-                });
-                $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
-                $scope.isFetchingSegment[contentType] = false;
-            },
-            (status) => {
-                if (status == 404) {
-                    console.log("No file(" + status + "): " + urlResolved);
+        if (urlType != $scope.TYPE_OF_MEDIA_SEGMENT || !$scope.llDashEnabled) {
+            $scope.xmlLoader(contentType, urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT,
+                // Function: onload
+                (buffer, requestInfo) => {
+                    $scope.monitorThroughputBuffer[contentType][curStreamInfo.pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
+                    // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
+                    $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
+                    $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex] = !isNaN(requestInfo.bufferLevel) ? (requestInfo.tsize / requestInfo.bufferLevel).toFixed(0) : Infinity;
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
+                    $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
+                    $scope.requestList.unshift({
+                        urlType: urlType,
+                        contentType: contentType,
+                        pathIndex: curStreamInfo.pathIndex,
+                        periodIndex: curStreamInfo.periodIndex,
+                        adaptationSetIndex: curStreamInfo.adaptationSetIndex,
+                        representationIndex: curStreamInfo.representationIndex,
+                        segmentIndex: curStreamInfo.segmentIndex,
+                        tresponse_trequest: requestInfo.tresponse - requestInfo.trequest,
+                        tfinish_tresponse: requestInfo.tfinish - requestInfo.tresponse,
+                        tfinish_trequest: requestInfo.tfinish - requestInfo.trequest,
+                        tsize: requestInfo.tsize,
+                        rtt: $scope.monitorRtt[contentType][curStreamInfo.pathIndex],
+                        throughput: $scope.monitorThroughput[contentType][curStreamInfo.pathIndex],
+                        throughputExpect: $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex]
+                    });
+                    $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
                     $scope.isFetchingSegment[contentType] = false;
-                    // $scope.streamInfo[contentType].segmentIndex = $scope.streamInfo[contentType].lastSegmentIndex;
+                },
+                // Function: onerror
+                (status) => {
+                    if (status == 404) {
+                        console.log("No file(" + status + "): " + urlResolved);
+                        $scope.isFetchingSegment[contentType] = false;
+                        // $scope.streamInfo[contentType].segmentIndex = $scope.streamInfo[contentType].lastSegmentIndex;
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            $scope.fetchLoader(contentType, urlResolved,
+                // Function: progress
+                (buffer, requestInfo) => {
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
+                    $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
+                    $scope.requestList.unshift({
+                        urlType: urlType,
+                        contentType: contentType,
+                        pathIndex: curStreamInfo.pathIndex,
+                        periodIndex: curStreamInfo.periodIndex,
+                        adaptationSetIndex: curStreamInfo.adaptationSetIndex,
+                        representationIndex: curStreamInfo.representationIndex,
+                        segmentIndex: curStreamInfo.segmentIndex,
+                        tresponse_trequest: requestInfo.tresponse - requestInfo.trequest,
+                        tfinish_tresponse: "-",
+                        tfinish_trequest: "-",
+                        tsize: requestInfo.tsize,
+                        rtt: $scope.monitorRtt[contentType][curStreamInfo.pathIndex],
+                        throughput: "-",
+                        throughputExpect: "-"
+                    });
+                    $scope.streamBufferToAppend[contentType].push({
+                        content: buffer,
+                        curStreamInfo: curStreamInfo
+                    });
+                },
+                // Function: onload
+                (buffer, requestInfo) => {
+                    $scope.monitorThroughputBuffer[contentType][curStreamInfo.pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
+                    // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
+                    $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
+                    $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex] = !isNaN(requestInfo.bufferLevel) ? (requestInfo.tsize / requestInfo.bufferLevel).toFixed(0) : Infinity;
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
+                    $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
+                    $scope.requestList.unshift({
+                        urlType: urlType,
+                        contentType: contentType,
+                        pathIndex: curStreamInfo.pathIndex,
+                        periodIndex: curStreamInfo.periodIndex,
+                        adaptationSetIndex: curStreamInfo.adaptationSetIndex,
+                        representationIndex: curStreamInfo.representationIndex,
+                        segmentIndex: curStreamInfo.segmentIndex,
+                        tresponse_trequest: requestInfo.tresponse - requestInfo.trequest,
+                        tfinish_tresponse: requestInfo.tfinish - requestInfo.tresponse,
+                        tfinish_trequest: requestInfo.tfinish - requestInfo.trequest,
+                        tsize: requestInfo.tsize,
+                        rtt: $scope.monitorRtt[contentType][curStreamInfo.pathIndex],
+                        throughput: $scope.monitorThroughput[contentType][curStreamInfo.pathIndex],
+                        throughputExpect: $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex]
+                    });
+                    $scope.loadSegment(null, contentType, curStreamInfo, urlType);
+                    $scope.isFetchingSegment[contentType] = false;
+                }
+            );
+        }
 
     };
 
     // Load segments from responses and append to queue
     $scope.loadSegment = function(buffer, contentType, curStreamInfo, urlType) {
 
-        $scope.streamBufferToAppend[contentType].push({
-            content: buffer,
-            curStreamInfo: curStreamInfo
-        });
+        if (buffer) {
+            $scope.streamBufferToAppend[contentType].push({
+                content: buffer,
+                curStreamInfo: curStreamInfo
+            });
+        }
         if (urlType == $scope.TYPE_OF_INIT_SEGMENT) {  // Save in the cache if InitSegment
             $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex] = {
                 content: buffer,
@@ -1718,7 +1782,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
 
     // Create and load a XMLHttpRequest
-    $scope.fetchBuffer = function(contentType, url, responseType, callback, noFile) {
+    $scope.xmlLoader = function(contentType, url, responseType, onload, onerror) {
 
         if (!url) {
             window.alert("The URL is invalid: " + url);
@@ -1742,12 +1806,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             if (xhr.status == 200) {
                 requestInfo.tfinish = performance.now();
                 requestInfo.tsize = xhr.responseType == $scope.RESPONSE_TYPE_OF_MPD ? xhr.response.length : xhr.responseType == $scope.RESPONSE_TYPE_OF_SEGMENT ? xhr.response.byteLength * 8 : NaN;
-                callback(xhr.response, requestInfo);
+                onload(xhr.response, requestInfo);
             }
         };
         xhr.onreadystatechange = function () {
-            if (noFile && xhr.status == 404) {
-                noFile(xhr.status);
+            if (onerror && xhr.status == 404) {
+                onerror(xhr.status);
                 xhr.onreadystatechange = null;
             }
         };
@@ -1758,13 +1822,137 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
         };
         xhr.ontimeout = function () {
-            if (noFile) {
-                noFile(xhr.status);
+            if (onerror) {
+                onerror(xhr.status);
             }
         };
         requestInfo.trequest = performance.now();
         requestInfo.bufferLevel = $scope.getBufferLevel(contentType);
         xhr.send();
+
+    };
+
+    // Create and load a fetch request
+    $scope.fetchLoader = function(contentType, url, progress, onload) {
+
+        var concatTypedArray = function (remaining, data) {
+            if (remaining.length === 0) {
+                return data;
+            }
+            const result = new Uint8Array(remaining.length + data.length);
+            result.set(remaining);
+            result.set(data, remaining.length);
+            return result;
+        };
+
+        var reader;
+
+        var read = function (response, processResult) {
+            if (!reader) {
+                throw "No reader!";
+            }
+            reader.read()
+                .then(processResult)
+                .catch(function (e) {
+                    if (response.status === 200) {
+                        console.log("Error in fetchLoader (with 200): " + e);
+                    }
+                });
+        };
+
+        if (!url) {
+            window.alert("The URL is invalid: " + url);
+            return;
+        }
+
+        var requestInfo = {
+            contentType: contentType,
+            tsize: NaN,
+            trequest: null,
+            tresponse: null,
+            tfinish: null,
+            bufferLevel: NaN
+        };
+        var firstByteReceived = false;
+
+        requestInfo.trequest = performance.now();
+        requestInfo.bufferLevel = $scope.getBufferLevel(contentType);
+
+        fetch(url).then(function (response) {  // TODO: reqOptions (headers)
+            // Get the time of the first byte received
+            if (!firstByteReceived) {
+                requestInfo.tresponse = performance.now();
+                firstByteReceived = true;
+            }
+
+            // Check the response
+            if (!response.ok) {
+                throw "Response is not OK!";
+            }
+            if (!response.body) {
+                throw "Body is not supported!";
+            }
+
+            const totalBytes = parseInt(response.headers.get('Content-Length'), 10);
+            let bytesReceived = 0;
+            let signaledFirstByte = false;
+            let remaining = new Uint8Array();
+            let offset = 0;
+            let lastChunkWasFinished = true;
+            if (!reader) {
+                reader = response.body.getReader();
+            }
+
+            // function: processResult
+            const processResult = function ({ value, done}) {
+                if (done) {
+                    // if (remaining) {}
+                    // Function: onload
+                    requestInfo.tfinish = performance.now();
+                    requestInfo.tsize = isNaN(totalBytes) ? bytesReceived : totalBytes;
+                    onload(response, requestInfo);  /////////
+                    return;
+                }
+
+                if (value && value.length > 0) {
+                    remaining = concatTypedArray(remaining, value);
+                    bytesReceived += value.length;
+
+                    const boxesInfo = $scope.findLastTopIsoBoxCompleted(['moov', 'mdat'], remaining, offset);
+                    if (boxesInfo.found) {
+                        const end = boxesInfo.lastCompletedOffset + boxesInfo.size;
+
+                        if (!lastChunkWasFinished) {
+                            lastChunkWasFinished = true;
+                        }
+
+                        let data;
+                        if (end === remaining.length) {
+                            data = remaining;
+                            remaining = new Uint8Array();
+                        } else {
+                            data = new Uint8Array(remaining.subarray(0, end));
+                            remaining = remaining.subarray(end);
+                        }
+
+                        requestInfo.tsize = isNaN(totalBytes) ? bytesReceived : totalBytes;
+                        progress(data, requestInfo);  /////////
+
+                        offset = 0;
+                    } else {
+                        offset = boxesInfo.lastCompletedOffset;
+                        if (!signaledFirstByte) {
+                            signaledFirstByte = true;
+                        }
+                    }
+                }
+                read(response, processResult);
+            };
+            read(response, processResult);
+
+        }).catch(function (e) {
+            console.log("Error in fetchLoader: " + e);
+        });
 
     };
 
@@ -2041,6 +2229,70 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     };
 
+    // dash.js: From the list of type boxes to look for, returns the latest one that is fully completed (header + payload)
+    $scope.findLastTopIsoBoxCompleted = function (types, buffer, offset) {
+
+        class IsoBoxSearchInfo {
+            constructor(lastCompletedOffset, found, size) {
+                this.lastCompletedOffset = lastCompletedOffset;
+                this.found = found;
+                this.size = size;
+            }
+        };
+
+        var parseUint32 = function (data, offset) {
+            return data[offset + 3] >>> 0 |
+                (data[offset + 2] << 8) >>> 0 |
+                (data[offset + 1] << 16) >>> 0 |
+                (data[offset] << 24) >>> 0;
+        };
+    
+        var parseIsoBoxType = function (data, offset) {
+            return String.fromCharCode(data[offset++]) +
+                String.fromCharCode(data[offset++]) +
+                String.fromCharCode(data[offset++]) +
+                String.fromCharCode(data[offset]);
+        };
+
+        if (offset === undefined) {
+            offset = 0;
+        }
+
+        // 8 = size (uint32) + type (4 characters)
+        if (!buffer || offset + 8 >= buffer.byteLength) {
+            return new IsoBoxSearchInfo(0, false);
+        }
+
+        const data = (buffer instanceof ArrayBuffer) ? new Uint8Array(buffer) : buffer;
+        let boxInfo;
+        let lastCompletedOffset = 0;
+        while (offset < data.byteLength) {
+            const boxSize = parseUint32(data, offset);
+            const boxType = parseIsoBoxType(data, offset + 4);
+
+            if (boxSize === 0) {
+                break;
+            }
+
+            if (offset + boxSize <= data.byteLength) {
+                if (types.indexOf(boxType) >= 0) {
+                    boxInfo = new IsoBoxSearchInfo(offset, true, boxSize);
+                } else {
+                    lastCompletedOffset = offset + boxSize;
+                }
+            }
+
+            offset += boxSize;
+        }
+
+        if (!boxInfo) {
+            return new IsoBoxSearchInfo(lastCompletedOffset, false);
+        }
+
+        return boxInfo;
+
+    }
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /*                         Functions: intervals and events                         */
@@ -2087,7 +2339,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         / $scope.streamBitrateList[$scope.CONTENT_TYPE[i]][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].timescale);    
                 }
                 $scope.monitorPlaybackQualityBuffer[$scope.CONTENT_TYPE[i]].push(bufferElement);
-                $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].appendBuffer(buffer.content);
+                // $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].appendBuffer(buffer.content).then{
+
+                // };
             }
         }
 
@@ -2097,7 +2351,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.lifeSignalFetcher = function(contentType, pathIndex) {
         
         if ($scope.monitorRttForLifeSignal[contentType][pathIndex] == $scope.monitorRtt[contentType][pathIndex]) {
-            $scope.fetchBuffer(contentType, $scope.streamURLsForLifeSignals[contentType][pathIndex], $scope.RESPONSE_TYPE_OF_LIFE_SIGNAL,
+            $scope.xmlLoader(contentType, $scope.streamURLsForLifeSignals[contentType][pathIndex], $scope.RESPONSE_TYPE_OF_LIFE_SIGNAL,
                 (buffer, requestInfo) => {
                     // $scope.monitorThroughputBuffer[contentType][pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
                     // $scope.monitorThroughput[contentType][pathIndex] = $scope.calculateAverageThroughput(contentType, pathIndex);
@@ -2176,7 +2430,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Observe latency and adjust playback rate to catch up
     $scope.setPlaybackRate = function () {
 
-        if (!$scope.streamIsDynamic) {
+        if (!$scope.streamIsDynamic || !$scope.catchupEnabled) {
             return;
         }
 
