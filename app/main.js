@@ -1967,7 +1967,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         if (!$scope.streamSourceBuffer[contentType]) {
             return NaN;
         }
-        var elementBuffered = $scope.streamSourceBuffer[contentType].buffered;
+        var elementBuffered = contentType ? $scope.streamSourceBuffer[contentType].buffered : $scope.streamElement.buffered;
         if (elementBuffered.length == 0) {
             return 0;
         }
@@ -1983,6 +1983,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Get the buffer level of videos/audios as array
     $scope.getBufferLevelAsArray = function (contentType) {  //////////////////////
 
+        if (!$scope.streamElement || (contentType && !$scope.streamSourceBuffer[contentType])) {
+            return NaN;
+        }
         var elementBuffered = contentType ? $scope.streamSourceBuffer[contentType].buffered : $scope.streamElement.buffered;
         var result = [];
         if (elementBuffered.length == 0) {
@@ -2339,9 +2342,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         / $scope.streamBitrateList[$scope.CONTENT_TYPE[i]][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].timescale);    
                 }
                 $scope.monitorPlaybackQualityBuffer[$scope.CONTENT_TYPE[i]].push(bufferElement);
-                // $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].appendBuffer(buffer.content).then{
-
-                // };
+                $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].appendBuffer(buffer.content);
             }
         }
 
@@ -2444,11 +2445,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     };
 
-    // Update the buffer level in the control bar periodly
+    // Update the buffer level in the control bar and restart playback periodly
     $scope.onBufferLevelUpdated = function () {
 
         if ($scope.controllBar && $scope.controllBar.onBufferLevelUpdated) {
             $scope.controllBar.onBufferLevelUpdated();
+        }
+
+        let buffer = $scope.getBufferLevel();
+        if (buffer > 0 && $scope.streamElement.paused) {
+            $scope.streamElement.play();
         }
 
     };
