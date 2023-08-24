@@ -144,6 +144,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT = 10;
     $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
     $scope.INTERVAL_OF_APPEND_BUFFER = 10;
+    $scope.INTERVAL_OF_REMOVE_BUFFER = 1000;
     $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 5000;
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
@@ -208,6 +209,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     }
 
     $scope.targetBuffer = 4;  // The buffer level desired to be fetched
+    $scope.maximalBuffer = 15;  // The buffer level desired to be saved
     $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
 
     $scope.selectedRule = "lowestBitrateRule";  // Save the selected ABR strategy
@@ -1002,6 +1004,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
             if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
+                $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
                 $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]);
             }
@@ -1119,6 +1122,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Add interval function: append buffers in intervals
             $scope.intervalFunctions.push(setInterval($scope.appendBuffer, $scope.INTERVAL_OF_APPEND_BUFFER));
+            $scope.intervalFunctions.push(setInterval($scope.removeBuffer, $scope.INTERVAL_OF_REMOVE_BUFFER));
 
             // Add interval function: update charts
             $scope.intervalFunctions.push(setInterval($scope.updateCharts, $scope.INTERVAL_OF_UPDATE_CHARTS));
@@ -1542,6 +1546,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer(curStreamInfo.mimeCodecs);
                     // Add event listeners:  1. append buffers from listeners   2. update buffer levels
                     $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
+                    $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                     $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
                 } 
                 // Need both video and audio SourceBuffers
@@ -1550,6 +1555,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] = $scope.mediaSource.addSourceBuffer($scope.streamSourceBufferMimeCodecs[$scope.CONTENT_TYPE[i]]);
                         // Add event listeners:  1. append buffers from listeners   2. update buffer levels
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
+                        $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
                     }
                 }
@@ -2358,6 +2364,17 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
                 $scope.monitorPlaybackQualityBuffer[$scope.CONTENT_TYPE[i]].push(bufferElement);
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].appendBuffer(buffer.content);
+            }
+        }
+
+    };
+
+    // Periodly check and remove buffers
+    $scope.removeBuffer = function() {
+
+        for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+            if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && !$scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].updating && $scope.streamElement.currentTime - $scope.maximalBuffer > 0) {
+                $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].remove(0, $scope.streamElement.currentTime - $scope.maximalBuffer);
             }
         }
 
