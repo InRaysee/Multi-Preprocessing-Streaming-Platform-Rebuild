@@ -130,6 +130,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.baselineTime = null;  // Baseline time of live stream
     $scope.isStartup = NaN;  // Flag for identifying if the player starts up
 
+    $scope.stallTime = 0;  // Record the length of total stall time
+    $scope.stallFlag = NaN;  // Flag for stall
+
     // $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
     // $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
     // $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
@@ -229,16 +232,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd"
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.108:8000/dash/stream.mpd",
-            "http://222.20.126.108:8000/dash/stream.mpd"
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
+            "http://222.20.126.108:8000/LoopedFile/stream.mpd"
         ]
     };
 
@@ -1000,6 +1003,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         $scope.startupTime = null;
         $scope.baselineTime = null;
         $scope.isStartup = NaN;
+
+        $scope.stallTime = 0;
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
             if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
@@ -2503,6 +2508,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Triggered when the player plays
     $scope.onSetPauseBtn = function () {
 
+        if ($scope.stallFlag) {
+            $scope.stallTime += ((new Date().getTime()) - $scope.stallFlag) / 1000;
+            $scope.stallFlag = NaN;
+        }
         if ($scope.controllBar && $scope.controllBar.setPauseBtn) {
             $scope.controllBar.setPauseBtn();
         }
@@ -2512,6 +2521,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Triggered when the player stops or waits
     $scope.onSetPlayBtn = function () {
 
+        $scope.stallFlag = new Date().getTime();
         if ($scope.controllBar && $scope.controllBar.setPlayBtn) {
             $scope.controllBar.setPlayBtn();
         }

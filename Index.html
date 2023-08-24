@@ -357,6 +357,9 @@
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Rate: </label> {{streamElement ? streamElement.playbackRate || 1 : 1}}
 							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Stall Time: </label> {{(stallTime || 0).toFixed(3)}} s
+							</div>
 							<!-- <div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
 							</div>

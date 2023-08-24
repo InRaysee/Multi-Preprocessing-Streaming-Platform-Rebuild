@@ -363,12 +363,54 @@
                 "url": "https://cmafref.akamaized.net/cmaf/live-ull/2006350/akambr/out.mpd"
             },
             {
-                "name": "FileServer",
+                "name": "File Dash",
                 "url": "http://222.20.126.108:8000/dash/stream.mpd"
             },
             {
-                "name": "EdgeServer",
+                "name": "Edge Dash",
                 "url": "http://222.20.126.109:8000/dash/stream.mpd"
+            },
+            {
+                "name": "File Docker Dash",
+                "urls": {
+                    "video": [
+                        "http://222.20.126.108:7001/dash/stream.mpd",
+                        "http://222.20.126.108:7002/dash/stream.mpd",
+                        "http://222.20.126.108:7003/dash/stream.mpd",
+                        "http://222.20.126.108:7004/dash/stream.mpd",
+                        "http://222.20.126.108:7005/dash/stream.mpd",
+                        "http://222.20.126.108:7006/dash/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://222.20.126.108:7001/dash/stream.mpd",
+                        "http://222.20.126.108:7002/dash/stream.mpd",
+                        "http://222.20.126.108:7003/dash/stream.mpd",
+                        "http://222.20.126.108:7004/dash/stream.mpd",
+                        "http://222.20.126.108:7005/dash/stream.mpd",
+                        "http://222.20.126.108:7006/dash/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Edge Docker Dash",
+                "urls": {
+                    "video": [
+                        "http://222.20.126.109:7001/dash/stream.mpd",
+                        "http://222.20.126.109:7002/dash/stream.mpd",
+                        "http://222.20.126.109:7003/dash/stream.mpd",
+                        "http://222.20.126.109:7004/dash/stream.mpd",
+                        "http://222.20.126.109:7005/dash/stream.mpd",
+                        "http://222.20.126.109:7006/dash/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://222.20.126.109:7001/dash/stream.mpd",
+                        "http://222.20.126.109:7002/dash/stream.mpd",
+                        "http://222.20.126.109:7003/dash/stream.mpd",
+                        "http://222.20.126.109:7004/dash/stream.mpd",
+                        "http://222.20.126.109:7005/dash/stream.mpd",
+                        "http://222.20.126.109:7006/dash/stream.mpd"
+                    ]
+                }
             },
             {
                 "name": "FS & ES",
