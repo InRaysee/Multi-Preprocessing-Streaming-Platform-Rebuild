@@ -148,6 +148,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
+    $scope.TIMEOUT_OF_FETCH_LOADER = 2000;
     $scope.AVERAGE_THROUGHPUT_WINDOW = 5;
     $scope.LEGEND_COLUMN_LENGTH = 10;
     $scope.TYPE_OF_MPD = "MPD";
@@ -197,43 +198,47 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 /*                   Global variables (public: adjust by users)                    */
 /////////////////////////////////////////////////////////////////////////////////////
 
-    $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
-    $scope.targetBuffer = 2;  // The buffer level desired to be fetched
+    $scope.optionButton = "Show Options";  // Save the state of option button
+
+    $scope.selectedMode = 'Multi-Path';  // Save the selected mode
+
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
         audio: 2
     }
-    $scope.optionButton = "Show Options";  // Save the state of option button
-    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
-    $scope.selectedMode = 'Multi-Path';  // Save the selected mode
+
+    $scope.targetBuffer = 4;  // The buffer level desired to be fetched
+    $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
+
+    $scope.selectedRule = "lowestBitrateRule";  // Save the selected ABR strategy
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
+
+    $scope.targetLatency = 3;  // The live delay allowed
+    $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
+    $scope.minDrift = 0.1;  // The minimal latency deviation allowed
+    // $scope.maxDrift = 3;  // The maximal latency deviation allowed
+    // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
     $scope.catchupEnabled = true;  // Whether catch up when playback or not
     $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd"
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd"
         ],
         audio: [
-            "http://localhost:8080/apple/v11/stream.mpd",
-            "http://localhost:8080/apple/v11/stream.mpd"
+            "http://222.20.126.108:8000/dash/stream.mpd",
+            "http://222.20.126.108:8000/dash/stream.mpd"
         ]
     };
-
-    $scope.targetLatency = 10;  // The live delay allowed
-    $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
-    $scope.minDrift = 0.1;  // The minimal latency deviation allowed
-    // $scope.maxDrift = 3;  // The maximal latency deviation allowed
-    // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -1878,7 +1883,17 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         requestInfo.trequest = performance.now();
         requestInfo.bufferLevel = $scope.getBufferLevel(contentType);
 
-        fetch(url).then(function (response) {  // TODO: reqOptions (headers)
+        var controller = new AbortController();
+        var controllerTimeout = setTimeout(() => {
+            controller.abort();
+            console.log("FetchLoader has stopped: " + url);
+            $scope.fetchLoader(contentType, url, progress, onload);
+        }, $scope.TIMEOUT_OF_FETCH_LOADER);
+
+        fetch(url, { signal: controller.signal }).then(function (response) {  // TODO: reqOptions (headers)
+            
+            clearTimeout(controllerTimeout);
+
             // Get the time of the first byte received
             if (!firstByteReceived) {
                 requestInfo.tresponse = performance.now();
