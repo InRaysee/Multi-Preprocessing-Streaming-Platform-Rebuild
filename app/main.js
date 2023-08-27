@@ -208,21 +208,21 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
-        audio: 2
+        audio: 0
     }
 
     $scope.targetBuffer = 4;  // The buffer level desired to be fetched
     $scope.maximalBuffer = 15;  // The buffer level desired to be saved
     $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
 
-    $scope.selectedRule = "lowestBitrateRule";  // Save the selected ABR strategy
+    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatency = 3;  // The live delay allowed
+    $scope.targetLatency = 1.5;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
@@ -232,16 +232,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd"
+            "http://222.20.126.108:7001/dash/stream.mpd",
+            "http://222.20.126.108:7002/dash/stream.mpd",
+            "http://222.20.126.108:7003/dash/stream.mpd",
+            "http://222.20.126.108:7004/dash/stream.mpd",
+            "http://222.20.126.108:7005/dash/stream.mpd",
+            "http://222.20.126.108:7006/dash/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd",
-            "http://222.20.126.108:8000/LoopedFile/stream.mpd"
+            // "http://222.20.126.108:7001/dash/stream.mpd",
+            // "http://222.20.126.108:7002/dash/stream.mpd",
+            // "http://222.20.126.108:7003/dash/stream.mpd",
+            // "http://222.20.126.108:7004/dash/stream.mpd",
+            // "http://222.20.126.108:7005/dash/stream.mpd",
+            // "http://222.20.126.108:7006/dash/stream.mpd"
         ]
     };
 
@@ -1520,7 +1524,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                                         let availabilityStartTime = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].availabilityStartTime.getTime();
                                         let timeShiftBufferDepth = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timeShiftBufferDepth;
                                         let targetLatency = $scope.targetLatency > timeShiftBufferDepth ? timeShiftBufferDepth : $scope.targetLatency;
-                                        let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                                        let now = new Date().getTime();
+                                        let targetTime = Math.max(0, now - availabilityStartTime - (targetLatency * 1000));
                                         let duration = ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].duration || $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].d) / $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timescale;
                                         curStreamInfo.segmentIndex = Math.floor(targetTime / (duration * 1000)) + ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber || 0);  /////////////////
                                     }
