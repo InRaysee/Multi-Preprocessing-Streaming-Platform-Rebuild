@@ -58,6 +58,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         video: null,
         audio: null
     };
+    $scope.abortController = {
+        video: null,
+        audio: null
+    };
     $scope.streamBufferToAppend = {  // Queues of buffers to append
         video: [],
         audio: []
@@ -110,6 +114,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamDuration = NaN;  // Total duration of the VOD stream
     $scope.streamStartTime = NaN;  // Availability start time of the live stream
+    $scope.streamStartTimeFormatted = null;  // Availability start time of the live stream
     $scope.streamTimeShiftDepth = NaN;  // The valid time of segments
     $scope.streamIsDynamic = NaN;  // Live mode when true, otherwise VOD mode
     $scope.autoSwitchTrack = {  // Flags for judging if the tracks are auto switched
@@ -126,8 +131,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.isSeeking = NaN;  // Flag for identifying if seeking the segment
     $scope.utcTime = null;  // UTC time
+    $scope.utcTimeFormatted = null;  // UTC time
     $scope.startupTime = null;  // Startup time of streaming
+    $scope.startupTimeFormatted = null;  // Startup time of streaming
     $scope.baselineTime = null;  // Baseline time of live stream
+    $scope.availabilityTimeOffset = NaN;  // availability time offset from MPD
     $scope.isStartup = NaN;  // Flag for identifying if the player starts up
 
     $scope.stallTime = 0;  // Record the length of total stall time
@@ -148,13 +156,15 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
     $scope.INTERVAL_OF_APPEND_BUFFER = 10;
     $scope.INTERVAL_OF_REMOVE_BUFFER = 1000;
-    $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 5000;
+    $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 1000;
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
-    $scope.TIMEOUT_OF_FETCH_LOADER = 2000;
+    $scope.TIMEOUT_OF_RELOAD_STREAM = 1000;
+    $scope.TIMEOUT_OF_FETCH_LOADER = 1000;
     $scope.AVERAGE_THROUGHPUT_WINDOW = 5;
     $scope.LEGEND_COLUMN_LENGTH = 10;
+    $scope.REQUEST_LIST_LENGTH = 20;
     $scope.TYPE_OF_MPD = "MPD";
     $scope.TYPE_OF_INIT_SEGMENT = "InitSegment";
     $scope.TYPE_OF_MEDIA_SEGMENT = "MediaSegment";
@@ -208,7 +218,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
-        audio: 0
+        audio: 2
     }
 
     $scope.targetBuffer = 4;  // The buffer level desired to be fetched
@@ -222,7 +232,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatency = 1.5;  // The live delay allowed
+    $scope.targetLatency = 3;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
@@ -240,8 +250,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             "http://222.20.126.108:7006/dash/stream.mpd"
         ],
         audio: [
-            // "http://222.20.126.108:7001/dash/stream.mpd",
-            // "http://222.20.126.108:7002/dash/stream.mpd",
+            "http://222.20.126.108:7001/dash/stream.mpd",
+            "http://222.20.126.108:7002/dash/stream.mpd",
             // "http://222.20.126.108:7003/dash/stream.mpd",
             // "http://222.20.126.108:7004/dash/stream.mpd",
             // "http://222.20.126.108:7005/dash/stream.mpd",
@@ -919,6 +929,17 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Reloading streams
     $scope.reloadStream = function() {
 
+        document.getElementById("Reload").disabled = true;
+
+        $scope.streamElement.pause();
+        $scope.isStartup = NaN;
+
+        for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+            if ($scope.abortController[$scope.CONTENT_TYPE[i]]) {
+                $scope.abortController[$scope.CONTENT_TYPE[i]].abort();
+            }
+        }
+
         for (let i = 0; i < $scope.intervalFunctions.length; i++) {
             clearInterval($scope.intervalFunctions[i]);
         }
@@ -936,113 +957,130 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         $scope.intervalLifeSignalFunctions.video = [];
         $scope.intervalLifeSignalFunctions.audio = [];
 
-        $scope.streamBufferToAppend = {
-            video: [],
-            audio: []
-        };
-        $scope.initCache = {
-            video: [],
-            audio: []
-        };
-        $scope.streamMpds = {
-            video: [],
-            audio: []
-        };
-        $scope.streamBitrateList = {
-            video: [],
-            audio: []
-        };
-        $scope.requestList = [];
-
-        $scope.streamInfo = {
-            video: {
-                pathIndex: NaN,
-                periodIndex: NaN,
-                adaptationSetIndex: NaN,
-                representationIndex: NaN,
-                segmentIndex: NaN,
-                baseUrl: NaN,
-                mimeCodecs: NaN,
-                lastSegmentIndex: NaN
-            },
-            audio: {
-                pathIndex: NaN,
-                periodIndex: NaN,
-                adaptationSetIndex: NaN,
-                representationIndex: NaN,
-                segmentIndex: NaN,
-                baseUrl: NaN,
-                mimeCodecs: NaN,
-                lastSegmentIndex: NaN
-            }
-        };
-        $scope.streamSourceBufferMimeCodecs = {
-            video: NaN,
-            audio: NaN
-        };
-
-        $scope.streamURLsForLifeSignals = {
-            video: [],
-            audio: []
-        };
-
-        $scope.streamDuration = NaN;
-        $scope.streamStartTime = NaN;
-        $scope.streamTimeShiftDepth = NaN;
-        $scope.streamIsDynamic = NaN;
-        $scope.autoSwitchTrack = {
-            video: NaN,
-            audio: NaN
-        };
-        $scope.autoSwitchBitrate = {
-            video: NaN,
-            audio: NaN
-        };
-        $scope.isFetchingSegment = {
-            video: NaN,
-            audio: NaN
-        };
-        $scope.isSeeking = NaN;
-        $scope.utcTime = null;
-        $scope.startupTime = null;
-        $scope.baselineTime = null;
-        $scope.isStartup = NaN;
-
-        $scope.stallTime = 0;
-
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
             if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                 $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].removeEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
-                $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]);
             }
         }
-        $scope.streamSourceBuffer = {
-            video: null,
-            audio: null
-        };
 
         if ($scope.controllBar) {
             $scope.streamElement.removeEventListener($scope.EVENT_TIME_UPDATE, $scope.controllBar.onPlaybackTimeUpdate);
-            $scope.controllBar.destroy();
-            $scope.controllBar = null;
-        }
-
-        if ($scope.streamElement) {
-            $scope.streamElement.src = "";
-            $scope.streamElement = null;
         }
 
         if ($scope.mediaSource) {
             $scope.mediaSource.removeEventListener('sourceopen', $scope.sourceOpen);
-            // $scope.mediaSource.endOfStream();
-            delete $scope.mediaSource;
         }
 
-        $scope.clearchartData();
-        
-        $scope.mse_init();
+        setTimeout(() => {
+
+            $scope.streamBufferToAppend = {
+                video: [],
+                audio: []
+            };
+            $scope.initCache = {
+                video: [],
+                audio: []
+            };
+            $scope.streamMpds = {
+                video: [],
+                audio: []
+            };
+            $scope.streamBitrateList = {
+                video: [],
+                audio: []
+            };
+            $scope.requestList = [];
+    
+            $scope.streamInfo = {
+                video: {
+                    pathIndex: NaN,
+                    periodIndex: NaN,
+                    adaptationSetIndex: NaN,
+                    representationIndex: NaN,
+                    segmentIndex: NaN,
+                    baseUrl: NaN,
+                    mimeCodecs: NaN,
+                    lastSegmentIndex: NaN
+                },
+                audio: {
+                    pathIndex: NaN,
+                    periodIndex: NaN,
+                    adaptationSetIndex: NaN,
+                    representationIndex: NaN,
+                    segmentIndex: NaN,
+                    baseUrl: NaN,
+                    mimeCodecs: NaN,
+                    lastSegmentIndex: NaN
+                }
+            };
+            $scope.streamSourceBufferMimeCodecs = {
+                video: NaN,
+                audio: NaN
+            };
+    
+            $scope.streamURLsForLifeSignals = {
+                video: [],
+                audio: []
+            };
+    
+            $scope.streamDuration = NaN;
+            $scope.streamStartTime = NaN;
+            $scope.streamStartTimeFormatted = null;
+            $scope.streamTimeShiftDepth = NaN;
+            $scope.streamIsDynamic = NaN;
+            $scope.autoSwitchTrack = {
+                video: NaN,
+                audio: NaN
+            };
+            $scope.autoSwitchBitrate = {
+                video: NaN,
+                audio: NaN
+            };
+            $scope.isFetchingSegment = {
+                video: NaN,
+                audio: NaN
+            };
+            $scope.isSeeking = NaN;
+            $scope.utcTime = null;
+            $scope.utcTimeFormatted = null;
+            $scope.startupTime = null;
+            $scope.startupTimeFormatted = null;
+            $scope.baselineTime = null;
+    
+            $scope.stallTime = 0;
+    
+            for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+                if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
+                    $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].remove(0, $scope.mediaSource.duration);
+                    $scope.mediaSource.removeSourceBuffer($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]);
+                }
+            }
+            $scope.streamSourceBuffer = {
+                video: null,
+                audio: null
+            };    
+            if ($scope.controllBar) {
+                $scope.controllBar.destroy();
+                $scope.controllBar = null;
+            }
+    
+            if ($scope.streamElement) {
+                $scope.streamElement.src = "";
+                $scope.streamElement = null;
+            }
+    
+            if ($scope.mediaSource) {
+                delete $scope.mediaSource;
+            }
+            $scope.clearchartData();
+            
+            $scope.mse_init();
+
+            document.getElementById("Reload").removeAttribute("disabled");
+
+        }, $scope.TIMEOUT_OF_RELOAD_STREAM);
 
     };
 
@@ -1070,17 +1108,21 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
 
         // Attach view & source
-        $scope.streamElement = document.getElementById('video');
-        if (!$scope.streamElement) {
-            window.alert("There is no video element in window!");
-            return;
+        if (!$scope.mediaSource) {
+            $scope.mediaSource = new MediaSource();
         }
-        $scope.mediaSource = new MediaSource();
         if (!$scope.mediaSource) {
             window.alert("There is no MediaSource object generated!");
             return;
         }
-        $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
+        if (!$scope.streamElement) {
+            $scope.streamElement = document.getElementById('video');
+            $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
+        }
+        if (!$scope.streamElement) {
+            window.alert("There is no video element in window!");
+            return;
+        }
 
         // Load MPDs
         $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen());
@@ -1091,7 +1133,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.sourceOpen = function() {
 
         setTimeout(() => {
-
+            
             // Fetch and load MPDs
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
@@ -1118,6 +1160,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                             throughput: $scope.monitorThroughput[$scope.CONTENT_TYPE[i]][j],
                             throughputExpect: $scope.monitorThroughputExpect[$scope.CONTENT_TYPE[i]][j]
                         });
+                        if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
+                            $scope.requestList.pop();
+                        }
                         $scope.loadMpd(response, $scope.CONTENT_TYPE[i], j);
                     });
                 }
@@ -1553,8 +1598,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 $scope.streamSourceBufferMimeCodecs[contentType] = curStreamInfo.mimeCodecs;
                 // Only need either video or audio SourceBuffer
                 if ($scope.streamNum[contentType == $scope.CONTENT_TYPE[0] ? $scope.CONTENT_TYPE[1] : $scope.CONTENT_TYPE[0]] == 0) {
-                    $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer(curStreamInfo.mimeCodecs);
-                    // Add event listeners:  1. append buffers from listeners   2. update buffer levels
+                    if (!$scope.streamSourceBuffer[contentType]) {
+                        $scope.streamSourceBuffer[contentType] = $scope.mediaSource.addSourceBuffer(curStreamInfo.mimeCodecs);
+                    }
+                    // Add event listeners:  1. append buffers from listeners   2. remove buffer periodly   3. update buffer levels
                     $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
                     $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                     $scope.streamSourceBuffer[contentType].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
@@ -1562,8 +1609,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 // Need both video and audio SourceBuffers
                 else if ($scope.streamSourceBufferMimeCodecs[contentType == $scope.CONTENT_TYPE[0] ? $scope.CONTENT_TYPE[1] : $scope.CONTENT_TYPE[0]]) {
                     for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-                        $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] = $scope.mediaSource.addSourceBuffer($scope.streamSourceBufferMimeCodecs[$scope.CONTENT_TYPE[i]]);
-                        // Add event listeners:  1. append buffers from listeners   2. update buffer levels
+                        if (!$scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
+                            $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] = $scope.mediaSource.addSourceBuffer($scope.streamSourceBufferMimeCodecs[$scope.CONTENT_TYPE[i]]);
+                        }
+                        // Add event listeners:  1. append buffers from listeners   2. remove buffer periodly   3. update buffer levels
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.removeBuffer);
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].addEventListener($scope.EVENT_UPDATE_END, $scope.onBufferLevelUpdated);
@@ -1582,6 +1631,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
             if (!$scope.streamStartTime && manifest.availabilityStartTime && !$scope.streamTimeShiftDepth && manifest.timeShiftBufferDepth) {
                 $scope.streamStartTime = manifest.availabilityStartTime;
+                let nowMs = $scope.streamStartTime.getMilliseconds();
+                nowMs = nowMs < 10 ? '00' + nowMs : nowMs < 100 ? '0' + nowMs : '' + nowMs;
+                $scope.streamStartTimeFormatted = $scope.streamStartTime.toLocaleString() + '.' + nowMs;
                 $scope.streamTimeShiftDepth = manifest.timeShiftBufferDepth;
                 $scope.mediaSource.duration = Infinity;
             }
@@ -1595,7 +1647,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.isStartup = false;
 
             // Set the startup time of the player
-            $scope.startupTime = new Date().toLocaleString();
+            let now = new Date();
+            let nowMs = now.getMilliseconds();
+            nowMs = nowMs < 10 ? '00' + nowMs : nowMs < 100 ? '0' + nowMs : '' + nowMs;
+            $scope.startupTime = now.getTime();
+            $scope.startupTimeFormatted = now.toLocaleString() + '.' + nowMs;
 
             // Initialize charts
             $scope.chartState["bufferLevel"][contentType] = {
@@ -1642,6 +1698,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             mimeCodecs: $scope.streamInfo[contentType].mimeCodecs,
             lastSegmentIndex: $scope.streamInfo[contentType].mimeCodecs
         };
+        $scope.availabilityTimeOffset = $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].availabilityTimeOffset || 0;
         if (urlType == $scope.TYPE_OF_INIT_SEGMENT && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
             console.log("Init segment of " + contentType + " " + curStreamInfo.pathIndex + " period " + curStreamInfo.periodIndex + " adaptationSet " + curStreamInfo.adaptationSetIndex + " representation " + curStreamInfo.representationIndex + " is in the initCache!");
             // $scope.streamBufferToAppend[contentType].push($scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]);
@@ -1664,6 +1721,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.xmlLoader(contentType, urlResolved, $scope.RESPONSE_TYPE_OF_SEGMENT,
                 // Function: onload
                 (buffer, requestInfo) => {
+                    if (isNaN($scope.isStartup)) {
+                        console.log("The response has been thrown.");
+                        return;
+                    }
                     $scope.monitorThroughputBuffer[contentType][curStreamInfo.pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
                     // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
                     $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
@@ -1687,6 +1748,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         throughput: $scope.monitorThroughput[contentType][curStreamInfo.pathIndex],
                         throughputExpect: $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex]
                     });
+                    if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
+                        $scope.requestList.pop();
+                    }
                     $scope.loadSegment(buffer, contentType, curStreamInfo, urlType);
                     $scope.isFetchingSegment[contentType] = false;
                 },
@@ -1703,6 +1767,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.fetchLoader(contentType, urlResolved,
                 // Function: progress
                 (buffer, requestInfo) => {
+                    if (isNaN($scope.isStartup)) {
+                        console.log("The response has been thrown.");
+                        return;
+                    }
                     $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
                     clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
                     $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
@@ -1722,6 +1790,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         throughput: "-",
                         throughputExpect: "-"
                     });
+                    if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
+                        $scope.requestList.pop();
+                    }
                     $scope.streamBufferToAppend[contentType].push({
                         content: buffer,
                         curStreamInfo: curStreamInfo
@@ -1729,6 +1800,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 },
                 // Function: onload
                 (buffer, requestInfo) => {
+                    if (isNaN($scope.isStartup)) {
+                        console.log("The response has been thrown.");
+                        return;
+                    }
                     $scope.monitorThroughputBuffer[contentType][curStreamInfo.pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
                     // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
                     $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
@@ -1752,6 +1827,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         throughput: $scope.monitorThroughput[contentType][curStreamInfo.pathIndex],
                         throughputExpect: $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex]
                     });
+                    if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
+                        $scope.requestList.pop();
+                    }
                     $scope.loadSegment(null, contentType, curStreamInfo, urlType);
                     $scope.isFetchingSegment[contentType] = false;
                 }
@@ -1899,14 +1977,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         requestInfo.trequest = performance.now();
         requestInfo.bufferLevel = $scope.getBufferLevel(contentType);
 
-        var controller = new AbortController();
+        $scope.abortController[contentType] = new AbortController();
         var controllerTimeout = setTimeout(() => {
-            controller.abort();
+            $scope.abortController[contentType].abort();
             console.log("FetchLoader has stopped: " + url);
             $scope.fetchLoader(contentType, url, progress, onload);
         }, $scope.TIMEOUT_OF_FETCH_LOADER);
 
-        fetch(url, { signal: controller.signal }).then(function (response) {  // TODO: reqOptions (headers)
+        fetch(url, { signal: $scope.abortController[contentType].signal }).then(function (response) {  // TODO: reqOptions (headers)
             
             clearTimeout(controllerTimeout);
 
@@ -1941,6 +2019,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     // Function: onload
                     requestInfo.tfinish = performance.now();
                     requestInfo.tsize = isNaN(totalBytes) ? bytesReceived : totalBytes;
+                    $scope.abortController[contentType] = null;
                     onload(response, requestInfo);  /////////
                     return;
                 }
@@ -2417,6 +2496,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         throughput: "-",
                         throughputExpect: "-"
                     });
+                    if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
+                        $scope.requestList.pop();
+                    }
                 },
                 (status) => {
                     console.log("No life signal(" + status + "): " + $scope.streamURLs[contentType][pathIndex]);
@@ -2542,10 +2624,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
 
     // Other platform intervals
-    setInterval(() => {
+    $scope.platformInterval = setInterval(() => {
 
-        $scope.utcTime = new Date().toLocaleString();
-        $scope.baselineTime = $scope.streamStartTime ? (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 : null;
+        let now = new Date();
+        let nowMs = now.getMilliseconds();
+        nowMs = nowMs < 10 ? '00' + nowMs : nowMs < 100 ? '0' + nowMs : '' + nowMs;
+        $scope.utcTime = now.getTime();
+        $scope.utcTimeFormatted = now.toLocaleString() + '.' + nowMs;
+        $scope.baselineTime = $scope.streamStartTime ? (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 + ($scope.availabilityTimeOffset || 0): null;
+
+        // For testing
+        if (($scope.startupTime ? ($scope.utcTime - $scope.startupTime) / 1000 : 0) > 310) {
+            window.alert($scope.stallTime);
+            clearInterval($scope.platformInterval);
+        }
 
     }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
 
