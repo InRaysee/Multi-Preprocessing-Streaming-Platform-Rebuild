@@ -10,16 +10,17 @@ Our early sample [Multi-Preprocessing-Streaming-Platform](https://github.com/InR
    
 ## Modes we provide
 
-- Multi-path mode - Start not more than 6 identical streams from different CDNs in parallel, and select the appropriate one to display.
+- Multi-path mode - Start identical streams from different CDNs in parallel, and select the appropriate one to display.
 
 ## Paths we allow
 
-20 paths of both videos and audios as maximum are allowed.
+20 paths of both videos and audios as maximum are allowed, which can be adjusted in options.
 
 ## Initial settings we provide
 
-- Target buffer length - The minimal buffer level we want to keep when streaming, i.e., fetching would start when the current buffer level is smaller than this value.
-- Scheduling Interval: 50 ms as default, scheduling timeout for requesting segments periodly.
+- Target buffer length (default: 4s) - the buffer level we want to keep when streaming, i.e., fetching would start when the current buffer level is smaller than this value.
+- Maximal buffer length (default: 15s) - the length of buffers the player keeps, i.e., other older portion would be deleted.
+- Scheduling Interval (default: 50 ms) - scheduling timeout for requesting segments periodly.
 
 ## ABR Strategies we use
 
@@ -33,15 +34,15 @@ Adaptive bitrate algorithms can help you select the appropriate bitrate version 
 
 Moreover, it is allowed to enable life-signal mode to send life signals and detect RTT of each path periodly.
 
-## Catchup Mechanism (inavailable now)
+## Catchup Mechanism
 
-This can help all streams keep synchronous and real-time in both VOD and live mode.
+This can help the stream keep synchronous with the UTC time.
 
-- Target latency: 3 as default, the live delay allowed.
-- Max drift: 3 as default, the maximal latency deviation allowed.
-- Min drift: 0.02 as default, the minimal latency deviation allowed.
-- Catchup playback rate: 0.5 as default, catchup playback rate.
-- Catchup latency threshold: 60 as default, maximal latency allowed to catch up.
+- Target latency (default: 3s) - the live delay we aim to approach.
+- Minimal drift (default: 0.1s) - the maximal latency deviation allowed.
+- Catchup playback rate (default: 0.5) - the playback rate of catchup mechanism.
+
+Moreover, the ON-OFF switches of catchup mechanism and LL-DASH are provided.
 
 ## How to run
 
