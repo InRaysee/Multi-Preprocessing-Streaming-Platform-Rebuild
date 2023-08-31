@@ -2634,10 +2634,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         $scope.baselineTime = $scope.streamStartTime ? (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 + ($scope.availabilityTimeOffset || 0): null;
 
         // For testing
-        if (($scope.startupTime ? ($scope.utcTime - $scope.startupTime) / 1000 : 0) > 310) {
-            window.alert($scope.stallTime);
-            clearInterval($scope.platformInterval);
-        }
+        // if (($scope.startupTime ? ($scope.utcTime - $scope.startupTime) / 1000 : 0) > 310) {
+        //     window.alert($scope.stallTime);
+        //     clearInterval($scope.platformInterval);
+        // }
 
     }, $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT);
 
