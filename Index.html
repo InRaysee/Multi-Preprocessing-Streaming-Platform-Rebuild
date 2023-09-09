@@ -29,6 +29,7 @@
 		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
 		<script src="app/contrib/dash.js/dist/dash.all.debug.js"></script>
 		<script src="app/main.js"></script>
+		<!-- <script src="app/bundle.js"></script> -->
 		<script src="app/contrib/dash.js/externals/Constants.js"></script>
 		<script src="app/contrib/dash.js/externals/DashConstants.js"></script>
 		<script src="app/contrib/dash.js/externals/BaseMatcher.js"></script>
@@ -36,6 +37,8 @@
 		<script src="app/contrib/dash.js/externals/DurationMatcher.js"></script>
 		<script src="app/contrib/dash.js/externals/NumericMatcher.js"></script>
 		<script src="app/contrib/dash.js/externals/StringMatcher.js"></script>
+		<script src="app/contrib/webrtc/adapter-latest.js"></script>
+		<script src="app/contrib/webrtc/capturer.js"></script>
 
 		<!-- Import ABR rules -->
 		<script src="RttThroughputRule.js"></script>
@@ -110,6 +113,18 @@
 											<input name="modes" id="MultiPathMode" type="radio" autocomplete="off" ng-click="changeMode('Multi-Path')" checked="true">
 											Multi-Path
 										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="modes" id="ChatMode" type="radio" autocomplete="off" ng-click="changeMode('Chat')">
+											Chat
+										</label>
+											<label data-toggle="tooltip" data-placement="right" id="input-output" style="margin-left: 10px;">
+												<div class="row">
+													<label for="videoCapture">Video capture source </label><select id="videoCapture"></select>
+												</div>
+												<div class="row">
+													<label for="audioCapture">Audio capture source </label><select id="audioCapture"></select>
+												</div>
+											</label>
 									</form>
 								</div>
 							</div>
@@ -154,27 +169,27 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="RttThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttThroughputRule')">
+											<input name="abr-rules" id="rttThroughputRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttThroughputRule')">
 											RttThroughputRule
 										</label>
 										
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="RttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')">
+											<input name="abr-rules" id="rttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')">
 											RttBufferRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="HighestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
+											<input name="abr-rules" id="highestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
 											HighestBitrateRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="LowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('lowestBitrateRule')">
+											<input name="abr-rules" id="lowestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('lowestBitrateRule')">
 											LowestBitrateRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="GlobalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('globalSwitchRule')">
+											<input name="abr-rules" id="globalSwitchRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('globalSwitchRule')">
 											GlobalSwitchRule
 										</label>
 											<label data-toggle="tooltip" data-placement="right" id="label-preferred-quality-seleceted-video" style="margin-left: 10px;">
@@ -325,6 +340,10 @@
 								</div>
 							</div>
 						</div>
+					</div>
+
+					<div id="cameraContainer" class="cameraContainer" style="position: absolute; background-color:#3a3d42; border: 2px solid #3a3d42; margin: 20px; width:240px; height:135px; display: none;">
+						<video id="camera" style="width:100%; height:100%;" playsinline autoplay></video>
 					</div>
 
 				</div>

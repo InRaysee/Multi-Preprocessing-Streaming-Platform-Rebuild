@@ -20,6 +20,76 @@ TODOs:
 */
 /////////////////////////////////////////////////////////////////////////////////////
 
+// const ffmpeg = require("./contrib/ffmpeg.js/ffmpeg-mp4.js");
+// let stdout = "";
+// let stderr = "";
+// // Print FFmpeg's version.
+// ffmpeg({
+//   arguments: ["-encoders"],
+//   print: function(data) { stdout += data + "\n"; },
+//   printErr: function(data) { stderr += data + "\n"; },
+//   onExit: function(code) {
+//     console.log("Process exited with code " + code);
+//     console.log(stdout);
+//     console.log(stderr);
+//   },
+// });
+
+// const ffmpeg = require("ffmpeg.js/ffmpeg-mp4.js");
+// // const fs = require('fs');
+// // const testData = new Uint8Array(fs.readFile("input.mp4"));
+// // Encode test video to H264.
+// const result = ffmpeg({
+// //   MEMFS: [{name: "input.mp4", data: testData}],
+//   mounts: [{type: "NODEFS", opts: {root: "."}, mountpoint: "/data"}],
+//   arguments: ["-f", "avfoundation", "-r", "30", "-i", "'0'", "-f", "rtp", "rtp://222.20.126.108:1234>test.sdp"]
+// });
+// // Write out.webm to disk.
+// // const out = result.MEMFS[0];
+// // fs.writeFile(out.name, Buffer(out.data));
+
+// const worker = new Worker("app/contrib/ffmpeg.js/davedoesdev/ffmpeg-worker-dash.js");
+// worker.onmessage = function(e) {
+//   const msg = e.data;
+//   switch (msg.type) {
+//   case "ready":
+//     // worker.postMessage({type: "run", arguments: ["-version"]});
+//     worker.postMessage({
+//         type: 'run',
+//         arguments: [
+//             '-seekable', '0',
+//             '-loglevel', 'info',
+//             '-i', '/work/stream1',
+//             '-map', '0:v',
+//             '-map', '0:a',
+//             '-c:v', 'copy', // assumes video is already in desired encoding
+//             '-c:a', 'copy', // assumes audio is already in desired encoding
+//             '-f', 'dash', // use dash encoder
+//             '-seg_duration', '2', // 2 second segments
+//             '-window_size', '2', // two chunks in the list at a time
+//             '-streaming', '1', // fragment data
+//             '-dash_segment_type', 'webm', // container type
+//             '/outbound/output.mpd' // path to manifest file in virtual FS,
+//                                 // must be under /outbound
+//         ],
+//         MEMFS: [
+//             { name: 'stream1' },
+//             { name: 'stream2' }
+//         ]
+//     });
+//     break;
+//   case "stdout":
+//     console.log(msg.data);
+//     break;
+//   case "stderr":
+//     console.log(msg.data);
+//     break;
+//   case "done":
+//     console.log(msg.data);
+//     break;
+//   }
+// };
+
 var app = angular.module('DashPlayer', ['DashSourcesService', 'angular-flot']);
 
 // Fetch sources.json
@@ -54,6 +124,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.mediaSource = null;  // Container for the MediaSource object
     $scope.streamElement = null;  // Container for video element in HTML page
     $scope.controllBar = null;  // Container for video control bar
+    $scope.capturer = null;  // Container for capturer
     $scope.streamSourceBuffer = {  // Containers for SourceBuffers
         video: null,
         audio: null
@@ -664,7 +735,13 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             case 'Multi-Path':
                 $scope.selectedMode = 'Multi-Path';
                 document.getElementById( "videoContainer" ).style.display = "block";
-                $scope.changeABRStrategy('rttBufferRule');
+                document.getElementById( "cameraContainer" ).style.display = "none";
+                break;
+            case 'Chat':
+                $scope.selectedMode = 'Chat';
+                document.getElementById( "videoContainer" ).style.display = "block";
+                document.getElementById( "cameraContainer" ).style.display = "block";
+                document.getElementById( "cameraContainer" ).style.position = "absolute";
                 break;
             default:
                 break;
@@ -687,6 +764,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Changing the ABR rule
     $scope.changeABRStrategy = function (strategy) {
 
+        document.getElementById(strategy).checked = true;
         $scope.selectedRule = strategy;
         if ($scope.selectedRule == "globalSwitchRule") {
             document.getElementById('global-quality-video').removeAttribute("disabled");
@@ -915,10 +993,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         document.getElementById("Load").style.display = "none";
         document.getElementById("Reload").style.display = "inline-block";
-        document.getElementById("MultiPathMode").disabled = "true";
         switch ($scope.selectedMode) {
             case 'Multi-Path':
-                $scope.mse_init();
+            case 'Chat':
+                    $scope.mse_init();
                 break;
             default:
                 break;
@@ -1064,6 +1142,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             if ($scope.controllBar) {
                 $scope.controllBar.destroy();
                 $scope.controllBar = null;
+            }
+            if ($scope.capturer) {
+                $scope.capturer.destroy();
+                $scope.capturer = null;
             }
     
             if ($scope.streamElement) {
@@ -1268,6 +1350,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
             // Create and add track/bitrate/caption lists into control bar
             $scope.controllBar.onStreamActivated(contentType, pathIndex);
+
+            // Create and initialize capturer
+            if ($scope.selectedMode == "Chat" && !$scope.capturer) {
+                $scope.capturer = new capturer();
+            }
 
             // Life signals
             $scope.monitorRttForLifeSignal[contentType][pathIndex] = $scope.monitorRtt[contentType][pathIndex];

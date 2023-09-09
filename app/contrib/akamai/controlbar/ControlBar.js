@@ -1056,4 +1056,4 @@ var ControlBar = function (displayUTCTimeCodes = false) {
 
     };
 
-}
+};
