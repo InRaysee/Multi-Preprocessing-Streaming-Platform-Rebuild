@@ -321,8 +321,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             "http://222.20.126.108:7012/dash/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.108:7002/dash/stream.mpd",
-            "http://222.20.126.108:7004/dash/stream.mpd",
+            // "http://222.20.126.108:7002/dash/stream.mpd",
+            // "http://222.20.126.108:7004/dash/stream.mpd",
             // "http://222.20.126.108:7006/dash/stream.mpd",
             // "http://222.20.126.108:7008/dash/stream.mpd",
             // "http://222.20.126.108:7010/dash/stream.mpd",
