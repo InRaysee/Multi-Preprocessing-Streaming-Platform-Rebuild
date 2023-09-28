@@ -303,7 +303,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatency = 3;  // The live delay allowed
+    $scope.targetLatency = 1.8;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
