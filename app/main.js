@@ -289,7 +289,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
-        audio: 2
+        audio: 0
     }
 
     $scope.targetBuffer = 4;  // The buffer level desired to be fetched
@@ -313,20 +313,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:7002/dash/stream.mpd",
-            "http://222.20.126.108:7004/dash/stream.mpd",
-            "http://222.20.126.108:7006/dash/stream.mpd",
-            "http://222.20.126.108:7008/dash/stream.mpd",
-            "http://222.20.126.108:7010/dash/stream.mpd",
-            "http://222.20.126.108:7012/dash/stream.mpd"
+            "http://222.20.126.108:7001/dash/stream.mpd",
+            "http://222.20.126.108:7003/dash/stream.mpd",
+            "http://222.20.126.108:7005/dash/stream.mpd",
+            "http://222.20.126.108:7007/dash/stream.mpd",
+            "http://222.20.126.108:7009/dash/stream.mpd",
+            "http://222.20.126.108:7011/dash/stream.mpd"
         ],
         audio: [
-            // "http://222.20.126.108:7002/dash/stream.mpd",
-            // "http://222.20.126.108:7004/dash/stream.mpd",
-            // "http://222.20.126.108:7006/dash/stream.mpd",
-            // "http://222.20.126.108:7008/dash/stream.mpd",
-            // "http://222.20.126.108:7010/dash/stream.mpd",
-            // "http://222.20.126.108:7012/dash/stream.mpd"
+            // "http://222.20.126.108:7001/dash/stream.mpd",
+            // "http://222.20.126.108:7003/dash/stream.mpd",
+            // "http://222.20.126.108:7005/dash/stream.mpd",
+            // "http://222.20.126.108:7007/dash/stream.mpd",
+            // "http://222.20.126.108:7009/dash/stream.mpd",
+            // "http://222.20.126.108:7011/dash/stream.mpd"
         ]
     };
 
