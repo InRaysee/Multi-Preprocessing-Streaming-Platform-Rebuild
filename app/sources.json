@@ -413,6 +413,56 @@
                 }
             },
             {
+                "name": "Zerotier File Dash",
+                "url": "http://172.28.0.53:8000/dash/stream.mpd"
+            },
+            {
+                "name": "Zerotier Edge Dash",
+                "url": "http://172.28.0.54:8000/dash/stream.mpd"
+            },
+            {
+                "name": "Zerotier File Docker Dash",
+                "urls": {
+                    "video": [
+                        "http://172.28.0.53:7001/dash/stream.mpd",
+                        "http://172.28.0.53:7003/dash/stream.mpd",
+                        "http://172.28.0.53:7005/dash/stream.mpd",
+                        "http://172.28.0.53:7007/dash/stream.mpd",
+                        "http://172.28.0.53:7009/dash/stream.mpd",
+                        "http://172.28.0.53:7011/dash/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://172.28.0.53:7001/dash/stream.mpd",
+                        "http://172.28.0.53:7003/dash/stream.mpd",
+                        "http://172.28.0.53:7005/dash/stream.mpd",
+                        "http://172.28.0.53:7007/dash/stream.mpd",
+                        "http://172.28.0.53:7009/dash/stream.mpd",
+                        "http://172.28.0.53:7011/dash/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Zerotier Edge Docker Dash",
+                "urls": {
+                    "video": [
+                        "http://172.28.0.54:7001/dash/stream.mpd",
+                        "http://172.28.0.54:7003/dash/stream.mpd",
+                        "http://172.28.0.54:7005/dash/stream.mpd",
+                        "http://172.28.0.54:7007/dash/stream.mpd",
+                        "http://172.28.0.54:7009/dash/stream.mpd",
+                        "http://172.28.0.54:7011/dash/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://172.28.0.54:7001/dash/stream.mpd",
+                        "http://172.28.0.54:7003/dash/stream.mpd",
+                        "http://172.28.0.54:7005/dash/stream.mpd",
+                        "http://172.28.0.54:7007/dash/stream.mpd",
+                        "http://172.28.0.54:7009/dash/stream.mpd",
+                        "http://172.28.0.54:7011/dash/stream.mpd"
+                    ]
+                }
+            },
+            {
                 "name": "FS & ES",
                 "urls": {
                     "video": [
