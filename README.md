@@ -95,11 +95,11 @@ Moreover, the ON-OFF switches of catchup mechanism and LL-DASH are provided.
         ```
    - Windows
         ```
-        ffmpeg -re -f dshow -r 30 -i [media type]=[device ID] -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
+        ffmpeg -re -rtbufsize [size] -f dshow -r 30 -i [media type]=[device ID] -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
         ```
         e.g.
         ```
-        ffmpeg -re -f dshow -r 30 -i video="OBS virtual camera" -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
+        ffmpeg -re -rtbufsize 100M -f dshow -r 30 -i video="OBS Virtual Camera" -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
         ```
 3. Copy SDP file to the path where runs FFMPEG transcoder in the server.
 4. Run FFMPEG transcoder for RTP in the server:
