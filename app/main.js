@@ -42,7 +42,7 @@ TODOs:
 // const result = ffmpeg({
 // //   MEMFS: [{name: "input.mp4", data: testData}],
 //   mounts: [{type: "NODEFS", opts: {root: "."}, mountpoint: "/data"}],
-//   arguments: ["-f", "avfoundation", "-r", "30", "-i", "'0'", "-f", "rtp", "rtp://222.20.126.108:1234>test.sdp"]
+//   arguments: ["-f", "avfoundation", "-r", "30", "-i", "'0'", "-f", "rtp", "rtp://222.20.126.109:1234>test.sdp"]
 // });
 // // Write out.webm to disk.
 // // const out = result.MEMFS[0];
@@ -313,20 +313,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:7001/dash/stream.mpd",
-            "http://222.20.126.108:7003/dash/stream.mpd",
-            "http://222.20.126.108:7005/dash/stream.mpd",
-            "http://222.20.126.108:7007/dash/stream.mpd",
-            "http://222.20.126.108:7009/dash/stream.mpd",
-            "http://222.20.126.108:7011/dash/stream.mpd"
+            "http://222.20.126.109:7001/dash/stream.mpd",
+            "http://222.20.126.109:7003/dash/stream.mpd",
+            "http://222.20.126.109:7005/dash/stream.mpd",
+            "http://222.20.126.109:7007/dash/stream.mpd",
+            "http://222.20.126.109:7009/dash/stream.mpd",
+            "http://222.20.126.109:7011/dash/stream.mpd"
         ],
         audio: [
-            // "http://222.20.126.108:7001/dash/stream.mpd",
-            // "http://222.20.126.108:7003/dash/stream.mpd",
-            // "http://222.20.126.108:7005/dash/stream.mpd",
-            // "http://222.20.126.108:7007/dash/stream.mpd",
-            // "http://222.20.126.108:7009/dash/stream.mpd",
-            // "http://222.20.126.108:7011/dash/stream.mpd"
+            // "http://222.20.126.109:7001/dash/stream.mpd",
+            // "http://222.20.126.109:7003/dash/stream.mpd",
+            // "http://222.20.126.109:7005/dash/stream.mpd",
+            // "http://222.20.126.109:7007/dash/stream.mpd",
+            // "http://222.20.126.109:7009/dash/stream.mpd",
+            // "http://222.20.126.109:7011/dash/stream.mpd"
         ]
     };
 
