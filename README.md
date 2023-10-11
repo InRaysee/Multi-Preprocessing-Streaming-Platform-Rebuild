@@ -79,28 +79,28 @@ Moreover, the ON-OFF switches of catchup mechanism and LL-DASH are provided.
 2. Start stream push via RTP/RTSP on the client side manually with FFMPEG commands:
    - Mac OS X
         ```
-        ffmpeg -re -f avfoundation -r 30 -i [device number] -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
+        ffmpeg -re -f avfoundation -r 30 -i [device number] -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
         ```
         e.g.
         ```
-        ffmpeg -re -f avfoundation -r 30 -i "0" -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
+        ffmpeg -re -f avfoundation -r 30 -i "0" -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
         ```
    - Ubuntu
         ```
-        ffmpeg -re -r 30 -i [device location] -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
+        ffmpeg -re -r 30 -i [device location] -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
         ```
         e.g.
         ```
-        ffmpeg -re -r 30 -i /dev/video0 -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
+        ffmpeg -re -r 30 -i /dev/video0 -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
         ```
    - Windows
         ```
-        ffmpeg -re -rtbufsize [size] -f dshow -r 30 -i [media type]=[device ID] -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
+        ffmpeg -re -rtbufsize [size] -f dshow -r 30 -i [media type]=[device ID] -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://[server IP]:[server port]>[SDP file name]
         ffmpeg -re -rtbufsize [size] -f dshow -r 30 -i video=[video device ID] -re -rtbufsize [size] -f dshow -i audio=[audio device ID] -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtsp -rtsp_transport tcp rtsp://[server IP]:[server port]/[stream ID]
         ```
         e.g.
         ```
-        ffmpeg -re -rtbufsize 100M -f dshow -r 30 -i video="OBS Virtual Camera" -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
+        ffmpeg -re -rtbufsize 100M -f dshow -r 30 -i video="OBS Virtual Camera" -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtp rtp://222.20.126.109:1234>rtp_info.sdp
         ffmpeg -re -rtbufsize 300M -f dshow -r 30 -i video="OBS Virtual Camera" -re -rtbufsize 300M -f dshow -i audio="麦克风 (Logitech BRIO)" -b:v 5000k -c:v libx264 -b:a 96k -c:a aac -preset:v ultrafast -tune:v zerolatency -f rtsp -rtsp_transport tcp rtsp://222.20.126.109:8554/mystream
         ```
 3. Copy SDP file to the path where runs FFMPEG transcoder in the server.
