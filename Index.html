@@ -27,6 +27,7 @@
 		<script src="app/lib/flot/jquery.flot.axislabels.js"></script>
 		<script src="app/contrib/cast_sender.js"></script>
 		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
+		<script src="app/contrib/akamai/controlbar/ControlBarVR.js"></script>
 		<script src="app/contrib/dash.js/dist/dash.all.debug.js"></script>
 		<script src="app/main.js"></script>
 		<!-- <script src="app/bundle.js"></script> -->
@@ -118,12 +119,16 @@
 											Chat
 										</label>
 											<label data-toggle="tooltip" data-placement="right" id="inputOutput" style="margin-left: 10px;">
-												<div class="row">
-													<label for="videoCapture">Video capture source </label><select id="videoCapture"></select>
-												</div>
-												<div class="row">
-													<label for="audioCapture">Audio capture source </label><select id="audioCapture"></select>
-												</div>
+												<label for="videoCapture">Video capture source </label>
+											</label>
+											<label data-toggle="tooltip" data-placement="right" id="inputOutput" style="margin-left: 10px;">
+												<select id="videoCapture"></select>
+											</label>
+											<label data-toggle="tooltip" data-placement="right" id="inputOutput" style="margin-left: 10px;">
+												<label for="audioCapture">Audio capture source </label>
+											</label>
+											<label data-toggle="tooltip" data-placement="right" id="inputOutput" style="margin-left: 10px;">
+												<select id="audioCapture"></select>
 											</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="modes" id="vrMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('VR')">
@@ -221,8 +226,12 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											Target latency (s)
+											Target latency bias (s)
 											<input style="width: 200px;" step="0.1" min="-10" type="number" id="targetLatency" ng-model="targetLatency">
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<button id="decreaseLatency" type="button" style="width: 70px;" ng-click="decreaseLatency();">- 0.1 s</button>
+											<button id="increaseLatency" type="button" style="width: 70px;" ng-click="increaseLatency();">+ 0.1 s</button>
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											Minimal drift (s)
@@ -373,7 +382,7 @@
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Baseline: </label> {{(baselineTime || streamElement.currentTime || 0).toFixed(3)}} s
 							</div>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Latency: </label> {{((baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0)).toFixed(3)}} s
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Latency Bias: </label> {{((baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0)).toFixed(3)}} s
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Buffer Level: </label> {{(monitorBufferLevel.video || 0).toFixed(3)}} s | {{(monitorBufferLevel.audio || 0).toFixed(3)}} s

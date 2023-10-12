@@ -1,4 +1,4 @@
-var ControlBar = function (displayUTCTimeCodes = false) {
+var ControlBarVR = function (displayUTCTimeCodes = false) {
 
     var appElement = document.querySelector('[ng-controller=DashController]');
     var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
