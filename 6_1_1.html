@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+		<title>VR mode</title>
+		
+		<script src="./contrib/aframe/dist/aframe-master.js"></script>
+
+		<style>
+			body {
+				background-color: #000000;
+			}
+		</style>
+		
+	</head>
+	
+    <body>
+
+		<a-scene>
+
+			<a-assets>
+			  	<video id="video0" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<video id="video1" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<video id="video2" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<video id="video3" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<video id="video4" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<video id="video5" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous"></video>
+				<audio id="audio0"></audio>  
+			</a-assets>
+	  
+			<a-entity material="shader: flat; src: #video0"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="480 0 0"
+					  rotation="0 270 0"
+					  visible="true"
+					  id="entityVideo0">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video1"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="-480 0 0"
+					  rotation="0 90 0"
+					  visible="true"
+					  id="entityVideo1">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video2"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="0 480 0"
+					  rotation="90 0 0"
+					  visible="true"
+					  id="entityVideo2">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video3"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="0 -480 0"
+					  rotation="-90 0 0"
+					  visible="true"
+					  id="entityVideo3">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video4"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="0 0 -480"
+					  rotation="0 0 0"
+					  visible="true"
+					  id="entityVideo4">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video5"
+					  geometry="primitive: plane; width: 960; height: 960;"
+					  position="0 0 480"
+					  rotation="0 180 0"
+					  visible="true"
+					  id="entityVideo5">
+			</a-entity>
+			<a-entity material="shader: flat; src: #audio0"
+					  geometry="primitive: plane; width: 0; height: 0;"
+					  position="0 0 0"
+					  rotation="0 0 0"
+					  visible="true"
+					  id="entityAudio">
+			</a-entity>
+
+			<a-entity camera position wasd-controls rotation look-controls aframe-injected rotation-reader-camera></a-entity>
+
+		</a-scene>
+
+		<script>
+			AFRAME.registerComponent('rotation-reader-camera', {
+				tick: function () {
+					// `this.el` is the element.
+					// `object3D` is the three.js object.
+
+					// `rotation` is a three.js Euler using radians. `quaternion` also available.
+					// console.log(this.el.object3D.rotation);
+
+					let appElement = window.parent.document.querySelector('[ng-controller=DashController]');
+                    let $scope = window.parent.angular ? window.parent.angular.element(appElement).scope() : undefined;
+					if ($scope && $scope.lon != undefined && $scope.lat != undefined) {
+						$scope.lat = (this.el.object3D.rotation._x / Math.PI) * 180;
+						$scope.lon = ((this.el.object3D.rotation._y % (Math.PI * 2)) / Math.PI) * 180;
+						$scope.lon = $scope.lon < 0 ? 360 + $scope.lon : $scope.lon;
+						// console.log("lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
+					}
+
+					// `position` is a three.js Vector3.
+					// console.log(this.el.object3D.position);
+				}
+			});
+		</script>
+        
+	</body>
+	
+</html>
