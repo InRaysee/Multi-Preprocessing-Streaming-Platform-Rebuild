@@ -93,7 +93,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     var onPlayPauseClick = function () {
         togglePlayPauseBtnState();
         if (!$scope.streamIsDynamic) {
-            if (!element.paused) {
+            if (!$scope.forcedPause) {
                 $scope.forcedPause = true;
                 element.pause();
             } else {
@@ -102,7 +102,7 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             }
         } else {
             // Find the available buffer if dynamic
-            if (!element.paused) {
+            if (!$scope.forcedPause) {
                 $scope.forcedPause = true;
                 element.pause();
             } else {
@@ -887,22 +887,9 @@ var ControlBar = function (displayUTCTimeCodes = false) {
 
     var onBufferLevelUpdated = function () {  //////////////////////
         if (seekbarBuffer) {
-            seekbarBuffer.style.width = ((playerTime() + getBufferLevel()) / playerDuration() * 100) + '%';
+            seekbarBuffer.style.width = ((playerTime() + $scope.getBufferLevel()) / playerDuration() * 100) + '%';
         }
     }
-
-    var getBufferLevel = function () {  //////////////////////
-        var elementBuffered = element.buffered;
-        if (elementBuffered.length == 0) {
-            return 0;
-        }
-        for (let i = 0; i < elementBuffered.length; i++) {
-            if (elementBuffered.start(i) <= element.currentTime && elementBuffered.end(i) >= element.currentTime) {
-                return elementBuffered.end(i) - element.currentTime;
-            }
-        }
-        return 0;
-    };
 
     var onSeekBarMouseMoveOut = function (/*e*/) {
         // if (!thumbnailContainer) return;
