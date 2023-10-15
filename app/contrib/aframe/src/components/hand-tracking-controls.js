@@ -1,47 +1,44 @@
-/* global THREE, XRRigidTransform, XRHand */
+/* global THREE */
 var registerComponent = require('../core/component').registerComponent;
 var bind = require('../utils/bind');
 
 var trackedControlsUtils = require('../utils/tracked-controls');
 var checkControllerPresentAndSetup = trackedControlsUtils.checkControllerPresentAndSetup;
 
-var JOINTS_NUMBER = 25;
+var AFRAME_CDN_ROOT = require('../constants').AFRAME_CDN_ROOT;
+var LEFT_HAND_MODEL_URL = AFRAME_CDN_ROOT + 'controllers/oculus-hands/v4/left.glb';
+var RIGHT_HAND_MODEL_URL = AFRAME_CDN_ROOT + 'controllers/oculus-hands/v4/right.glb';
 
-var LEFT_HAND_MODEL_URL = 'https://cdn.aframe.io/controllers/oculus-hands/unity/left.glb';
-var RIGHT_HAND_MODEL_URL = 'https://cdn.aframe.io/controllers/oculus-hands/unity/right.glb';
-
-var BONE_PREFIX = {
-  left: 'b_l_',
-  right: 'b_r_'
-};
-
-var BONE_MAPPING = [
+var JOINTS = [
   'wrist',
-  'thumb1',
-  'thumb2',
-  'thumb3',
-  'thumb_null',
-  null,
-  'index1',
-  'index2',
-  'index3',
-  'index_null',
-  null,
-  'middle1',
-  'middle2',
-  'middle3',
-  'middle_null',
-  null,
-  'ring1',
-  'ring2',
-  'ring3',
-  'ring_null',
-  'pinky0',
-  'pinky1',
-  'pinky2',
-  'pinky3',
-  'pinky_null'
+  'thumb-metacarpal',
+  'thumb-phalanx-proximal',
+  'thumb-phalanx-distal',
+  'thumb-tip',
+  'index-finger-metacarpal',
+  'index-finger-phalanx-proximal',
+  'index-finger-phalanx-intermediate',
+  'index-finger-phalanx-distal',
+  'index-finger-tip',
+  'middle-finger-metacarpal',
+  'middle-finger-phalanx-proximal',
+  'middle-finger-phalanx-intermediate',
+  'middle-finger-phalanx-distal',
+  'middle-finger-tip',
+  'ring-finger-metacarpal',
+  'ring-finger-phalanx-proximal',
+  'ring-finger-phalanx-intermediate',
+  'ring-finger-phalanx-distal',
+  'ring-finger-tip',
+  'pinky-finger-metacarpal',
+  'pinky-finger-phalanx-proximal',
+  'pinky-finger-phalanx-intermediate',
+  'pinky-finger-phalanx-distal',
+  'pinky-finger-tip'
 ];
+
+var THUMB_TIP_INDEX = 4;
+var INDEX_TIP_INDEX = 9;
 
 var PINCH_START_DISTANCE = 0.015;
 var PINCH_END_DISTANCE = 0.03;
@@ -89,6 +86,10 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     this.pinchEventDetail = {position: new THREE.Vector3()};
     this.indexTipPosition = new THREE.Vector3();
 
+    this.hasPoses = false;
+    this.jointPoses = new Float32Array(16 * JOINTS.length);
+    this.jointRadii = new Float32Array(JOINTS.length);
+
     this.bindMethods();
 
     this.updateReferenceSpace = this.updateReferenceSpace.bind(this);
@@ -103,7 +104,7 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     if (!xrSession) { return; }
     var referenceSpaceType = self.el.sceneEl.systems.webxr.sessionReferenceSpaceType;
     xrSession.requestReferenceSpace(referenceSpaceType).then(function (referenceSpace) {
-      self.referenceSpace = referenceSpace.getOffsetReferenceSpace(new XRRigidTransform({x: 0, y: 1.5, z: 0}));
+      self.referenceSpace = referenceSpace;
     }).catch(function (error) {
       self.el.sceneEl.systems.webxr.warnIfFeatureNotRequested(referenceSpaceType, 'tracked-controls-webxr uses reference space ' + referenceSpaceType);
       throw error;
@@ -128,11 +129,17 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
     var frame = sceneEl.frame;
     var trackedControlsWebXR = this.el.components['tracked-controls-webxr'];
-    if (!controller || !frame || !trackedControlsWebXR) { return; }
+    var referenceSpace = this.referenceSpace;
+    if (!controller || !frame || !referenceSpace || !trackedControlsWebXR) { return; }
+    this.hasPoses = false;
     if (controller.hand) {
       this.el.object3D.position.set(0, 0, 0);
       this.el.object3D.rotation.set(0, 0, 0);
-      if (frame.getJointPose) { this.updateHandModel(); }
+
+      this.hasPoses = frame.fillPoses(controller.hand.values(), referenceSpace, this.jointPoses) &&
+        frame.fillJointRadii(controller.hand.values(), this.jointRadii);
+
+      this.updateHandModel();
       this.detectGesture();
     }
   },
@@ -147,28 +154,6 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     }
   },
 
-  updateHandMeshModel: function () {
-    var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
-    var referenceSpace = this.referenceSpace;
-    if (!controller || !this.mesh || !referenceSpace) { return; }
-    this.mesh.visible = false;
-    for (var i = 0; i < controller.hand.length; i++) {
-      var bone;
-      var jointPose;
-      var jointTransform;
-      if (!controller.hand[i]) { continue; }
-      jointPose = this.el.sceneEl.frame.getJointPose(controller.hand[i], referenceSpace);
-      if (BONE_MAPPING[i] == null) { continue; }
-      bone = this.getBone(BONE_PREFIX[this.data.hand] + BONE_MAPPING[i]);
-      if (bone != null && jointPose) {
-        jointTransform = jointPose.transform;
-        this.mesh.visible = true;
-        bone.position.copy(jointTransform.position).multiplyScalar(100);
-        bone.quaternion.set(jointTransform.orientation.x, jointTransform.orientation.y, jointTransform.orientation.z, jointTransform.orientation.w);
-      }
-    }
-  },
-
   getBone: function (name) {
     var bones = this.bones;
     for (var i = 0; i < bones.length; i++) {
@@ -177,23 +162,44 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     return null;
   },
 
-  updateHandDotsModel: function () {
-    var frame = this.el.sceneEl.frame;
-    var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
-    var trackedControlsWebXR = this.el.components['tracked-controls-webxr'];
-    var referenceSpace = trackedControlsWebXR.system.referenceSpace;
-    for (var i = 0; i < this.jointEls.length; ++i) {
-      var jointEl = this.jointEls[i];
-      jointEl.object3D.visible = !!controller.hand[i];
-      if (controller.hand[i]) {
-        var object3D = jointEl.object3D;
-        var pose = frame.getJointPose(controller.hand[i], referenceSpace);
-        jointEl.object3D.visible = !!pose;
-        if (!pose) { continue; }
-        object3D.matrix.elements = pose.transform.matrix;
-        object3D.matrix.decompose(object3D.position, object3D.rotation, object3D.scale);
-        jointEl.setAttribute('scale', {x: pose.radius, y: pose.radius, z: pose.radius});
+  updateHandMeshModel: (function () {
+    var jointPose = new THREE.Matrix4();
+    return function () {
+      var jointPoses = this.jointPoses;
+      var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
+      var i = 0;
+
+      if (!controller || !this.mesh) { return; }
+      this.mesh.visible = false;
+      if (!this.hasPoses) { return; }
+      for (var inputjoint of controller.hand.values()) {
+        var bone = this.getBone(inputjoint.jointName);
+        if (bone != null) {
+          this.mesh.visible = true;
+          jointPose.fromArray(jointPoses, i * 16);
+          bone.position.setFromMatrixPosition(jointPose);
+          bone.quaternion.setFromRotationMatrix(jointPose);
+        }
+        i++;
       }
+    };
+  })(),
+
+  updateHandDotsModel: function () {
+    var jointPoses = this.jointPoses;
+    var jointRadii = this.jointRadii;
+    var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
+    var jointEl;
+    var object3D;
+
+    for (var i = 0; i < controller.hand.size; i++) {
+      jointEl = this.jointEls[i];
+      object3D = jointEl.object3D;
+      jointEl.object3D.visible = this.hasPoses;
+      if (!this.hasPoses) { continue; }
+      object3D.matrix.fromArray(jointPoses, i * 16);
+      object3D.matrix.decompose(object3D.position, object3D.rotation, object3D.scale);
+      jointEl.setAttribute('scale', {x: jointRadii[i], y: jointRadii[i], z: jointRadii[i]});
     }
   },
 
@@ -203,45 +209,32 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
 
   detectPinch: (function () {
     var thumbTipPosition = new THREE.Vector3();
+    var jointPose = new THREE.Matrix4();
     return function () {
-      var frame = this.el.sceneEl.frame;
       var indexTipPosition = this.indexTipPosition;
-      var controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
-      var trackedControlsWebXR = this.el.components['tracked-controls-webxr'];
-      var referenceSpace = this.referenceSpace || trackedControlsWebXR.system.referenceSpace;
-      if (!controller.hand[XRHand.INDEX_PHALANX_TIP] ||
-          !controller.hand[XRHand.THUMB_PHALANX_TIP]) { return; }
-      var indexTipPose = frame.getJointPose(controller.hand[XRHand.INDEX_PHALANX_TIP], referenceSpace);
-      var thumbTipPose = frame.getJointPose(controller.hand[XRHand.THUMB_PHALANX_TIP], referenceSpace);
+      if (!this.hasPoses) { return; }
 
-      if (!indexTipPose || !thumbTipPose) { return; }
-
-      thumbTipPosition.copy(thumbTipPose.transform.position);
-      indexTipPosition.copy(indexTipPose.transform.position);
+      thumbTipPosition.setFromMatrixPosition(jointPose.fromArray(this.jointPoses, THUMB_TIP_INDEX * 16));
+      indexTipPosition.setFromMatrixPosition(jointPose.fromArray(this.jointPoses, INDEX_TIP_INDEX * 16));
 
       var distance = indexTipPosition.distanceTo(thumbTipPosition);
 
       if (distance < PINCH_START_DISTANCE && this.isPinched === false) {
         this.isPinched = true;
         this.pinchEventDetail.position.copy(indexTipPosition).lerp(thumbTipPosition, PINCH_POSITION_INTERPOLATION);
-        this.pinchEventDetail.position.y += 1.5;
         this.el.emit('pinchstarted', this.pinchEventDetail);
       }
 
       if (distance > PINCH_END_DISTANCE && this.isPinched === true) {
         this.isPinched = false;
         this.pinchEventDetail.position.copy(indexTipPosition).lerp(thumbTipPosition, PINCH_POSITION_INTERPOLATION);
-        this.pinchEventDetail.position.y += 1.5;
         this.el.emit('pinchended', this.pinchEventDetail);
       }
 
       if (this.isPinched) {
         this.pinchEventDetail.position.copy(indexTipPosition).lerp(thumbTipPosition, PINCH_POSITION_INTERPOLATION);
-        this.pinchEventDetail.position.y += 1.5;
         this.el.emit('pinchmoved', this.pinchEventDetail);
       }
-
-      indexTipPosition.y += 1.5;
     };
   })(),
 
@@ -275,11 +268,12 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
     controller = this.el.components['tracked-controls'] && this.el.components['tracked-controls'].controller;
     if (!this.el.getObject3D('mesh')) { return; }
     if (!controller || !controller.hand || !controller.hand[0]) {
-      this.el.removeObject3D('mesh');
+      this.el.getObject3D('mesh').visible = false;
     }
   },
 
   initDefaultModel: function () {
+    if (this.el.getObject3D('mesh')) { return; }
     if (this.data.modelStyle === 'dots') {
       this.initDotsModel();
     }
@@ -292,7 +286,7 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
   initDotsModel: function () {
      // Add models just once.
     if (this.jointEls.length !== 0) { return; }
-    for (var i = 0; i < JOINTS_NUMBER; ++i) {
+    for (var i = 0; i < JOINTS.length; ++i) {
       var jointEl = this.jointEl = document.createElement('a-entity');
       jointEl.setAttribute('geometry', {
         primitive: 'sphere',
@@ -312,11 +306,11 @@ module.exports.Component = registerComponent('hand-tracking-controls', {
 
   onModelLoaded: function () {
     var mesh = this.mesh = this.el.getObject3D('mesh').children[0];
-    var skinnedMesh = this.skinnedMesh = mesh.children[24];
+    var skinnedMesh = this.skinnedMesh = mesh.getObjectByProperty('type', 'SkinnedMesh');
     if (!this.skinnedMesh) { return; }
     this.bones = skinnedMesh.skeleton.bones;
     this.el.removeObject3D('mesh');
-    mesh.position.set(0, 1.5, 0);
+    mesh.position.set(0, 0, 0);
     mesh.rotation.set(0, 0, 0);
     skinnedMesh.frustumCulled = false;
     skinnedMesh.material = new THREE.MeshStandardMaterial({skinning: true, color: this.data.modelColor});

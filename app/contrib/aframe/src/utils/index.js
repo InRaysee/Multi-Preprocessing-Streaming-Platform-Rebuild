@@ -66,6 +66,48 @@ module.exports.throttle = function (functionToThrottle, minimumInterval, optiona
 
 /**
  * Returns throttle function that gets called at most once every interval.
+ * If there are multiple calls in the last interval we call the function one additional
+ * time.
+ * It behaves like throttle except for the very last call that gets deferred until the end of the interval.
+ * This is useful when an event is used to trigger synchronization of state, and there is a need to converge
+ * to the correct final state following a burst of events.
+ *
+ * Example use cases:
+ * - synchronizing state based on the componentchanged event
+ * - following a mouse pointer using the mousemove event
+ * - integrating with THREE.TransformControls, via the objectChange event.
+ *
+ * @param {function} functionToThrottle
+ * @param {number} minimumInterval - Minimal interval between calls (milliseconds).
+ * @param {object} optionalContext - If given, bind function to throttle to this context.
+ * @returns {function} Throttled function.
+ */
+module.exports.throttleLeadingAndTrailing = function (functionToThrottle, minimumInterval, optionalContext) {
+  var lastTime;
+  var deferTimer;
+  if (optionalContext) {
+    functionToThrottle = module.exports.bind(functionToThrottle, optionalContext);
+  }
+  return function () {
+    var time = Date.now();
+    var sinceLastTime = typeof lastTime === 'undefined' ? minimumInterval : time - lastTime;
+    var args = arguments;
+    if (typeof lastTime === 'undefined' || sinceLastTime >= minimumInterval) {
+      clearTimeout(deferTimer);
+      lastTime = time;
+      functionToThrottle.apply(null, args);
+    } else {
+      clearTimeout(deferTimer);
+      deferTimer = setTimeout(function () {
+        lastTime = Date.now();
+        functionToThrottle.apply(this, args);
+      }, minimumInterval - sinceLastTime);
+    }
+  };
+};
+
+/**
+ * Returns throttle function that gets called at most once every interval.
  * Uses the time/timeDelta timestamps provided by the global render loop for better perf.
  *
  * @param {function} functionToThrottle

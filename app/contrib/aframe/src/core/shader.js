@@ -23,7 +23,7 @@ var propertyToThreeMapping = {
  * Shader class definition.
  *
  * Shaders extend the material component API so you can create your own library
- * of customized materials
+ * of customized materials.
  *
  */
 var Shader = module.exports.Shader = function () {};
@@ -55,6 +55,7 @@ Shader.prototype = {
     this.material = new (this.raw ? THREE.RawShaderMaterial : THREE.ShaderMaterial)({
       // attributes: this.attributes,
       uniforms: this.uniforms,
+      glslVersion: this.raw ? THREE.GLSL3 : undefined,
       vertexShader: this.vertexShader,
       fragmentShader: this.fragmentShader
     });

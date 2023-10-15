@@ -71,7 +71,7 @@ module.exports.Component = registerComponent('screenshot', {
         side: THREE.DoubleSide
       });
       self.quad = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(1, 1),
+        new THREE.PlaneGeometry(1, 1),
         self.material
       );
       self.quad.visible = false;
@@ -85,6 +85,7 @@ module.exports.Component = registerComponent('screenshot', {
 
   getRenderTarget: function (width, height) {
     return new THREE.WebGLRenderTarget(width, height, {
+      colorSpace: this.el.sceneEl.renderer.outputColorSpace,
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       wrapS: THREE.ClampToEdgeWrapping,
@@ -152,7 +153,7 @@ module.exports.Component = registerComponent('screenshot', {
           format: THREE.RGBFormat,
           generateMipmaps: true,
           minFilter: THREE.LinearMipmapLinearFilter,
-          encoding: THREE.sRGBEncoding
+          colorSpace: THREE.SRGBColorSpace
         });
       // Create cube camera and copy position from scene camera.
       cubeCamera = new THREE.CubeCamera(el.camera.near, el.camera.far, cubeRenderTarget);

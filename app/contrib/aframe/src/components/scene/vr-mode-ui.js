@@ -18,8 +18,11 @@ module.exports.Component = registerComponent('vr-mode-ui', {
 
   schema: {
     enabled: {default: true},
+    cardboardModeEnabled: {default: false},
     enterVRButton: {default: ''},
-    enterARButton: {default: ''}
+    enterVREnabled: {default: true},
+    enterARButton: {default: ''},
+    enterAREnabled: {default: false}
   },
 
   init: function () {
@@ -90,21 +93,26 @@ module.exports.Component = registerComponent('vr-mode-ui', {
     if (this.enterVREl || this.enterAREl || this.orientationModalEl) { return; }
 
     // Add UI if enabled and not already present.
-    if (data.enterVRButton) {
-      // Custom button.
-      this.enterVREl = document.querySelector(data.enterVRButton);
-      this.enterVREl.addEventListener('click', this.onEnterVRButtonClick);
-    } else {
-      this.enterVREl = createEnterVRButton(this.onEnterVRButtonClick);
-      sceneEl.appendChild(this.enterVREl);
+    if (!this.enterVREl && data.enterVREnabled) {
+      if (data.enterVRButton) {
+        // Custom button.
+        this.enterVREl = document.querySelector(data.enterVRButton);
+        this.enterVREl.addEventListener('click', this.onEnterVRButtonClick);
+      } else {
+        this.enterVREl = createEnterVRButton(this.onEnterVRButtonClick);
+        sceneEl.appendChild(this.enterVREl);
+      }
     }
-    if (data.enterARButton) {
-      // Custom button.
-      this.enterAREl = document.querySelector(data.enterARButton);
-      this.enterAREl.addEventListener('click', this.onEnterARButtonClick);
-    } else {
-      this.enterAREl = createEnterARButton(this.onEnterARButtonClick);
-      sceneEl.appendChild(this.enterAREl);
+
+    if (!this.enterAREl && data.enterAREnabled) {
+      if (data.enterARButton) {
+        // Custom button.
+        this.enterAREl = document.querySelector(data.enterARButton);
+        this.enterAREl.addEventListener('click', this.onEnterARButtonClick);
+      } else {
+        this.enterAREl = createEnterARButton(this.onEnterARButtonClick);
+        sceneEl.appendChild(this.enterAREl);
+      }
     }
 
     this.orientationModalEl = createOrientationModal(this.onModalClick);
@@ -119,6 +127,9 @@ module.exports.Component = registerComponent('vr-mode-ui', {
         uiElement.parentNode.removeChild(uiElement);
       }
     });
+    this.enterVREl = undefined;
+    this.enterAREl = undefined;
+    this.orientationModalEl = undefined;
   },
 
   updateEnterInterfaces: function () {
@@ -130,9 +141,11 @@ module.exports.Component = registerComponent('vr-mode-ui', {
   toggleEnterVRButtonIfNeeded: function () {
     var sceneEl = this.el;
     if (!this.enterVREl) { return; }
-    if (sceneEl.is('vr-mode')) {
+    if (sceneEl.is('vr-mode') ||
+       ((sceneEl.isMobile || utils.device.isMobileDeviceRequestingDesktopSite()) && !this.data.cardboardModeEnabled && !utils.device.checkVRSupport())) {
       this.enterVREl.classList.add(HIDDEN_CLASS);
     } else {
+      if (!utils.device.checkVRSupport()) { this.enterVREl.classList.add('fullscreen'); }
       this.enterVREl.classList.remove(HIDDEN_CLASS);
     }
   },
@@ -180,8 +193,7 @@ function createEnterVRButton (onClick) {
   vrButton = document.createElement('button');
   vrButton.className = ENTER_VR_BTN_CLASS;
   vrButton.setAttribute('title',
-    'Enter VR mode with a headset or fullscreen mode on a desktop. ' +
-    'Visit https://webvr.rocks or https://webvr.info for more information.');
+    'Enter VR mode with a headset or fullscreen without');
   vrButton.setAttribute(constants.AFRAME_INJECTED, '');
   if (utils.device.isMobile()) { applyStickyHoverFix(vrButton); }
   // Insert elements.
@@ -212,8 +224,7 @@ function createEnterARButton (onClick) {
   arButton = document.createElement('button');
   arButton.className = ENTER_AR_BTN_CLASS;
   arButton.setAttribute('title',
-    'Enter AR mode with a headset or handheld device. ' +
-    'Visit https://webvr.rocks or https://webvr.info for more information.');
+    'Enter AR mode with a headset or handheld device.');
   arButton.setAttribute(constants.AFRAME_INJECTED, '');
   if (utils.device.isMobile()) { applyStickyHoverFix(arButton); }
   // Insert elements.

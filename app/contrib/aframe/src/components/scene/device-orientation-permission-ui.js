@@ -24,9 +24,6 @@ module.exports.Component = registerComponent('device-orientation-permission-ui',
     deviceMotionMessage: {
       default: 'This immersive website requires access to your device motion sensors.'
     },
-    mobileDesktopMessage: {
-      default: 'Set your browser to request the mobile version of the site and reload the page to enjoy immersive mode.'
-    },
     httpsMessage: {
       default: 'Access this site over HTTPS to enter VR mode and grant access to the device sensors.'
     },
@@ -46,12 +43,6 @@ module.exports.Component = registerComponent('device-orientation-permission-ui',
       this.showHTTPAlert();
     }
 
-    // Show alert on iPad if Safari is on desktop mode.
-    if (utils.device.isMobileDeviceRequestingDesktopSite()) {
-      this.showMobileDesktopModeAlert();
-      return;
-    }
-
     // Browser doesn't support or doesn't require permission to DeviceOrientationEvent API.
     if (typeof DeviceOrientationEvent === 'undefined' || !DeviceOrientationEvent.requestPermission) {
       this.permissionGranted = true;
@@ -61,7 +52,10 @@ module.exports.Component = registerComponent('device-orientation-permission-ui',
     this.onDeviceMotionDialogAllowClicked = bind(this.onDeviceMotionDialogAllowClicked, this);
     this.onDeviceMotionDialogDenyClicked = bind(this.onDeviceMotionDialogDenyClicked, this);
     // Show dialog only if permission has not yet been granted.
-    DeviceOrientationEvent.requestPermission().catch(function () {
+    DeviceOrientationEvent.requestPermission().then(function () {
+      self.el.emit('deviceorientationpermissiongranted');
+      self.permissionGranted = true;
+    }).catch(function () {
       self.devicePermissionDialogEl = createPermissionDialog(
         self.data.denyButtonText,
         self.data.allowButtonText,
@@ -69,9 +63,6 @@ module.exports.Component = registerComponent('device-orientation-permission-ui',
         self.onDeviceMotionDialogAllowClicked,
         self.onDeviceMotionDialogDenyClicked);
       self.el.appendChild(self.devicePermissionDialogEl);
-    }).then(function () {
-      self.el.emit('deviceorientationpermissiongranted');
-      self.permissionGranted = true;
     });
   },
 
@@ -82,15 +73,6 @@ module.exports.Component = registerComponent('device-orientation-permission-ui',
 
   onDeviceMotionDialogDenyClicked: function () {
     this.remove();
-  },
-
-  showMobileDesktopModeAlert: function () {
-    var self = this;
-    var safariIpadAlertEl = createAlertDialog(
-      self.data.cancelButtonText,
-      self.data.mobileDesktopMessage,
-      function () { self.el.removeChild(safariIpadAlertEl); });
-    this.el.appendChild(safariIpadAlertEl);
   },
 
   showHTTPAlert: function () {

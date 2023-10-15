@@ -53,14 +53,16 @@ module.exports.Component = registerComponent('layer', {
   },
 
   loadCubeMapImages: function () {
-    var type = this.data.type;
     var glayer;
     var xrGLFactory = this.xrGLFactory;
     var frame = this.el.sceneEl.frame;
     var src = this.data.src;
+    var type = this.data.type;
 
     this.visibilityChanged = false;
     if (!this.layer) { return; }
+    if (type !== 'monocubemap' && type !== 'stereocubemap') { return; }
+
     if (!src.complete) {
       this.pendingCubeMapUpdate = true;
     } else {
@@ -245,6 +247,7 @@ module.exports.Component = registerComponent('layer', {
       height: this.data.height / 2 || this.texture.image.height / 1000,
       width: this.data.width / 2 || this.texture.image.width / 1000
     });
+    this.initLoadingScreenImages();
     sceneEl.renderer.xr.addLayer(this.layer);
   },
 
@@ -359,7 +362,7 @@ module.exports.Component = registerComponent('layer', {
       warn('The layer component requires WebXR and the layers API enabled');
       return;
     }
-    xrSession.requestReferenceSpace('local').then(this.onRequestedReferenceSpace);
+    xrSession.requestReferenceSpace('local-floor').then(this.onRequestedReferenceSpace);
     this.needsRedraw = true;
     this.layerEnabled = true;
     if (this.quadPanelEl) {
@@ -382,10 +385,10 @@ module.exports.Component = registerComponent('layer', {
 
 function blitTexture (gl, texture, subImage, textureEl) {
   var xrReadFramebuffer = gl.createFramebuffer();
-  let x1offset = subImage.viewport.x;
-  let y1offset = subImage.viewport.y;
-  let x2offset = subImage.viewport.x + subImage.viewport.width;
-  let y2offset = subImage.viewport.y + subImage.viewport.height;
+  var x1offset = subImage.viewport.x;
+  var y1offset = subImage.viewport.y;
+  var x2offset = subImage.viewport.x + subImage.viewport.width;
+  var y2offset = subImage.viewport.y + subImage.viewport.height;
 
   // Update video texture.
   if (textureEl.tagName === 'VIDEO') {

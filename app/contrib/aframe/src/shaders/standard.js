@@ -22,8 +22,10 @@ module.exports.Shader = registerShader('standard', {
     displacementBias: {default: 0.5},
     displacementTextureOffset: {type: 'vec2'},
     displacementTextureRepeat: {type: 'vec2', default: {x: 1, y: 1}},
+
     emissive: {type: 'color', default: '#000'},
     emissiveIntensity: {default: 1},
+
     envMap: {default: ''},
 
     fog: {default: true},
@@ -59,20 +61,9 @@ module.exports.Shader = registerShader('standard', {
    * Adds a reference from the scene to this entity as the camera.
    */
   init: function (data) {
-    this.rendererSystem = this.el.sceneEl.systems.renderer;
     this.materialData = {color: new THREE.Color(), emissive: new THREE.Color()};
     getMaterialData(data, this.materialData);
-    this.rendererSystem.applyColorCorrection(this.materialData.color);
-    this.rendererSystem.applyColorCorrection(this.materialData.emissive);
     this.material = new THREE.MeshStandardMaterial(this.materialData);
-
-    utils.material.updateMap(this, data);
-    if (data.normalMap) { utils.material.updateDistortionMap('normal', this, data); }
-    if (data.displacementMap) { utils.material.updateDistortionMap('displacement', this, data); }
-    if (data.ambientOcclusionMap) { utils.material.updateDistortionMap('ambientOcclusion', this, data); }
-    if (data.metalnessMap) { utils.material.updateDistortionMap('metalness', this, data); }
-    if (data.roughnessMap) { utils.material.updateDistortionMap('roughness', this, data); }
-    this.updateEnvMap(data);
   },
 
   update: function (data) {
@@ -96,8 +87,6 @@ module.exports.Shader = registerShader('standard', {
     var key;
     var material = this.material;
     getMaterialData(data, this.materialData);
-    this.rendererSystem.applyColorCorrection(this.materialData.color);
-    this.rendererSystem.applyColorCorrection(this.materialData.emissive);
     for (key in this.materialData) {
       material[key] = this.materialData[key];
     }
@@ -124,7 +113,7 @@ module.exports.Shader = registerShader('standard', {
     if (sphericalEnvMap) {
       this.el.sceneEl.systems.material.loadTexture(sphericalEnvMap, {src: sphericalEnvMap}, function textureLoaded (texture) {
         self.isLoadingEnvMap = false;
-        texture.mapping = THREE.SphericalReflectionMapping;
+        texture.mapping = THREE.EquirectangularReflectionMapping;
         material.envMap = texture;
         utils.material.handleTextureEvents(self.el, texture);
         material.needsUpdate = true;
