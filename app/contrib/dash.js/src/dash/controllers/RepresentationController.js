@@ -47,11 +47,13 @@ function RepresentationController(config) {
     const dashConstants = config.dashConstants;
     const segmentsController = config.segmentsController;
     const isDynamic = config.isDynamic;
+    const adapter = config.adapter;
 
     let instance,
         realAdaptation,
         updating,
         voAvailableRepresentations,
+        currentRepresentationInfo,
         currentVoRepresentation;
 
     function setup() {
@@ -86,10 +88,15 @@ function RepresentationController(config) {
         return currentVoRepresentation;
     }
 
+    function getCurrentRepresentationInfo() {
+        return currentRepresentationInfo
+    }
+
     function resetInitialSettings() {
         realAdaptation = null;
         updating = true;
         voAvailableRepresentations = [];
+        currentRepresentationInfo = null;
     }
 
     function reset() {
@@ -99,28 +106,37 @@ function RepresentationController(config) {
     }
 
     function updateData(newRealAdaptation, availableRepresentations, type, isFragmented, quality) {
-        checkConfig();
+        return new Promise((resolve, reject) => {
+            updating = true;
+            voAvailableRepresentations = availableRepresentations;
+            realAdaptation = newRealAdaptation;
+            const rep = getRepresentationForQuality(quality)
+            _setCurrentVoRepresentation(rep);
 
-        updating = true;
+            if (type !== Constants.VIDEO && type !== Constants.AUDIO && (type !== Constants.TEXT || !isFragmented)) {
+                endDataUpdate();
+                resolve();
+                return;
+            }
 
-        voAvailableRepresentations = availableRepresentations;
+            const promises = [];
+            for (let i = 0, ln = voAvailableRepresentations.length; i < ln; i++) {
+                const currentRep = voAvailableRepresentations[i];
+                promises.push(_updateRepresentation(currentRep));
+            }
 
-        const rep = getRepresentationForQuality(quality)
-        _setCurrentVoRepresentation(rep);
-        realAdaptation = newRealAdaptation;
+            Promise.all(promises)
+                .then(() => {
+                    // Update the current representation again as we have now the reference to the segments
+                    const rep = getRepresentationForQuality(quality)
+                    _setCurrentVoRepresentation(rep);
+                    resolve();
+                })
+                .catch((e) => {
+                    reject(e);
+                })
+        })
 
-        if (type !== Constants.VIDEO && type !== Constants.AUDIO && (type !== Constants.TEXT || !isFragmented)) {
-            endDataUpdate();
-            return Promise.resolve();
-        }
-
-        const promises = [];
-        for (let i = 0, ln = voAvailableRepresentations.length; i < ln; i++) {
-            const currentRep = voAvailableRepresentations[i];
-            promises.push(_updateRepresentation(currentRep));
-        }
-
-        return Promise.all(promises);
     }
 
     function _updateRepresentation(currentRep) {
@@ -301,6 +317,7 @@ function RepresentationController(config) {
 
     function _setCurrentVoRepresentation(value) {
         currentVoRepresentation = value;
+        currentRepresentationInfo = adapter.convertRepresentationToRepresentationInfo(currentVoRepresentation);
     }
 
     function onManifestValidityChanged(e) {
@@ -320,6 +337,7 @@ function RepresentationController(config) {
         isUpdating,
         updateData,
         getCurrentRepresentation,
+        getCurrentRepresentationInfo,
         getRepresentationForQuality,
         prepareQualityChange,
         reset

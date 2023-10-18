@@ -46,27 +46,19 @@ function MssHandler(config) {
     const events = config.events;
     const constants = config.constants;
     const initSegmentType = config.initSegmentType;
-    const dashMetrics = config.dashMetrics;
     const playbackController = config.playbackController;
     const streamController = config.streamController;
-    const protectionController = config.protectionController;
-    const mssFragmentProcessor = MssFragmentProcessor(context).create({
-        dashMetrics: dashMetrics,
-        playbackController: playbackController,
-        protectionController: protectionController,
-        streamController: streamController,
-        eventBus: eventBus,
-        constants: constants,
-        ISOBoxer: config.ISOBoxer,
-        debug: config.debug,
-        errHandler: config.errHandler
-    });
     let mssParser,
+        mssFragmentProcessor,
         fragmentInfoControllers,
         instance;
 
     function setup() {
         fragmentInfoControllers = [];
+    }
+
+    function createMssFragmentProcessor() {
+        mssFragmentProcessor = MssFragmentProcessor(context).create(config);
     }
 
     function getStreamProcessor(type) {
@@ -166,7 +158,7 @@ function MssHandler(config) {
     }
 
     function onSegmentMediaLoaded(e) {
-        if (e.error)  return;
+        if (e.error) return;
 
         let streamProcessor = getStreamProcessor(e.request.mediaType);
         if (!streamProcessor) return;
@@ -195,7 +187,7 @@ function MssHandler(config) {
         }
     }
 
-    function onPlaybackSeekAsked() {
+    function onPlaybackSeeking() {
         if (playbackController.getIsDynamic() && playbackController.getTime() !== 0) {
             startFragmentInfoControllers();
         }
@@ -212,7 +204,7 @@ function MssHandler(config) {
     function registerEvents() {
         eventBus.on(events.INIT_FRAGMENT_NEEDED, onInitFragmentNeeded, instance, { priority: dashjs.FactoryMaker.getSingletonFactoryByName(eventBus.getClassName()).EVENT_PRIORITY_HIGH }); /* jshint ignore:line */
         eventBus.on(events.PLAYBACK_PAUSED, onPlaybackPaused, instance, { priority: dashjs.FactoryMaker.getSingletonFactoryByName(eventBus.getClassName()).EVENT_PRIORITY_HIGH }); /* jshint ignore:line */
-        eventBus.on(events.PLAYBACK_SEEK_ASKED, onPlaybackSeekAsked, instance, { priority: dashjs.FactoryMaker.getSingletonFactoryByName(eventBus.getClassName()).EVENT_PRIORITY_HIGH }); /* jshint ignore:line */
+        eventBus.on(events.PLAYBACK_SEEKING, onPlaybackSeeking, instance, { priority: dashjs.FactoryMaker.getSingletonFactoryByName(eventBus.getClassName()).EVENT_PRIORITY_HIGH }); /* jshint ignore:line */
         eventBus.on(events.FRAGMENT_LOADING_COMPLETED, onSegmentMediaLoaded, instance, { priority: dashjs.FactoryMaker.getSingletonFactoryByName(eventBus.getClassName()).EVENT_PRIORITY_HIGH }); /* jshint ignore:line */
         eventBus.on(events.TTML_TO_PARSE, onTTMLPreProcess, instance);
     }
@@ -225,7 +217,7 @@ function MssHandler(config) {
 
         eventBus.off(events.INIT_FRAGMENT_NEEDED, onInitFragmentNeeded, this);
         eventBus.off(events.PLAYBACK_PAUSED, onPlaybackPaused, this);
-        eventBus.off(events.PLAYBACK_SEEK_ASKED, onPlaybackSeekAsked, this);
+        eventBus.off(events.PLAYBACK_SEEKING, onPlaybackSeeking, this);
         eventBus.off(events.FRAGMENT_LOADING_COMPLETED, onSegmentMediaLoaded, this);
         eventBus.off(events.TTML_TO_PARSE, onTTMLPreProcess, this);
 
@@ -239,9 +231,10 @@ function MssHandler(config) {
     }
 
     instance = {
-        reset: reset,
-        createMssParser: createMssParser,
-        registerEvents: registerEvents
+        reset,
+        createMssParser,
+        createMssFragmentProcessor,
+        registerEvents
     };
 
     setup();

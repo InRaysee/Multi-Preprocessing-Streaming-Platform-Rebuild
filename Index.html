@@ -40,6 +40,7 @@
 		<script src="app/contrib/dash.js/externals/StringMatcher.js"></script>
 		<script src="app/contrib/webrtc/adapter-latest.js"></script>
 		<script src="app/contrib/webrtc/capturer.js"></script>
+		<script src="comparor.js"></script>
 
 		<!-- Import ABR rules -->
 		<script src="RttThroughputRule.js"></script>
@@ -130,6 +131,10 @@
 											<label data-toggle="tooltip" data-placement="right" id="inputOutput" style="margin-left: 10px;">
 												<select id="audioCapture"></select>
 											</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="modes" id="comparisonMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('Comparison')">
+											Comparison
+										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="modes" id="vrMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('VR')">
 											VR
@@ -367,6 +372,11 @@
 						<!-- Camera container -->
 						<div id="cameraContainer" class="cameraContainer" style="position: absolute; background-color:#3a3d42; border: 2px solid #3a3d42; margin: 20px; width:240px; height:135px; display: none;">
 							<video id="camera" style="width:100%; height:100%;" playsinline autoplay></video>
+						</div>
+
+						<!-- Comparison container -->
+						<div id="comparisonContainer" class="comparisonContainer" style="position: absolute; background-color:#3a3d42; border: 2px solid #3a3d42; margin: 20px; width:240px; height:135px; display: none;">
+							<video id="comparison" style="width:100%; height:100%;" playsinline autoplay></video>
 						</div>
 
 					</div>

@@ -206,14 +206,14 @@ function EBMLParser(config) {
         let outFloat;
 
         switch (size) {
-        case 4:
-            outFloat = data.getFloat32(pos);
-            pos += 4;
-            break;
-        case 8:
-            outFloat = data.getFloat64(pos);
-            pos += 8;
-            break;
+            case 4:
+                outFloat = data.getFloat32(pos);
+                pos += 4;
+                break;
+            case 8:
+                outFloat = data.getFloat64(pos);
+                pos += 8;
+                break;
         }
         return outFloat;
     }
@@ -223,16 +223,48 @@ function EBMLParser(config) {
      *
      * @param {number} size 1 to 8 bytes
      * @return {number} the decoded number
-     * @throws will throw an exception if the bit stream is malformed or there is
-     * not enough data
+     * @throws will throw an exception if the bit stream is malformed, there is
+     * not enough data, or if the value exceeds the maximum safe integer value
      * @memberof EBMLParser
      */
     function getMatroskaUint(size) {
+        if (size > 4) {
+            return getMatroskaUintLarge(size);
+        }
+
         let val = 0;
 
         for (let i = 0; i < size; i += 1) {
             val <<= 8;
             val |= data.getUint8(pos + i) & 0xff;
+        }
+
+        pos += size;
+        return val >>> 0;
+    }
+
+    /**
+     * Consumes and returns an unsigned int from the bitstream.
+     *
+     * @param {number} size 1 to 8 bytes
+     * @return {number} the decoded number
+     * @throws will throw an exception if the bit stream is malformed, there is
+     * not enough data, or if the value exceeds the maximum safe integer value
+     */
+    function getMatroskaUintLarge(size) {
+        const limit = Math.floor(Number.MAX_SAFE_INTEGER / 256);
+        let val = 0;
+
+        for (let i = 0; i < size; i += 1) {
+            if (val > limit) {
+                throw new Error('Value exceeds safe integer limit');
+            }
+            val *= 256;
+            const n = data.getUint8(pos + i);
+            if (val > Number.MAX_SAFE_INTEGER - n) {
+                throw new Error('Value exceeds safe integer limit');
+            }
+            val += n;
         }
 
         pos += size;

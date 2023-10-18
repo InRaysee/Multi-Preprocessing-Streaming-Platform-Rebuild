@@ -32,6 +32,7 @@
 import FactoryMaker from '../../core/FactoryMaker';
 import Settings from '../../core/Settings';
 import Constants from '../constants/Constants';
+import { modifyRequest } from '../utils/RequestModifier';
 
 /**
  * @module FetchLoader
@@ -54,7 +55,16 @@ function FetchLoader(cfg) {
     }
 
     function load(httpRequest) {
+        if (requestModifier && requestModifier.modifyRequest) {
+            modifyRequest(httpRequest, requestModifier)
+                .then(() => request(httpRequest));
+        }
+        else {
+            request(httpRequest);
+        }
+    }
 
+    function request(httpRequest) {
         // Variables will be used in the callback functions
         const requestStartTime = new Date();
         const request = httpRequest.request;
@@ -77,7 +87,7 @@ function FetchLoader(cfg) {
             request.requestStartDate = requestStartTime;
         }
 
-        if (requestModifier) {
+        if (requestModifier && requestModifier.modifyRequestHeader) {
             // modifyRequestHeader expects a XMLHttpRequest object so,
             // to keep backward compatibility, we should expose a setRequestHeader method
             // TODO: Remove RequestModifier dependency on XMLHttpRequest object and define
@@ -86,6 +96,8 @@ function FetchLoader(cfg) {
                 setRequestHeader: function (header, value) {
                     headers.append(header, value);
                 }
+            }, {
+                url: httpRequest.url
             });
         }
 
@@ -174,7 +186,7 @@ function FetchLoader(cfg) {
                             reader.read().then(function processFetch(args) {
                                 const value = args.value;
                                 const done = args.done;
-                                markB = Date.now()
+                                markB = Date.now();
 
                                 if (value && value.length) {
                                     const chunkDownloadDurationMS = markB - markA;
@@ -231,16 +243,22 @@ function FetchLoader(cfg) {
                                     // are correctly generated
                                     // Same structure as https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequestEventTarget/
                                     let calculatedThroughput = null;
+                                    let calculatedTime = null;
                                     if (calculationMode === Constants.ABR_FETCH_THROUGHPUT_CALCULATION_MOOF_PARSING) {
                                         calculatedThroughput = calculateThroughputByChunkData(startTimeData, endTimeData);
+                                        if (calculatedThroughput) {
+                                            calculatedTime = bytesReceived * 8 / calculatedThroughput;
+                                        }
+                                    }
+                                    else if (calculationMode === Constants.ABR_FETCH_THROUGHPUT_CALCULATION_DOWNLOADED_DATA) {
+                                        calculatedTime = calculateDownloadedTime(downloadedData, bytesReceived);
                                     }
 
                                     httpRequest.progress({
                                         loaded: bytesReceived,
                                         total: isNaN(totalBytes) ? bytesReceived : totalBytes,
                                         lengthComputable: true,
-                                        time: calculateDownloadedTime(downloadedData, bytesReceived),
-                                        throughput: calculatedThroughput,
+                                        time: calculatedTime,
                                         stream: true
                                     });
                                 }
@@ -408,14 +426,16 @@ function FetchLoader(cfg) {
                         let chunkDownloadTime = datumE[i].ts - datum[i].ts;
                         if (chunkDownloadTime > 1) {
                             chunkThroughputs.push((8 * datumE[i].bytes) / chunkDownloadTime);
+                            shortDurationStartTime = 0;
                         } else {
                             if (shortDurationStartTime === 0) {
                                 shortDurationStartTime = datum[i].ts;
+                                shortDurationBytesReceived = 0;
                             }
                             let cumulatedChunkDownloadTime = datumE[i].ts - shortDurationStartTime;
                             if (cumulatedChunkDownloadTime > 1) {
+                                shortDurationBytesReceived += datumE[i].bytes;
                                 chunkThroughputs.push((8 * shortDurationBytesReceived) / cumulatedChunkDownloadTime);
-                                shortDurationBytesReceived = 0;
                                 shortDurationStartTime = 0;
                             } else {
                                 // continue cumulating short duration data

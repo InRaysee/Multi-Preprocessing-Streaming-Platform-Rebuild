@@ -125,6 +125,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.streamElement = null;  // Container for video element in HTML page
     $scope.controllBar = null;  // Container for video control bar
     $scope.capturer = null;  // Container for capturer
+    $scope.comparor = null;  // Container for comparor
     $scope.streamSourceBuffer = {  // Containers for SourceBuffers
         video: null,
         audio: null
@@ -726,6 +727,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         switch (mode) {
             case 'Multi-Path':
             case 'Chat':
+            case 'Comparison':
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
                 break;
@@ -751,17 +753,27 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 document.getElementById( "video" ).style.display = "flex";
                 document.getElementById( "vr" ).style.display = "none";
                 document.getElementById( "cameraContainer" ).style.display = "none";
+                document.getElementById( "comparisonContainer" ).style.display = "none";
                 break;
             case 'Chat':
                 document.getElementById( "video" ).style.display = "flex";
                 document.getElementById( "vr" ).style.display = "none";
                 document.getElementById( "cameraContainer" ).style.display = "block";
                 document.getElementById( "cameraContainer" ).style.position = "absolute";
+                document.getElementById( "comparisonContainer" ).style.display = "none";
+                break;
+            case 'Comparison':
+                document.getElementById( "video" ).style.display = "flex";
+                document.getElementById( "vr" ).style.display = "none";
+                document.getElementById( "cameraContainer" ).style.display = "none";
+                document.getElementById( "comparisonContainer" ).style.display = "block";
+                document.getElementById( "comparisonContainer" ).style.position = "absolute";
                 break;
             case 'VR':
                 document.getElementById( "video" ).style.display = "none";
                 document.getElementById( "vr" ).style.display = "flex";
                 document.getElementById( "cameraContainer" ).style.display = "none";
+                document.getElementById( "comparisonContainer" ).style.display = "none";
                 break;
             default:
                 break;
@@ -1102,6 +1114,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         switch ($scope.mode) {
             case 'Multi-Path':
             case 'Chat':
+            case 'Comparison':
                 $scope.videoInit();
                 break;
             case 'VR':
@@ -1307,6 +1320,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             if ($scope.capturer) {
                 $scope.capturer.destroy();
                 $scope.capturer = null;
+            }
+            if ($scope.comparor) {
+                $scope.comparor.destroy();
+                $scope.comparor = null;
             }
     
             if ($scope.mode == "VR") {
@@ -1602,6 +1619,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             // Create and initialize capturer
             if ($scope.mode == "Chat" && !$scope.capturer) {
                 $scope.capturer = new capturer();
+            }
+
+            // Create and initialize comparor
+            if ($scope.mode == "Comparison" && !$scope.comparor) {
+                $scope.comparor = new comparor();
+                $scope.comparor.init();
             }
 
             // Life signals

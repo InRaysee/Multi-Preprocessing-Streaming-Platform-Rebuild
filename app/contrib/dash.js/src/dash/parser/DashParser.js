@@ -35,6 +35,7 @@ import StringMatcher from './matchers/StringMatcher';
 import DurationMatcher from './matchers/DurationMatcher';
 import DateTimeMatcher from './matchers/DateTimeMatcher';
 import NumericMatcher from './matchers/NumericMatcher';
+import LangMatcher from './matchers/LangMatcher';
 import RepresentationBaseValuesMap from './maps/RepresentationBaseValuesMap';
 import SegmentValuesMap from './maps/SegmentValuesMap';
 
@@ -56,18 +57,19 @@ function DashParser(config) {
             new DurationMatcher(),
             new DateTimeMatcher(),
             new NumericMatcher(),
-            new StringMatcher()   // last in list to take precedence over NumericMatcher
+            new LangMatcher(),
+            new StringMatcher()// last in list to take precedence over NumericMatcher
         ];
 
         converter = new X2JS({
-            escapeMode:         false,
-            attributePrefix:    '',
-            arrayAccessForm:    'property',
-            emptyNodeForm:      'object',
-            stripWhitespaces:   false,
+            escapeMode: false,
+            attributePrefix: '',
+            arrayAccessForm: 'property',
+            emptyNodeForm: 'object',
+            stripWhitespaces: false,
             enableToStringFunc: true,
-            ignoreRoot:         false,
-            matchers:           matchers
+            ignoreRoot: false,
+            matchers: matchers
         });
 
         objectIron = ObjectIron(context).create({

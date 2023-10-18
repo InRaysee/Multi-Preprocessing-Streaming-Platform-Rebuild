@@ -47,6 +47,7 @@ function ManifestLoader(config) {
     config = config || {};
     const context = this.context;
     const debug = config.debug;
+    const settings = config.settings;
     const eventBus = EventBus(context).getInstance();
     const urlUtils = URLUtils(context).getInstance();
 
@@ -71,7 +72,8 @@ function ManifestLoader(config) {
             urlUtils: urlUtils,
             constants: Constants,
             dashConstants: DashConstants,
-            errors: Errors
+            errors: Errors,
+            requestTimeout: config.settings.get().streaming.manifestRequestTimeout
         });
 
         xlinkController = XlinkController(context).create({
@@ -96,19 +98,39 @@ function ManifestLoader(config) {
             //do some business to transform it into a Dash Manifest
             if (mssHandler) {
                 parser = mssHandler.createMssParser();
+                mssHandler.createMssFragmentProcessor();
                 mssHandler.registerEvents();
             }
             return parser;
         } else if (data.indexOf('MPD') > -1 || data.indexOf('Patch') > -1) {
-            return DashParser(context).create({debug: debug});
+            return DashParser(context).create({ debug: debug });
         } else {
             return parser;
         }
     }
 
-    function load(url) {
+    function load(url, serviceLocation = null, queryParams = null) {
 
+        const requestStartDate = new Date();
         const request = new TextRequest(url, HTTPRequest.MPD_TYPE);
+
+        if (serviceLocation) {
+            request.serviceLocation = serviceLocation;
+        }
+
+        if (queryParams) {
+            request.queryParams = queryParams;
+        }
+
+        if (!request.requestStartDate) {
+            request.requestStartDate = requestStartDate;
+        }
+
+        eventBus.trigger(
+            Events.MANIFEST_LOADING_STARTED, {
+                request
+            }
+        );
 
         urlLoader.load({
             request: request,
@@ -187,11 +209,18 @@ function ManifestLoader(config) {
                         manifest.originalUrl = manifest.url;
                     }
 
-                    // In the following, we only use the first Location entry even if many are available
-                    // Compare with ManifestUpdater/DashManifestModel
-                    if (manifest.hasOwnProperty(Constants.LOCATION)) {
-                        baseUri = urlUtils.parseBaseUrl(manifest.Location_asArray[0]);
-                        logger.debug('BaseURI set by Location to: ' + baseUri);
+                    // If there is a mismatch between the manifest's specified duration and the total duration of all periods,
+                    // and the specified duration is greater than the total duration of all periods,
+                    // overwrite the manifest's duration attribute. This is a patch for if a manifest is generated incorrectly.
+                    if (settings &&
+                        settings.get().streaming.enableManifestDurationMismatchFix &&
+                        manifest.mediaPresentationDuration &&
+                        manifest.Period_asArray.length > 1) {
+                        const sumPeriodDurations = manifest.Period_asArray.reduce((totalDuration, period) => totalDuration + period.duration, 0);
+                        if (!isNaN(sumPeriodDurations) && manifest.mediaPresentationDuration > sumPeriodDurations) {
+                            logger.warn('Media presentation duration greater than duration of all periods. Setting duration to total period duration');
+                            manifest.mediaPresentationDuration = sumPeriodDurations;
+                        }
                     }
 
                     manifest.baseUri = baseUri;

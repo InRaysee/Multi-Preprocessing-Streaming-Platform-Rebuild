@@ -29,9 +29,9 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
- /**
-  * @ignore
-  */
+/**
+ * @ignore
+ */
 function RNG() {
 
     // check whether secure random numbers are available. if not, revert to
@@ -51,7 +51,7 @@ function RNG() {
         index,
         instance;
 
-    function initialise() {
+    function initialize() {
         if (crypto) {
             if (!randomNumbers) {
                 randomNumbers = new ArrayType(NUM_RANDOM_NUMBERS);
@@ -74,7 +74,7 @@ function RNG() {
 
         if (crypto) {
             if (index === randomNumbers.length) {
-                initialise();
+                initialize();
             }
 
             r = randomNumbers[index] / MAX_VALUE;
@@ -90,7 +90,7 @@ function RNG() {
         random: rand
     };
 
-    initialise();
+    initialize();
 
     return instance;
 }

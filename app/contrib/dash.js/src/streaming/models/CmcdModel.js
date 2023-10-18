@@ -140,7 +140,8 @@ function CmcdModel() {
         try {
             if (settings.get().streaming.cmcd && settings.get().streaming.cmcd.enabled) {
                 const cmcdData = _getCmcdData(request);
-                const finalPayloadString = _buildFinalString(cmcdData);
+                const filteredCmcdData = _applyWhitelist(cmcdData);
+                const finalPayloadString = _buildFinalString(filteredCmcdData);
 
                 eventBus.trigger(MetricsReportingEvents.CMCD_DATA_GENERATED, {
                     url: request.url,
@@ -160,6 +161,22 @@ function CmcdModel() {
         }
     }
 
+    function _applyWhitelist(cmcdData) {
+        try {
+            const enabledCMCDKeys = settings.get().streaming.cmcd.enabledKeys;
+
+            return Object.keys(cmcdData)
+                .filter(key => enabledCMCDKeys.includes(key))
+                .reduce((obj, key) => {
+                    obj[key] = cmcdData[key];
+
+                    return obj;
+                }, {});
+        } catch (e) {
+            return cmcdData;
+        }
+    }
+
     function _copyParameters(data, parameterNames) {
         const copiedData = {};
         for (let name of parameterNames) {
@@ -174,10 +191,10 @@ function CmcdModel() {
         try {
             if (settings.get().streaming.cmcd && settings.get().streaming.cmcd.enabled) {
                 const cmcdData = _getCmcdData(request);
-                const cmcdObjectHeader = _copyParameters(cmcdData, ['br', 'd', 'ot', 'tb']);
-                const cmcdRequestHeader = _copyParameters(cmcdData, ['bl', 'dl', 'mtp', 'nor', 'nrr', 'su']);
-                const cmcdStatusHeader = _copyParameters(cmcdData, ['bs', 'rtp']);
-                const cmcdSessionHeader = _copyParameters(cmcdData, ['cid', 'pr', 'sf', 'sid', 'st', 'v']);
+                const cmcdObjectHeader = _copyParameters(cmcdData, _applyWhitelistByKeys(['br', 'd', 'ot', 'tb']));
+                const cmcdRequestHeader = _copyParameters(cmcdData, _applyWhitelistByKeys(['bl', 'dl', 'mtp', 'nor', 'nrr', 'su']));
+                const cmcdStatusHeader = _copyParameters(cmcdData, _applyWhitelistByKeys(['bs', 'rtp']));
+                const cmcdSessionHeader = _copyParameters(cmcdData, _applyWhitelistByKeys(['cid', 'pr', 'sf', 'sid', 'st', 'v']));
                 const headers = {
                     'CMCD-Object': _buildFinalString(cmcdObjectHeader),
                     'CMCD-Request': _buildFinalString(cmcdRequestHeader),
@@ -198,6 +215,12 @@ function CmcdModel() {
         } catch (e) {
             return null;
         }
+    }
+
+    function _applyWhitelistByKeys(keys) {
+        const enabledCMCDKeys = settings.get().streaming.cmcd.enabledKeys;
+
+        return keys.filter(key => enabledCMCDKeys.includes(key));
     }
 
     function _getCmcdData(request) {
@@ -266,7 +289,9 @@ function CmcdModel() {
         if (!rtp) {
             rtp = _calculateRtp(request);
         }
-        data.rtp = rtp;
+        if (!isNaN(rtp)) {
+            data.rtp = rtp;
+        }
 
         if (nextRequest) {
             if (request.url !== nextRequest.url) {
@@ -406,7 +431,7 @@ function CmcdModel() {
 
     function _getObjectDurationByRequest(request) {
         try {
-            return !isNaN(request.duration) ? Math.round(request.duration * 1000) : null;
+            return !isNaN(request.duration) ? Math.round(request.duration * 1000) : NaN;
         } catch (e) {
             return null;
         }
@@ -544,24 +569,32 @@ function CmcdModel() {
     }
 
     function _calculateRtp(request) {
-        // Get the values we need
-        let playbackRate = playbackController.getPlaybackRate();
-        if (!playbackRate) playbackRate = 1;
-        let { quality, mediaType, mediaInfo, duration } = request;
-        let currentBufferLevel = _getBufferLevelByType(mediaType);
-        if (currentBufferLevel === 0) currentBufferLevel = 500;
-        let bitrate = mediaInfo.bitrateList[quality].bandwidth;
+        try {
+            // Get the values we need
+            let playbackRate = playbackController.getPlaybackRate();
+            if (!playbackRate) playbackRate = 1;
+            let { quality, mediaType, mediaInfo, duration } = request;
 
-        // Calculate RTP
-        let segmentSize = (bitrate * duration) / 1000; // Calculate file size in kilobits
-        let timeToLoad = (currentBufferLevel / playbackRate) / 1000; // Calculate time available to load file in seconds
-        let minBandwidth = segmentSize / timeToLoad; // Calculate the exact bandwidth required
-        let rtpSafetyFactor = settings.get().streaming.cmcd.rtpSafetyFactor && !isNaN(settings.get().streaming.cmcd.rtpSafetyFactor) ? settings.get().streaming.cmcd.rtpSafetyFactor : RTP_SAFETY_FACTOR;
-        let maxBandwidth = minBandwidth * rtpSafetyFactor; // Include a safety buffer
+            if (!mediaInfo) {
+                return NaN;
+            }
+            let currentBufferLevel = _getBufferLevelByType(mediaType);
+            if (currentBufferLevel === 0) currentBufferLevel = 500;
+            let bitrate = mediaInfo.bitrateList[quality].bandwidth;
 
-        let rtp = (parseInt(maxBandwidth / 100) + 1) * 100; // Round to the next multiple of 100
+            // Calculate RTP
+            let segmentSize = (bitrate * duration) / 1000; // Calculate file size in kilobits
+            let timeToLoad = (currentBufferLevel / playbackRate) / 1000; // Calculate time available to load file in seconds
+            let minBandwidth = segmentSize / timeToLoad; // Calculate the exact bandwidth required
+            let rtpSafetyFactor = settings.get().streaming.cmcd.rtpSafetyFactor && !isNaN(settings.get().streaming.cmcd.rtpSafetyFactor) ? settings.get().streaming.cmcd.rtpSafetyFactor : RTP_SAFETY_FACTOR;
+            let maxBandwidth = minBandwidth * rtpSafetyFactor; // Include a safety buffer
 
-        return rtp;
+
+            // Round to the next multiple of 100
+            return (parseInt(maxBandwidth / 100) + 1) * 100;
+        } catch (e) {
+            return NaN;
+        }
     }
 
     function reset() {

@@ -50,6 +50,7 @@ function ABRRulesCollection(config) {
     const context = this.context;
 
     const mediaPlayerModel = config.mediaPlayerModel;
+    const customParametersModel = config.customParametersModel;
     const dashMetrics = config.dashMetrics;
     const settings = config.settings;
 
@@ -68,7 +69,6 @@ function ABRRulesCollection(config) {
                 qualitySwitchRules.push(
                     L2ARule(context).create({
                         dashMetrics: dashMetrics,
-                        mediaPlayerModel: mediaPlayerModel,
                         settings: settings
                     })
                 );
@@ -131,7 +131,7 @@ function ABRRulesCollection(config) {
         }
 
         // add custom ABR rules if any
-        const customRules = mediaPlayerModel.getABRCustomRules();
+        const customRules = customParametersModel.getAbrCustomRules();
         customRules.forEach(function (rule) {
             if (rule.type === QUALITY_SWITCH_RULES) {
                 qualitySwitchRules.push(rule.rule(context).create());
@@ -212,6 +212,10 @@ function ABRRulesCollection(config) {
         const abandonRequestArray = abandonFragmentRules.map(rule => rule.shouldAbandon(rulesContext, streamId));
         const activeRules = _getRulesWithChange(abandonRequestArray);
         const shouldAbandon = getMinSwitchRequest(activeRules);
+
+        if (shouldAbandon) {
+            shouldAbandon.reason.forceAbandon = true
+        }
 
         return shouldAbandon || SwitchRequest(context).create();
     }

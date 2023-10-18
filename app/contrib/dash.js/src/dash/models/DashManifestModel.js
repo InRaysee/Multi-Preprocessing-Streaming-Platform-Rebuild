@@ -38,6 +38,9 @@ import UTCTiming from '../vo/UTCTiming';
 import Event from '../vo/Event';
 import BaseURL from '../vo/BaseURL';
 import EventStream from '../vo/EventStream';
+import ProducerReferenceTime from '../vo/ProducerReferenceTime';
+import ContentSteering from '../vo/ContentSteering';
+import DescriptorType from '../vo/DescriptorType';
 import ObjectUtils from '../../streaming/utils/ObjectUtils';
 import URLUtils from '../../streaming/utils/URLUtils';
 import FactoryMaker from '../../core/FactoryMaker';
@@ -45,6 +48,8 @@ import Debug from '../../core/Debug';
 import DashJSError from '../../streaming/vo/DashJSError';
 import Errors from '../../core/errors/Errors';
 import {THUMBNAILS_SCHEME_ID_URIS} from '../../streaming/thumbnail/ThumbnailTracks';
+import MpdLocation from '../vo/MpdLocation';
+import PatchLocation from '../vo/PatchLocation';
 
 function DashManifestModel() {
     let instance,
@@ -54,9 +59,6 @@ function DashManifestModel() {
 
     const context = this.context;
     const urlUtils = URLUtils(context).getInstance();
-
-    var appElement = document.querySelector('[ng-controller=DashController]');
-    var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
 
     const isInteger = Number.isInteger || function (value) {
         return typeof value === 'number' &&
@@ -165,35 +167,109 @@ function DashManifestModel() {
         return getIsTypeOf(adaptation, Constants.IMAGE);
     }
 
+    function getProducerReferenceTimesForAdaptation(adaptation) {
+        const prtArray = adaptation && adaptation.hasOwnProperty(DashConstants.PRODUCERREFERENCETIME_ASARRAY) ? adaptation[DashConstants.PRODUCERREFERENCETIME_ASARRAY] : [];
+
+        // ProducerReferenceTime elements can also be contained in Representations
+        const representationsArray = adaptation && adaptation.hasOwnProperty(DashConstants.REPRESENTATION_ASARRAY) ? adaptation[DashConstants.REPRESENTATION_ASARRAY] : [];
+
+        representationsArray.forEach((rep) => {
+            if (rep.hasOwnProperty(DashConstants.PRODUCERREFERENCETIME_ASARRAY)) {
+                prtArray.push(...rep[DashConstants.PRODUCERREFERENCETIME_ASARRAY]);
+            }
+        });
+
+        const prtsForAdaptation = [];
+
+        // Unlikely to have multiple ProducerReferenceTimes.
+        prtArray.forEach((prt) => {
+            const entry = new ProducerReferenceTime();
+
+            if (prt.hasOwnProperty(DashConstants.ID)) {
+                entry[DashConstants.ID] = prt[DashConstants.ID];
+            } else {
+                // Ignore. Missing mandatory attribute
+                return;
+            }
+
+            if (prt.hasOwnProperty(DashConstants.WALL_CLOCK_TIME)) {
+                entry[DashConstants.WALL_CLOCK_TIME] = prt[DashConstants.WALL_CLOCK_TIME];
+            } else {
+                // Ignore. Missing mandatory attribute
+                return;
+            }
+
+            if (prt.hasOwnProperty(DashConstants.PRESENTATION_TIME)) {
+                entry[DashConstants.PRESENTATION_TIME] = prt[DashConstants.PRESENTATION_TIME];
+            } else {
+                // Ignore. Missing mandatory attribute
+                return;
+            }
+
+            if (prt.hasOwnProperty(DashConstants.INBAND)) {
+                entry[DashConstants.INBAND] = prt[DashConstants.INBAND] !== 'false';
+            }
+
+            if (prt.hasOwnProperty(DashConstants.TYPE)) {
+                entry[DashConstants.TYPE] = prt[DashConstants.TYPE];
+            }
+
+            // Not interested in other attributes for now
+            // UTC element contained must be same as that in the MPD
+            prtsForAdaptation.push(entry);
+        })
+
+        return prtsForAdaptation;
+    }
+
     function getLanguageForAdaptation(adaptation) {
         let lang = '';
 
         if (adaptation && adaptation.hasOwnProperty(DashConstants.LANG)) {
-            //Filter out any other characters not allowed according to RFC5646
-            lang = adaptation.lang.replace(/[^A-Za-z0-9-]/g, '');
+            lang = adaptation.lang;
         }
 
         return lang;
     }
 
     function getViewpointForAdaptation(adaptation) {
-        return adaptation && adaptation.hasOwnProperty(DashConstants.VIEWPOINT) ? adaptation.Viewpoint : null;
+        if (!adaptation || !adaptation.hasOwnProperty(DashConstants.VIEWPOINT_ASARRAY) || !adaptation[DashConstants.VIEWPOINT_ASARRAY].length) return [];
+        return adaptation[DashConstants.VIEWPOINT_ASARRAY].map( viewpoint => {
+            const vp = new DescriptorType();
+            return vp.init(viewpoint);
+        });
     }
 
     function getRolesForAdaptation(adaptation) {
-        return adaptation && adaptation.hasOwnProperty(DashConstants.ROLE_ASARRAY) ? adaptation.Role_asArray : [];
+        if (!adaptation || !adaptation.hasOwnProperty(DashConstants.ROLE_ASARRAY) || !adaptation[DashConstants.ROLE_ASARRAY].length) return [];
+        return adaptation[DashConstants.ROLE_ASARRAY].map( role => {
+            const r = new DescriptorType();
+            return r.init(role);
+        });
     }
 
     function getAccessibilityForAdaptation(adaptation) {
-        return adaptation && adaptation.hasOwnProperty(DashConstants.ACCESSIBILITY_ASARRAY) ? adaptation.Accessibility_asArray : [];
+        if (!adaptation || !adaptation.hasOwnProperty(DashConstants.ACCESSIBILITY_ASARRAY) || !adaptation[DashConstants.ACCESSIBILITY_ASARRAY].length) return [];
+        return adaptation[DashConstants.ACCESSIBILITY_ASARRAY].map( accessibility => {
+            const a = new DescriptorType();
+            return a.init(accessibility);
+        });
     }
 
     function getAudioChannelConfigurationForAdaptation(adaptation) {
-        return adaptation && adaptation.hasOwnProperty(DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY) ? adaptation.AudioChannelConfiguration_asArray : [];
+        if (!adaptation || !adaptation.hasOwnProperty(DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY) || !adaptation[DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY].length) return [];
+        return adaptation[DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY].map( audioChanCfg => {
+            const acc = new DescriptorType();
+            return acc.init(audioChanCfg);
+        });
     }
 
     function getAudioChannelConfigurationForRepresentation(representation) {
-        return representation && representation.hasOwnProperty(DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY) ? representation.AudioChannelConfiguration_asArray : [];
+        if (!representation || !representation.hasOwnProperty(DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY) || !representation[DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY].length) return [];
+        return representation[DashConstants.AUDIOCHANNELCONFIGURATION_ASARRAY].map( audioChanCfg => {
+            const acc = new DescriptorType();
+            return acc.init(audioChanCfg);
+        });
     }
 
     function getRepresentationSortFunction() {
@@ -306,6 +382,22 @@ function DashManifestModel() {
         return adaptation && adaptation.Representation_asArray && adaptation.Representation_asArray.length > 0 ? adaptation.Representation_asArray[0].mimeType : null;
     }
 
+    function getSegmentAlignment(adaptation) {
+        if (adaptation && adaptation.hasOwnProperty(DashConstants.SEGMENT_ALIGNMENT)) {
+            return adaptation[DashConstants.SEGMENT_ALIGNMENT] === 'true'
+        }
+
+        return false
+    }
+
+    function getSubSegmentAlignment(adaptation) {
+        if (adaptation && adaptation.hasOwnProperty(DashConstants.SUB_SEGMENT_ALIGNMENT)) {
+            return adaptation[DashConstants.SUB_SEGMENT_ALIGNMENT] === 'true'
+        }
+
+        return false
+    }
+
     function getKID(adaptation) {
         if (!adaptation || !adaptation.hasOwnProperty(DashConstants.CENC_DEFAULT_KID)) {
             return null;
@@ -341,10 +433,6 @@ function DashManifestModel() {
         let isDynamic = false;
         if (manifest && manifest.hasOwnProperty('type')) {
             isDynamic = (manifest.type === DashConstants.DYNAMIC);
-            if (!isDynamic) {
-                $scope.targetLatency = 0;
-                document.getElementById( "target-latency" ).disabled = "true";
-            }
         }
         return isDynamic;
     }
@@ -671,19 +759,12 @@ function DashManifestModel() {
                 voPeriod = new Period();
                 voPeriod.start = realPeriod.start;
             }
-                // If the @start attribute is absent, but the previous Period
-                // element contains a @duration attribute then then this new
-                // Period is also a regular Period. The start time of the new
-                // Period PeriodStart is the sum of the start time of the previous
-                // Period PeriodStart and the value of the attribute @duration
-            // of the previous Period.
+            // If the @start attribute is absent, but the previous Period element contains a @duration attribute then this new Period is also a regular Period. The start time of the new Period PeriodStart is the sum of the start time of the previous Period PeriodStart and the value of the attribute @duration of the previous Period.
             else if (realPreviousPeriod !== null && realPreviousPeriod.hasOwnProperty(DashConstants.DURATION) && voPreviousPeriod !== null) {
                 voPeriod = new Period();
                 voPeriod.start = parseFloat((voPreviousPeriod.start + voPreviousPeriod.duration).toFixed(5));
             }
-                // If (i) @start attribute is absent, and (ii) the Period element
-                // is the first in the MPD, and (iii) the MPD@type is 'static',
-            // then the PeriodStart time shall be set to zero.
+            // If (i) @start attribute is absent, and (ii) the Period element is the first in the MPD, and (iii) the MPD@type is 'static', then the PeriodStart time shall be set to zero.
             else if (i === 0 && !isDynamic) {
                 voPeriod = new Period();
                 voPeriod.start = 0;
@@ -762,10 +843,6 @@ function DashManifestModel() {
                 if (manifest.loadedTime) {
                     mpd.availabilityStartTime = new Date(manifest.loadedTime.getTime());
                 }
-            }
-            if ($scope !== undefined && $scope.startupTime !== undefined && $scope.startupTimeFormatted !== undefined && $scope.startupTime == 0) {
-                $scope.startupTime = mpd.availabilityStartTime ? mpd.availabilityStartTime.getTime() / 1000 : null;  // Ignore clientServerTimeShift
-                $scope.startupTimeFormatted = new Date(parseInt($scope.startupTime * 1000)).toLocaleString();
             }
 
             if (manifest.hasOwnProperty(DashConstants.AVAILABILITY_END_TIME)) {
@@ -895,7 +972,7 @@ function DashManifestModel() {
         return events;
     }
 
-    function getEventStreams(inbandStreams, representation) {
+    function getEventStreams(inbandStreams, representation, period) {
         const eventStreams = [];
         let i;
 
@@ -918,12 +995,13 @@ function DashManifestModel() {
                 eventStream.value = inbandStreams[i].value;
             }
             eventStreams.push(eventStream);
+            eventStream.period = period;
         }
 
         return eventStreams;
     }
 
-    function getEventStreamForAdaptationSet(manifest, adaptation) {
+    function getEventStreamForAdaptationSet(manifest, adaptation, period) {
         let inbandStreams,
             periodArray,
             adaptationArray;
@@ -938,10 +1016,10 @@ function DashManifestModel() {
             }
         }
 
-        return getEventStreams(inbandStreams, null);
+        return getEventStreams(inbandStreams, null, period);
     }
 
-    function getEventStreamForRepresentation(manifest, representation) {
+    function getEventStreamForRepresentation(manifest, representation, period) {
         let inbandStreams,
             periodArray,
             adaptationArray,
@@ -960,7 +1038,7 @@ function DashManifestModel() {
             }
         }
 
-        return getEventStreams(inbandStreams, representation);
+        return getEventStreams(inbandStreams, representation, period);
     }
 
     function getUTCTimingSources(manifest) {
@@ -1078,29 +1156,62 @@ function DashManifestModel() {
         return baseUrls;
     }
 
-    function getLocation(manifest) {
-        if (manifest && manifest.hasOwnProperty(Constants.LOCATION)) {
-            // for now, do not support multiple Locations -
-            // just set Location to the first Location.
-            manifest.Location = manifest.Location_asArray[0];
-
-            return manifest.Location;
+    function getContentSteering(manifest) {
+        if (manifest && manifest.hasOwnProperty(DashConstants.CONTENT_STEERING_AS_ARRAY)) {
+            // Only one ContentSteering element is supported on MPD level
+            const element = manifest[DashConstants.CONTENT_STEERING_AS_ARRAY][0];
+            return _createContentSteeringInstance(element);
         }
 
-        // may well be undefined
         return undefined;
     }
 
-    function getPatchLocation(manifest) {
-        if (manifest && manifest.hasOwnProperty(DashConstants.PATCH_LOCATION)) {
-            // only include support for single patch location currently
-            manifest.PatchLocation = manifest.PatchLocation_asArray[0];
+    function _createContentSteeringInstance(element) {
+        const entry = new ContentSteering();
 
-            return manifest.PatchLocation;
+        entry.serverUrl = element.__text;
+
+        if (element.hasOwnProperty(DashConstants.DEFAULT_SERVICE_LOCATION)) {
+            entry.defaultServiceLocation = element[DashConstants.DEFAULT_SERVICE_LOCATION];
+            entry.defaultServiceLocationArray = entry.defaultServiceLocation.split(' ');
         }
 
-        // no patch location provided
-        return undefined;
+        if (element.hasOwnProperty(DashConstants.QUERY_BEFORE_START)) {
+            entry.queryBeforeStart = element[DashConstants.QUERY_BEFORE_START].toLowerCase() === 'true';
+        }
+
+        if (element.hasOwnProperty(DashConstants.CLIENT_REQUIREMENT)) {
+            entry.clientRequirement = element[DashConstants.CLIENT_REQUIREMENT].toLowerCase() !== 'false';
+        }
+
+        return entry;
+    }
+
+    function getLocation(manifest) {
+        if (manifest && manifest.hasOwnProperty(DashConstants.LOCATION_AS_ARRAY)) {
+            return manifest[DashConstants.LOCATION_AS_ARRAY].map((entry) => {
+                const text = entry.__text || entry;
+                const serviceLocation = entry.hasOwnProperty(DashConstants.SERVICE_LOCATION) ? entry[DashConstants.SERVICE_LOCATION] : null;
+
+                return new MpdLocation(text, serviceLocation)
+            })
+        }
+
+        return [];
+    }
+
+    function getPatchLocation(manifest) {
+        if (manifest && manifest.hasOwnProperty(DashConstants.PATCH_LOCATION_AS_ARRAY)) {
+            return manifest[DashConstants.PATCH_LOCATION_AS_ARRAY].map((entry) => {
+                const text = entry.__text || entry;
+                const serviceLocation = entry.hasOwnProperty(DashConstants.SERVICE_LOCATION) ? entry[DashConstants.SERVICE_LOCATION] : null;
+                let ttl = entry.hasOwnProperty(DashConstants.TTL) ? parseFloat(entry[DashConstants.TTL]) * 1000 : NaN;
+
+                return new PatchLocation(text, serviceLocation, ttl)
+            })
+        }
+
+        return [];
     }
 
     function getSuggestedPresentationDelay(mpd) {
@@ -1116,7 +1227,14 @@ function DashManifestModel() {
         if (manifest && manifest.hasOwnProperty(DashConstants.SERVICE_DESCRIPTION)) {
             for (const sd of manifest.ServiceDescription_asArray) {
                 // Convert each of the properties defined in
-                let id, schemeIdUri, latency, playbackRate;
+                let id = null,
+                    schemeIdUri = null,
+                    latency = null,
+                    playbackRate = null,
+                    operatingQuality = null,
+                    operatingBandwidth = null,
+                    contentSteering = null;
+
                 for (const prop in sd) {
                     if (sd.hasOwnProperty(prop)) {
                         if (prop === DashConstants.ID) {
@@ -1125,37 +1243,57 @@ function DashManifestModel() {
                             schemeIdUri = sd[prop].schemeIdUri;
                         } else if (prop === DashConstants.SERVICE_DESCRIPTION_LATENCY) {
                             latency = {
-                                target: sd[prop].target,
-                                max: sd[prop].max,
-                                min: sd[prop].min
+                                target: parseInt(sd[prop].target),
+                                max: parseInt(sd[prop].max),
+                                min: parseInt(sd[prop].min),
+                                referenceId: parseInt(sd[prop].referenceId)
                             };
                         } else if (prop === DashConstants.SERVICE_DESCRIPTION_PLAYBACK_RATE) {
                             playbackRate = {
-                                max: sd[prop].max,
-                                min: sd[prop].min
+                                max: parseFloat(sd[prop].max),
+                                min: parseFloat(sd[prop].min)
                             };
+                        } else if (prop === DashConstants.SERVICE_DESCRIPTION_OPERATING_QUALITY) {
+                            operatingQuality = {
+                                mediaType: sd[prop].mediaType,
+                                max: parseInt(sd[prop].max),
+                                min: parseInt(sd[prop].min),
+                                target: parseInt(sd[prop].target),
+                                type: sd[prop].type,
+                                maxQualityDifference: parseInt(sd[prop].maxQualityDifference)
+                            }
+                        } else if (prop === DashConstants.SERVICE_DESCRIPTION_OPERATING_BANDWIDTH) {
+                            operatingBandwidth = {
+                                mediaType: sd[prop].mediaType,
+                                max: parseInt(sd[prop].max),
+                                min: parseInt(sd[prop].min),
+                                target: parseInt(sd[prop].target)
+                            }
+                        } else if (prop === DashConstants.CONTENT_STEERING) {
+                            contentSteering = _createContentSteeringInstance(sd[prop])
                         }
                     }
                 }
-                // we have a ServiceDescription for low latency. Add it if it really has parameters defined
-                if (schemeIdUri === Constants.SERVICE_DESCRIPTION_LL_SCHEME && (latency || playbackRate)) {
-                    serviceDescriptions.push({
-                        id,
-                        schemeIdUri,
-                        latency,
-                        playbackRate
-                    });
-                }
+
+                serviceDescriptions.push({
+                    id,
+                    schemeIdUri,
+                    latency,
+                    playbackRate,
+                    operatingQuality,
+                    operatingBandwidth,
+                    contentSteering
+                });
             }
         }
 
         return serviceDescriptions;
     }
 
-    function getSupplementalProperties(adaptation) {
+    function getSupplementalPropertiesForAdaptation(adaptation) {
         const supplementalProperties = {};
 
-        if (adaptation && adaptation.hasOwnProperty(DashConstants.SUPPLEMENTAL_PROPERTY)) {
+        if (adaptation && adaptation.hasOwnProperty(DashConstants.SUPPLEMENTAL_PROPERTY_ASARRAY)) {
             for (const sp of adaptation.SupplementalProperty_asArray) {
                 if (sp.hasOwnProperty(Constants.SCHEME_ID_URI) && sp.hasOwnProperty(DashConstants.VALUE)) {
                     supplementalProperties[sp[Constants.SCHEME_ID_URI]] = sp[DashConstants.VALUE];
@@ -1163,6 +1301,35 @@ function DashManifestModel() {
             }
         }
         return supplementalProperties;
+    }
+
+    function getSupplementalPropertiesAsArrayForAdaptation(adaptation) {
+        if (!adaptation || !adaptation.hasOwnProperty(DashConstants.SUPPLEMENTAL_PROPERTY_ASARRAY) || !adaptation.SupplementalProperty_asArray.length) return [];
+        return adaptation.SupplementalProperty_asArray.map( supp => {
+            const s = new DescriptorType();
+            return s.init(supp);
+        });
+    }
+
+    function getSupplementalPropertiesForRepresentation(representation) {
+        const supplementalProperties = {};
+
+        if (representation && representation.hasOwnProperty(DashConstants.SUPPLEMENTAL_PROPERTY_ASARRAY)) {
+            for (const sp of representation.SupplementalProperty_asArray) {
+                if (sp.hasOwnProperty(Constants.SCHEME_ID_URI) && sp.hasOwnProperty(DashConstants.VALUE)) {
+                    supplementalProperties[sp[Constants.SCHEME_ID_URI]] = sp[DashConstants.VALUE];
+                }
+            }
+        }
+        return supplementalProperties;
+    }
+
+    function getSupplementalPropertiesAsArrayForRepresentation(representation) {
+        if (!representation || !representation.hasOwnProperty(DashConstants.SUPPLEMENTAL_PROPERTY_ASARRAY) || !representation.SupplementalProperty_asArray.length) return [];
+        return representation.SupplementalProperty_asArray.map( supp => {
+            const s = new DescriptorType();
+            return s.init(supp);
+        });
     }
 
     function setConfig(config) {
@@ -1181,6 +1348,7 @@ function DashManifestModel() {
         getIsTypeOf,
         getIsText,
         getIsFragmented,
+        getProducerReferenceTimesForAdaptation,
         getLanguageForAdaptation,
         getViewpointForAdaptation,
         getRolesForAdaptation,
@@ -1220,12 +1388,18 @@ function DashManifestModel() {
         getUTCTimingSources,
         getBaseURLsFromElement,
         getRepresentationSortFunction,
+        getContentSteering,
         getLocation,
         getPatchLocation,
         getSuggestedPresentationDelay,
         getAvailabilityStartTime,
         getServiceDescriptions,
-        getSupplementalProperties,
+        getSegmentAlignment,
+        getSubSegmentAlignment,
+        getSupplementalPropertiesForAdaptation,
+        getSupplementalPropertiesAsArrayForAdaptation,
+        getSupplementalPropertiesForRepresentation,
+        getSupplementalPropertiesAsArrayForRepresentation,
         setConfig
     };
 

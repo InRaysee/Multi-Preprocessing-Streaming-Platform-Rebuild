@@ -31,16 +31,17 @@
 
 import Constants from '../constants/Constants';
 import FactoryMaker from '../../core/FactoryMaker';
+import EventBus from '../../core/EventBus';
+import MediaPlayerEvents from '../MediaPlayerEvents';
 
 // throughput generally stored in kbit/s
 // latency generally stored in ms
 
 function ThroughputHistory(config) {
-
+    const context = this.context;
     config = config || {};
     // sliding window constants
     const MAX_MEASUREMENTS_TO_KEEP = 20;
-    const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED = 1;
     const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE = 3;
     const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD = 4;
     const AVERAGE_LATENCY_SAMPLE_AMOUNT = 4;
@@ -54,9 +55,7 @@ function ThroughputHistory(config) {
     const EWMA_LATENCY_FAST_HALF_LIFE_COUNT = 1;
 
     const settings = config.settings;
-
-    var appElement = document.querySelector('[ng-controller=DashController]');
-    var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
+    const eventBus = EventBus(context).getInstance();
 
     let throughputDict,
         latencyDict,
@@ -89,45 +88,31 @@ function ThroughputHistory(config) {
             return;
         }
 
-        if (settings.get().info.totalThroughputNeeded && $scope !== undefined && $scope.requestList !== undefined && (httpRequest._stream == "video" || httpRequest._stream == "audio")) {
-            let httpRequestElement = {
-                "count": settings.get().info.count,
-                "timeline": httpRequest.mediaStartTime,
-                "request": httpRequest
-            };
-            let searchingEnd = Math.max(0, $scope.requestList.length - 60);
-            let exist_flag = false;
-            for (let i = $scope.requestList.length - 1; i >= searchingEnd; i--) {
-                if ($scope.requestList[i].count == httpRequestElement.count && $scope.requestList[i].timeline == httpRequestElement.timeline) {
-                    $scope.requestList[i] = httpRequestElement;
-                    exist_flag = true;
-                }
-            }
-            if (!exist_flag) {
-                $scope.requestList.push(httpRequestElement);
-            }
-        }
-
         const latencyTimeInMilliseconds = (httpRequest.tresponse.getTime() - httpRequest.trequest.getTime()) || 1;
         const downloadTimeInMilliseconds = (httpRequest._tfinish.getTime() - httpRequest.tresponse.getTime()) || 1; //Make sure never 0 we divide by this value. Avoid infinity!
         const downloadBytes = httpRequest.trace.reduce((a, b) => a + b.b[0], 0);
-
         let throughputMeasureTime = 0, throughput = 0;
-        if (settings.get().streaming.lowLatencyEnabled) {
-            const calculationMode = settings.get().streaming.abr.fetchThroughputCalculationMode;
-            if (calculationMode === Constants.ABR_FETCH_THROUGHPUT_CALCULATION_MOOF_PARSING) {
-                const sumOfThroughputValues = httpRequest.trace.reduce((a, b) => a + b.t, 0);
-                throughput = Math.round(sumOfThroughputValues / httpRequest.trace.length);
-            }
-            if (throughput === 0) {
-                throughputMeasureTime = httpRequest.trace.reduce((a, b) => a + b.d, 0);
-            }
+
+        if (httpRequest._fileLoaderType && httpRequest._fileLoaderType === Constants.FILE_LOADER_TYPES.FETCH) {
+            throughputMeasureTime = httpRequest.trace.reduce((a, b) => a + b.d, 0);
         } else {
             throughputMeasureTime = useDeadTimeLatency ? downloadTimeInMilliseconds : latencyTimeInMilliseconds + downloadTimeInMilliseconds;
         }
 
         if (throughputMeasureTime !== 0) {
             throughput = Math.round((8 * downloadBytes) / throughputMeasureTime); // bits/ms = kbits/s
+        }
+
+        // Get estimated throughput (etp, in kbits/s) from CMSD response headers
+        if (httpRequest.cmsd) {
+            const etp = httpRequest.cmsd.dynamic && httpRequest.cmsd.dynamic.etp ? httpRequest.cmsd.dynamic.etp : null;
+            if (etp) {
+                // Apply weight ratio on etp
+                const etpWeightRatio = settings.get().streaming.cmsd.abr.etpWeightRatio;
+                if (etpWeightRatio > 0 && etpWeightRatio <= 1) {
+                    throughput = (throughput * (1 - etpWeightRatio)) + (etp * etpWeightRatio);
+                }
+            }
         }
 
         checkSettingsForMediaType(mediaType);
@@ -147,6 +132,11 @@ function ThroughputHistory(config) {
         }
 
         throughputDict[mediaType].push(throughput);
+        eventBus.trigger(MediaPlayerEvents.THROUGHPUT_MEASUREMENT_STORED, {
+            throughput,
+            mediaType,
+            httpRequest
+        })
         if (throughputDict[mediaType].length > MAX_MEASUREMENTS_TO_KEEP) {
             throughputDict[mediaType].shift();
         }
@@ -181,8 +171,7 @@ function ThroughputHistory(config) {
 
         if (isThroughput) {
             arr = throughputDict[mediaType];
-            //sampleSize = isDynamic ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
-            sampleSize = settings.get().info.totalThroughputNeeded ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED : isDynamic ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
+            sampleSize = isDynamic ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
         } else {
             arr = latencyDict[mediaType];
             sampleSize = AVERAGE_LATENCY_SAMPLE_AMOUNT;

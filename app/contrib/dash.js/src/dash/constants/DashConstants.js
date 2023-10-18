@@ -89,7 +89,11 @@ class DashConstants {
         this.CONTENT_PROTECTION = 'ContentProtection';
         this.ESSENTIAL_PROPERTY = 'EssentialProperty';
         this.SUPPLEMENTAL_PROPERTY = 'SupplementalProperty';
+        this.SUPPLEMENTAL_PROPERTY_ASARRAY = 'SupplementalProperty_asArray';
         this.INBAND_EVENT_STREAM = 'InbandEventStream';
+        this.PRODUCER_REFERENCE_TIME = 'ProducerReferenceTime';
+        this.INBAND = 'inband';
+        this.TYPE = 'type';
         this.ACCESSIBILITY = 'Accessibility';
         this.ROLE = 'Role';
         this.RATING = 'Rating';
@@ -97,7 +101,10 @@ class DashConstants {
         this.SUBSET = 'Subset';
         this.LANG = 'lang';
         this.VIEWPOINT = 'Viewpoint';
+        this.VIEWPOINT_ASARRAY = 'Viewpoint_asArray';
         this.ROLE_ASARRAY = 'Role_asArray';
+        this.REPRESENTATION_ASARRAY = 'Representation_asArray';
+        this.PRODUCERREFERENCETIME_ASARRAY = 'ProducerReferenceTime_asArray';
         this.ACCESSIBILITY_ASARRAY = 'Accessibility_asArray';
         this.AUDIOCHANNELCONFIGURATION_ASARRAY = 'AudioChannelConfiguration_asArray';
         this.CONTENTPROTECTION_ASARRAY = 'ContentProtection_asArray';
@@ -131,10 +138,44 @@ class DashConstants {
         this.SERVICE_DESCRIPTION_SCOPE = 'Scope';
         this.SERVICE_DESCRIPTION_LATENCY = 'Latency';
         this.SERVICE_DESCRIPTION_PLAYBACK_RATE = 'PlaybackRate';
+        this.SERVICE_DESCRIPTION_OPERATING_QUALITY = 'OperatingQuality';
+        this.SERVICE_DESCRIPTION_OPERATING_BANDWIDTH = 'OperatingBandwidth';
         this.PATCH_LOCATION = 'PatchLocation';
+        this.PATCH_LOCATION_AS_ARRAY = 'PatchLocation_asArray';
+        this.LOCATION = 'Location';
+        this.LOCATION_AS_ARRAY = 'Location_asArray';
         this.PUBLISH_TIME = 'publishTime';
         this.ORIGINAL_PUBLISH_TIME = 'originalPublishTime';
         this.ORIGINAL_MPD_ID = 'mpdId';
+        this.WALL_CLOCK_TIME = 'wallClockTime';
+        this.PRESENTATION_TIME = 'presentationTime';
+        this.LABEL = 'Label';
+        this.GROUP_LABEL = 'GroupLabel';
+        this.CONTENT_STEERING = 'ContentSteering';
+        this.CONTENT_STEERING_AS_ARRAY = 'ContentSteering_asArray';
+        this.DEFAULT_SERVICE_LOCATION = 'defaultServiceLocation';
+        this.QUERY_BEFORE_START = 'queryBeforeStart';
+        this.CLIENT_REQUIREMENT = 'clientRequirement';
+        this.TTL = 'ttl';
+        this.CONTENT_STEERING_RESPONSE = {
+            VERSION: 'VERSION',
+            TTL: 'TTL',
+            RELOAD_URI: 'RELOAD-URI',
+            PATHWAY_PRIORITY : 'PATHWAY-PRIORITY',
+            PATHWAY_CLONES : 'PATHWAY-CLONES',
+            BASE_ID: 'BASE-ID',
+            ID: 'ID',
+            URI_REPLACEMENT: 'URI-REPLACEMENT',
+            HOST: 'HOST',
+            PARAMS: 'PARAMS'
+        };
+        this.PRODUCER_REFERENCE_TIME_TYPE = {
+            ENCODER: 'encoder',
+            CAPTURED: 'captured',
+            APPLICATION: 'application'
+        }
+        this.SEGMENT_ALIGNMENT = 'segmentAlignment';
+        this.SUB_SEGMENT_ALIGNMENT = 'subsegmentAlignment'
     }
 
     constructor () {

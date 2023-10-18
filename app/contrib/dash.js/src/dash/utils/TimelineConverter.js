@@ -44,9 +44,6 @@ function TimelineConverter() {
     const eventBus = EventBus(context).getInstance();
     const settings = Settings(context).getInstance();
 
-    var appElement = document.querySelector('[ng-controller=DashController]');
-    var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
-
     let instance,
         dashManifestModel,
         timelineAnchorAvailabilityOffset, // In case we calculate the TSBD using _calcTimeShiftBufferWindowForDynamicTimelineManifest we use the segments as anchor times. We apply this offset when calculating if a segment is available or not.
@@ -68,9 +65,6 @@ function TimelineConverter() {
 
     function setClientTimeOffset(value) {
         clientServerTimeShift = value;
-        if ($scope !== undefined && $scope.clientServerTimeShift !== undefined) {
-            $scope.clientServerTimeShift = clientServerTimeShift;
-        }
     }
 
     /**
@@ -235,7 +229,7 @@ function TimelineConverter() {
         const range = { start: NaN, end: NaN };
         const voPeriod = streams[0].getAdapter().getRegularPeriods()[0];
         const now = calcPresentationTimeFromWallTime(new Date(), voPeriod);
-
+        
         if (!streams || streams.length === 0) {
             return { range, now };
         }
@@ -319,28 +313,34 @@ function TimelineConverter() {
     function _calcRangeForTimeline(voRepresentation) {
         const adaptation = voRepresentation.adaptation.period.mpd.manifest.Period_asArray[voRepresentation.adaptation.period.index].AdaptationSet_asArray[voRepresentation.adaptation.index];
         const representation = dashManifestModel.getRepresentationFor(voRepresentation.index, adaptation);
-        const timeline = representation.SegmentTemplate.SegmentTimeline;
-        const timescale = representation.SegmentTemplate.timescale;
+        const base = representation.SegmentTemplate || representation.SegmentList;
+        const timeline = base.SegmentTimeline;
+        const timescale = base.timescale;
         const segments = timeline.S_asArray;
         const range = { start: 0, end: 0 };
+        const segmentTime = segments[0].t;
+        const hasValidSegmentTime = !isNaN(segmentTime);
+        const enhancedSegmentTime = hasValidSegmentTime ? segmentTime : 0;
         let d = 0;
         let segment,
             repeat,
             i,
             len;
-
-        range.start = calcPresentationTimeFromMediaTime(segments[0].t / timescale, voRepresentation);
-
+        
+        if(hasValidSegmentTime) {
+            range.start = calcPresentationTimeFromMediaTime(enhancedSegmentTime / timescale, voRepresentation);
+        }
+        
         for (i = 0, len = segments.length; i < len; i++) {
             segment = segments[i];
             repeat = 0;
             if (segment.hasOwnProperty('r')) {
                 repeat = segment.r;
             }
-            d += (segment.d / timescale) * (1 + repeat);
+            d += segment.d * (1 + repeat);
         }
 
-        range.end = range.start + d;
+        range.end = calcPresentationTimeFromMediaTime((enhancedSegmentTime + d) / timescale, voRepresentation);
 
         return range;
     }
