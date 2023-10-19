@@ -329,6 +329,29 @@
 							</div>
 						</div>
 
+						<div id="comparisonSource" style="display: none;">
+							<div class="row">
+								<div class="input-group">
+									<div class="input-group-btn">
+										<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" style="vertical-align: bottom; width: 210px;">
+											Change URL for Comparor <span class="caret"></span>
+										</button>
+										<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+											<li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
+												<a tabindex="-1" href="#">{{item.type}}</a>
+												<ul class="dropdown-menu">
+													<li ng-repeat="subitem in item.submenu">
+														<a ng-click="setStream(subitem, 'comparison')">{{subitem.name}}</a>
+													</li>
+												</ul>
+											</li>
+										</ul>
+									</div>
+									<input type="text" class="form-control" ng-model="streamURLforComparison" ng-change ="">
+								</div>
+							</div>
+						</div>
+
 					</div>
 
 					<!-- Video container -->

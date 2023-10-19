@@ -324,6 +324,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         ]
     };
 
+    $scope.streamURLforComparison = "http://222.20.126.109:7001/dash/stream.mpd";  // Save the selected media source for comparison
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 /*                     Global variables (stat & chart related)                     */
@@ -667,13 +669,23 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Setting up media sources
     $scope.setStream = function (item, contentType, num) {
         
-        if (contentType != undefined && num != undefined) {
-            if (item.name == "COPY") {
-                $scope.streamURLs[contentType][num] = $scope.streamURLs[contentType][0];
-            } else if (item.name == "CUSTOM") {
-                $scope.streamURLs[contentType][num] = "";
-            } else {
-                $scope.streamURLs[contentType][num] = item.url ? item.url : item.urls[contentType][num % item.urls[contentType].length];
+        if (contentType != undefined) {
+            if (num != undefined) {
+                if (item.name == "COPY") {
+                    $scope.streamURLs[contentType][num] = $scope.streamURLs[contentType][0];
+                } else if (item.name == "CUSTOM") {
+                    $scope.streamURLs[contentType][num] = "";
+                } else {
+                    $scope.streamURLs[contentType][num] = item.url ? item.url : item.urls[contentType][num % item.urls[contentType].length];
+                }
+            } else if (contentType == "comparison") {
+                if (item.name == "COPY") {
+                    $scope.streamURLforComparison = $scope.streamURLs[$scope.CONTENT_TYPE[0]][0];
+                } else if (item.name == "CUSTOM") {
+                    $scope.streamURLforComparison = "";
+                } else {
+                    $scope.streamURLforComparison = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[0]][0];
+                }
             }
         } else {
             if (item.name == "COPY") {
@@ -682,25 +694,26 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = $scope.streamURLs.video[0];
                     }                    
                 }
+                if ($scope.selectedMode == "Comparison") {
+                    $scope.streamURLforComparison = $scope.streamURLs.video[0];
+                }
             } else if (item.name == "CUSTOM") {
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = "";
                     }                    
                 }
+                if ($scope.selectedMode == "Comparison") {
+                    $scope.streamURLforComparison = "";
+                }
             } else {
-                if (item.url) {
-                    for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-                        for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
-                            $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.url;
-                        }                    
-                    }
-                } else {
-                    for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-                        for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
-                            $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.urls[$scope.CONTENT_TYPE[i]][j % item.urls[$scope.CONTENT_TYPE[i]].length];
-                        }                    
-                    }
+                for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+                    for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
+                        $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[i]][j % item.urls[$scope.CONTENT_TYPE[i]].length];
+                    }                    
+                }
+                if ($scope.selectedMode == "Comparison") {
+                    $scope.streamURLforComparison = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[0]][0];
                 }
             }
         }
@@ -727,11 +740,17 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         switch (mode) {
             case 'Multi-Path':
             case 'Chat':
+                document.getElementById( "comparisonSource" ).style.display = "none";
+                document.getElementById( "videoNumber" ).removeAttribute("disabled");
+                document.getElementById( "audioNumber" ).removeAttribute("disabled");
+                break;
             case 'Comparison':
+                document.getElementById( "comparisonSource" ).style.display = "block";
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
                 break;
             case 'VR':
+                document.getElementById( "comparisonSource" ).style.display = "none";
                 $scope.streamNum.video = $scope.VIDEO_NUMBER_OF_VR_MODE;  // Assume one path for one video
                 $scope.changeStreamNumber('video');
                 document.getElementById( "videoNumber" ).disabled = true;

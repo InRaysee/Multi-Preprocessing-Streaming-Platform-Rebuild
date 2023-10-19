@@ -5,11 +5,11 @@ var comparor = function () {
     const appElement = document.querySelector('[ng-controller=DashController]');
     const $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
     const videoElement = document.getElementById('comparison');
+    var player = null;
 
     const init = function () {
 
-        var player = null;
-        var url = $scope.streamURLs.video[0];
+        var url = $scope.streamURLforComparison;
 
         if (!url || url == "") {
             window.alert("Wrong streamURL for comparor: Empty URL!");
