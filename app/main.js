@@ -694,27 +694,21 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = $scope.streamURLs.video[0];
                     }                    
                 }
-                if ($scope.selectedMode == "Comparison") {
-                    $scope.streamURLforComparison = $scope.streamURLs.video[0];
-                }
+                $scope.streamURLforComparison = $scope.streamURLs.video[0];
             } else if (item.name == "CUSTOM") {
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = "";
                     }                    
                 }
-                if ($scope.selectedMode == "Comparison") {
-                    $scope.streamURLforComparison = "";
-                }
+                $scope.streamURLforComparison = "";
             } else {
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         $scope.streamURLs[$scope.CONTENT_TYPE[i]][j] = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[i]][j % item.urls[$scope.CONTENT_TYPE[i]].length];
                     }                    
                 }
-                if ($scope.selectedMode == "Comparison") {
-                    $scope.streamURLforComparison = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[0]][0];
-                }
+                $scope.streamURLforComparison = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[0]][0];
             }
         }
 
