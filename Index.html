@@ -27,7 +27,7 @@
 		<script src="app/lib/flot/jquery.flot.axislabels.js"></script>
 		<script src="app/contrib/cast_sender.js"></script>
 		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
-		<script src="app/contrib/akamai/controlbar/ControlBarVR.js"></script>
+		<script src="app/contrib/akamai/controlbar/ControlBarCMP.js"></script>
 		<script src="app/contrib/dash.js/dist/dash.all.debug.js"></script>
 		<script src="app/main.js"></script>
 		<!-- <script src="app/bundle.js"></script> -->
@@ -136,8 +136,8 @@
 											Comparison
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="vrMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('VR')">
-											VR
+											<input name="modes" id="cmpMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('CMP')">
+											CMP
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="modes" id="erpMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('ERP')">
@@ -172,7 +172,7 @@
 									</label>
 									<label data-toggle="tooltip" data-placement="right">
 										Maximal buffer length (s)
-										<input style="width: 200px;" step="1" min="10" type="number" id="maximalBuffer" ng-model="maximalBuffer">
+										<input style="width: 200px;" step="1" min="0" type="number" id="maximalBuffer" ng-model="maximalBuffer">
 									</label>
 									<label data-toggle="tooltip" data-placement="right">
 										Schedule Interval (ms)
@@ -236,7 +236,7 @@
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
 											Target latency bias (s)
-											<input style="width: 200px;" step="0.1" min="-10" type="number" id="targetLatency" ng-model="targetLatency">
+											<input style="width: 200px;" step="0.1" min="-10" type="number" id="targetLatencyBias" ng-model="targetLatencyBias">
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
 											<button id="decreaseLatency" type="button" style="width: 70px;" ng-click="decreaseLatency();">- 0.1 s</button>
@@ -265,6 +265,10 @@
 										<label data-toggle="tooltip" data-placement="right">
 											<input name="low_latency_dash" id="lowLatencyDash" type="checkbox" autocomplete="off" ng-model="llDashEnabled" checked>
 											LL-DASH enabled
+										</label>
+										<label data-toggle="tooltip" data-placement="right">
+											<input name="auto_adjusting_latency_bias" id="autoAdjustingLatencyBias" type="checkbox" autocomplete="off" ng-model="autoAdjustingLatencyBias">
+											Auto adjusting latency bias
 										</label>
 									</form>
 								</div>
@@ -428,50 +432,50 @@
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Stall Time: </label> {{(stallTime || 0).toFixed(3)}} s
 							</div>
 							<div class="text-success">
-								<label class="text-primary" data-toggle="tooltip" data-placement="top">Baseline: </label> {{(baselineTime || (mode == "VR" ? streamElement.video[0].currentTime : streamElement.currentTime) || 0).toFixed(3)}} s
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Baseline: </label> {{(baselineTime || (mode == "CMP" ? streamElement.video[0].currentTime : streamElement.currentTime) || 0).toFixed(3)}} s
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Timeline: </label>
-								<span ng-if="mode != 'VR'">{{(streamElement.currentTime || 0).toFixed(2)}} s</span>
-								<div ng-if="mode == 'VR' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{(streamElement.currentTime || 0).toFixed(2)}} s</span>
+								<div ng-if="mode == 'CMP' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top" style="margin-bottom: 0px;">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.video track by $index">[{{item.currentTime.toFixed(2)}} s]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.audio track by $index">[{{item.currentTime.toFixed(2)}} s]</span>
 									</div>
 								</div>
 							</div>
-							<div class="text-success">
+							<!-- <div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Latency Bias: </label>
-								<span ng-if="mode != 'VR'">{{(baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0) >= 0 ? '+' : ''}}{{((baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0)).toFixed(2)}} s</span>
-								<div ng-if="mode == 'VR' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{(baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0) >= 0 ? '+' : ''}}{{((baselineTime || streamElement.currentTime || 0) - (streamElement.currentTime || 0)).toFixed(2)}} s</span>
+								<div ng-if="mode == 'CMP' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.video track by $index">[{{(baselineTime || item.currentTime || 0) - (item.currentTime || 0) >= 0 ? '+' : ''}}{{((baselineTime || item.currentTime || 0) - (item.currentTime || 0)).toFixed(2)}} s]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.audio track by $index">[{{(baselineTime || item.currentTime || 0) - (item.currentTime || 0) >= 0 ? '+' : ''}}{{((baselineTime || item.currentTime || 0) - (item.currentTime || 0)).toFixed(2)}} s]</span>
 									</div>
 								</div>
-							</div>
+							</div> -->
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Buffer Level: </label>
-								<span ng-if="mode != 'VR'">{{(monitorBufferLevel.video || 0).toFixed(2)}} s | {{(monitorBufferLevel.audio || 0).toFixed(2)}} s</span>
-								<div ng-if="mode == 'VR' && monitorBufferLevel.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{(monitorBufferLevel.video || 0).toFixed(2)}} s | {{(monitorBufferLevel.audio || 0).toFixed(2)}} s</span>
+								<div ng-if="mode == 'CMP' && monitorBufferLevel.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorBufferLevel.video track by $index">[{{item.toFixed(2)}} s]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && monitorBufferLevel.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && monitorBufferLevel.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorBufferLevel.audio track by $index">[{{item.toFixed(2)}} s]</span>
@@ -480,14 +484,14 @@
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Downloading Quality: </label>
-								<span ng-if="mode != 'VR'">{{((monitorDownloadingQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorDownloadingQuality.audio || 0) / 1000).toFixed(0)}} kbps</span>
-								<div ng-if="mode == 'VR' && monitorDownloadingQuality.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{((monitorDownloadingQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorDownloadingQuality.audio || 0) / 1000).toFixed(0)}} kbps</span>
+								<div ng-if="mode == 'CMP' && monitorDownloadingQuality.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorDownloadingQuality.video track by $index">[{{(item / 1000).toFixed(0)}} kbps]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && monitorDownloadingQuality.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && monitorDownloadingQuality.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorDownloadingQuality.audio track by $index">[{{(item / 1000).toFixed(0)}} kbps]</span>
@@ -496,14 +500,14 @@
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Quality: </label>
-								<span ng-if="mode != 'VR'">{{((monitorPlaybackQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorPlaybackQuality.audio || 0) / 1000).toFixed(0)}} kbps</span>
-								<div ng-if="mode == 'VR' && monitorPlaybackQuality.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{((monitorPlaybackQuality.video || 0) / 1000).toFixed(0)}} kbps | {{((monitorPlaybackQuality.audio || 0) / 1000).toFixed(0)}} kbps</span>
+								<div ng-if="mode == 'CMP' && monitorPlaybackQuality.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorPlaybackQuality.video track by $index">[{{(item / 1000).toFixed(0)}} kbps]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && monitorPlaybackQuality.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && monitorPlaybackQuality.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in monitorPlaybackQuality.audio track by $index">[{{(item / 1000).toFixed(0)}} kbps]</span>
@@ -512,24 +516,24 @@
 							</div>
 							<div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Playback Rate: </label>
-								<span ng-if="mode != 'VR'">{{(streamElement ? streamElement.playbackRate || 1 : 1).toFixed(2)}}</span>
-								<div ng-if="mode == 'VR' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<span ng-if="mode != 'CMP'">{{(streamElement ? streamElement.playbackRate || 1 : 1).toFixed(2)}}</span>
+								<div ng-if="mode == 'CMP' && streamElement.video" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">video:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.video track by $index">[{{item.playbackRate.toFixed(2)}}]</span>
 									</div>
 								</div>
-								<div ng-if="mode == 'VR' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
+								<div ng-if="mode == 'CMP' && streamElement.audio" style="margin-left: 10px; margin-bottom: 5px; display: flex;">
 									<label class="text-primary" data-toggle="tooltip" data-placement="top">audio:</label>
 									<div style="display: flex; flex-wrap: wrap;">
 										<span ng-repeat="item in streamElement.audio track by $index">[{{item.playbackRate.toFixed(2)}}]</span>
 									</div>
 								</div>
 							</div>
-							<div class="text-success" ng-if="mode != 'VR'">
+							<div class="text-success" ng-if="mode != 'CMP'">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Stream Info (video): </label> {{streamInfo.video.pathIndex}} - {{streamInfo.video.periodIndex}} - {{streamInfo.video.adaptationSetIndex}} - {{streamInfo.video.representationIndex}} - {{streamInfo.video.segmentIndex}}
 							</div>
-							<div class="text-success" ng-if="mode != 'VR'">
+							<div class="text-success" ng-if="mode != 'CMP'">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Stream Info (audio): </label> {{streamInfo.audio.pathIndex}} - {{streamInfo.audio.periodIndex}} - {{streamInfo.audio.adaptationSetIndex}} - {{streamInfo.audio.representationIndex}} - {{streamInfo.audio.segmentIndex}}
 							</div>
 							<!-- <div class="text-success">

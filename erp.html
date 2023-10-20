@@ -5,7 +5,7 @@
     <head>
 
 		<meta charset="utf-8"/>
-		<title>VR mode</title>
+		<title>ERP mode</title>
 		
 		<script src="app/contrib/aframe/dist/aframe-master.js"></script>
         <script src="app/contrib/aframe/js/play-on-click.js"></script>
@@ -27,9 +27,9 @@
 			  	<video id="video" preload="auto" autoplay loop="false" crossOrigin="anonymous"></video>
 			</a-assets>
 
-            <a-videosphere rotation="0 -90 0" src="#video"></a-videosphere>
+            <a-videosphere rotation="0 -90 0" src="#video" radius="5000" segments-height="256" segments-width="256"></a-videosphere>
 
-			<a-entity camera position wasd-controls rotation look-controls aframe-injected rotation-reader-camera></a-entity>
+			<a-entity camera position wasd-controls="acceleration:1000" rotation look-controls aframe-injected rotation-reader-camera></a-entity>
 
 		</a-scene>
 

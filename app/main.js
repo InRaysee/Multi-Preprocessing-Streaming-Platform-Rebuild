@@ -214,14 +214,15 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.CONTENT_TYPE = ["video", "audio"];
     $scope.DYNAMIC = "dynamic";
     $scope.STATIC = "static";
-    $scope.VIDEO_NUMBER_OF_VR_MODE = 6;
-    $scope.AUDIO_NUMBER_OF_VR_MODE = 1;
+    $scope.VIDEO_NUMBER_OF_CMP_MODE = 6;
+    $scope.AUDIO_NUMBER_OF_CMP_MODE = 1;
     $scope.INTERVAL_OF_PLATFORM_ADJUSTMENT = 10;
     $scope.INTERVAL_OF_UPDATE_CHARTS = 500;
     $scope.INTERVAL_OF_APPEND_BUFFER = 10;
     $scope.INTERVAL_OF_REMOVE_BUFFER = 1000;
     $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 1000;
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
+    $scope.INTERVAL_OF_SET_TARGET_LATENCY_BIAS = 1000;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
     $scope.TIMEOUT_OF_RELOAD_STREAM = 1000;
@@ -297,13 +298,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatency = 1.9;  // The live delay allowed
+    $scope.targetLatencyBias = 1.9;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
     // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
     $scope.catchupEnabled = true;  // Whether catch up when playback or not
     $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
+    $scope.autoAdjustingLatencyBias = false;  // Whether auto adjusting latency bias or not
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
@@ -744,12 +746,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
                 break;
-            case 'VR':
+            case 'CMP':
                 document.getElementById( "comparisonSource" ).style.display = "none";
-                $scope.streamNum.video = $scope.VIDEO_NUMBER_OF_VR_MODE;  // Assume one path for one video
+                $scope.streamNum.video = $scope.VIDEO_NUMBER_OF_CMP_MODE;  // Assume one path for one video
                 $scope.changeStreamNumber('video');
                 document.getElementById( "videoNumber" ).disabled = true;
-                $scope.streamNum.audio = $scope.AUDIO_NUMBER_OF_VR_MODE;  // Assume one path for one audio
+                $scope.streamNum.audio = $scope.AUDIO_NUMBER_OF_CMP_MODE;  // Assume one path for one audio
                 $scope.changeStreamNumber('audio');
                 document.getElementById( "audioNumber" ).disabled = true;
                 break;
@@ -783,7 +785,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 document.getElementById( "comparisonContainer" ).style.display = "block";
                 document.getElementById( "comparisonContainer" ).style.position = "absolute";
                 break;
-            case 'VR':
+            case 'CMP':
                 document.getElementById( "video" ).style.display = "none";
                 document.getElementById( "vr" ).style.display = "flex";
                 document.getElementById( "cameraContainer" ).style.display = "none";
@@ -831,12 +833,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Increasing and decreasing target latency
     $scope.increaseLatency = function () {
 
-        $scope.targetLatency = Math.round(($scope.targetLatency + 0.1) * 10) / 10;
+        $scope.targetLatencyBias = Math.round(($scope.targetLatencyBias + 0.1) * 10) / 10;
 
     }
     $scope.decreaseLatency = function () {
 
-        $scope.targetLatency = Math.round(($scope.targetLatency - 0.1) * 10) / 10;
+        $scope.targetLatencyBias = Math.round(($scope.targetLatencyBias - 0.1) * 10) / 10;
 
     }
 
@@ -955,7 +957,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.updateCharts = function () {
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j]) {
                         if (!$scope.monitorBufferLevel[$scope.CONTENT_TYPE[i]]) {
@@ -990,7 +992,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
         }
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             let maxBufferLevelTemp = 0;
             if ($scope.monitorBufferLevel[$scope.CONTENT_TYPE[0]].length > 0) {
                 maxBufferLevelTemp = Math.max(maxBufferLevelTemp, $scope.monitorBufferLevel[$scope.CONTENT_TYPE[0]].reduce((a, b)=> isNaN(b) ? a : a > b ? a : b));
@@ -1067,7 +1069,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         let time = $scope.getTimeForPlot();
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j]) {
                         $scope.plotPoint($scope.CONTENT_TYPE[i] + '_' + j, 'bufferLevel', $scope.monitorBufferLevel[$scope.CONTENT_TYPE[i]][j] || 0, time);
@@ -1137,7 +1139,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             case 'Comparison':
                 $scope.videoInit();
                 break;
-            case 'VR':
+            case 'CMP':
             case 'ERP':
                 $scope.aframeInit();
                 break;
@@ -1151,8 +1153,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.aframeInit = function() {
 
         switch ($scope.mode) {
-            case 'VR':
-                document.getElementById('vr').src = "./6_1_1.html";
+            case 'CMP':
+                document.getElementById('vr').src = "./cmp.html";
                 break;
             case 'ERP':
                 document.getElementById('vr').src = "./erp.html";
@@ -1179,7 +1181,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         document.getElementById("reload").disabled = true;
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     $scope.streamElement[$scope.CONTENT_TYPE[i]][j].pause();
@@ -1190,7 +1192,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.abortController[$scope.CONTENT_TYPE[i]] && $scope.abortController[$scope.CONTENT_TYPE[i]][j]) {
                         $scope.abortController[$scope.CONTENT_TYPE[i]][j].abort();
@@ -1217,7 +1219,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.intervalLifeSignalFunctions[$scope.CONTENT_TYPE[i]].length; j++) {
                     if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j]) {
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j].removeEventListener($scope.EVENT_UPDATE_END, $scope.appendBuffer);
@@ -1235,7 +1237,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         }
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.controllBar) {
@@ -1325,7 +1327,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.lat = 0;
 
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-                if ($scope.mode == "VR") {
+                if ($scope.mode == "CMP") {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j]) {
                             // $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j].remove(0, $scope.mediaSource[$scope.CONTENT_TYPE[i]][j].duration);
@@ -1356,7 +1358,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 $scope.comparor = null;
             }
     
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         if ($scope.streamElement[$scope.CONTENT_TYPE[i]][j]) {
@@ -1416,7 +1418,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         // Attach view & source
         if (!$scope.mediaSource) {
-            if ($scope.mode != "VR") {
+            if ($scope.mode != "CMP") {
                 $scope.mediaSource = new MediaSource();
             } else {
                 $scope.mediaSource = {
@@ -1435,7 +1437,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             return;
         }
         if (!$scope.streamElement) {
-            if ($scope.mode != "VR") {
+            if ($scope.mode != "CMP") {
                 $scope.streamElement = $scope.mode == "ERP" ? document.getElementById('vr').contentWindow.document.getElementById('video') : document.getElementById('video');
                 $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
             } else {
@@ -1460,7 +1462,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
 
         // Load MPDs
-        if ($scope.mode != "VR") {
+        if ($scope.mode != "CMP") {
             $scope.mediaSource.addEventListener('sourceopen', $scope.sourceOpen());
         } else {
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
@@ -1475,7 +1477,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Triggered when mediaSoure is ready to open sources
     $scope.sourceOpen = function(contentType, pathIndex) {
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             $scope.sourceOpenNum++;
             if ($scope.sourceOpenNum < $scope.streamNum[$scope.CONTENT_TYPE[0]] + $scope.streamNum[$scope.CONTENT_TYPE[1]]) {  //////////////////////////
                 console.log($scope.sourceOpenNum + " media source " + ($scope.sourceOpenNum > 1 ? "are" : "is") + " open: " + contentType + pathIndex);
@@ -1520,13 +1522,13 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
 
             // Add event listeners:  update playback time  ////////////////////////////
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].addEventListener($scope.EVENT_TIME_UPDATE, $scope.onPlaybackTimeUpdate);
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].addEventListener($scope.PLAYING, $scope.onSetPauseBtn);
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].addEventListener($scope.PAUSE, $scope.onSetPlayBtn);
-                        $scope.streamElement[$scope.CONTENT_TYPE[i]][j].addEventListener($scope.WAITING, $scope.onSetPlayBtn);
+                        // $scope.streamElement[$scope.CONTENT_TYPE[i]][j].addEventListener($scope.WAITING, $scope.onSetPlayBtn);
                     }
                 }
             } else {
@@ -1545,6 +1547,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Add interval function: set playback rate
             $scope.intervalFunctions.push(setInterval($scope.setPlaybackRate, $scope.INTERVAL_OF_SET_PLAYBACK_RATE));
+
+            // Add interval function: set target latency bias
+            $scope.intervalFunctions.push(setInterval($scope.setTargetLatencyBias, $scope.INTERVAL_OF_SET_TARGET_LATENCY_BIAS));
 
         }, $scope.TIMEOUT_OF_SOURCE_OPEN);
 
@@ -1611,7 +1616,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             
             // Register stream information and create SourceBuffer
-            if ($scope.mode != "VR" && !$scope.streamSourceBuffer[contentType]) {
+            if ($scope.mode != "CMP" && !$scope.streamSourceBuffer[contentType]) {
                 // Register stream information
                 let registerStreamInfoResult = $scope.registerFirstStreamInfo(manifest, contentType, pathIndex);
                 if (registerStreamInfoResult == "SUCCESS") {
@@ -1622,7 +1627,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     throw registerStreamInfoResult;
                 }
             }
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 if (!$scope.streamSourceBuffer[contentType]) {
                     $scope.streamSourceBuffer[contentType] = [];
                 }
@@ -1639,7 +1644,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Create and initialize control bar
             if (!$scope.controllBar) {
-                $scope.controllBar = $scope.mode == "VR" ? new ControlBarVR() : new ControlBar();
+                $scope.controllBar = $scope.mode == "CMP" ? new ControlBarCMP() : new ControlBar();
                 $scope.controllBar.initialize();
                 $scope.controllBar.destroyAllMenus();
             }
@@ -1900,7 +1905,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 label: contentType + "_" + i
             };
             $scope.initChartingByMediaType(contentType + "_" + i, "rtt");
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 $scope.chartState["bufferLevel"][contentType + "_" + i] = {
                     data: [],
                     color: color,
@@ -1976,9 +1981,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                                     } else if (manifest.type == $scope.DYNAMIC) {
                                         let availabilityStartTime = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].availabilityStartTime.getTime();
                                         let timeShiftBufferDepth = $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timeShiftBufferDepth;
-                                        let targetLatency = $scope.targetLatency > timeShiftBufferDepth ? timeShiftBufferDepth : $scope.targetLatency;
+                                        let targetLatencyBias = $scope.targetLatencyBias > timeShiftBufferDepth ? timeShiftBufferDepth : $scope.targetLatencyBias;
                                         let now = new Date().getTime();
-                                        let targetTime = Math.max(0, now - availabilityStartTime - (targetLatency * 1000));
+                                        let targetTime = Math.max(0, now - availabilityStartTime - (targetLatencyBias * 1000));
                                         let duration = ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].duration || $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].d) / $scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].timescale;
                                         curStreamInfo.segmentIndex = Math.floor(targetTime / (duration * 1000)) + ($scope.streamBitrateList[contentType][i][j][jj][firstsmall.key].startNumber || 0);  /////////////////
                                     }
@@ -2003,7 +2008,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Create SourceBuffer
             if (!$scope.streamSourceBufferMimeCodecs[contentType] || ($scope.streamSourceBufferMimeCodecs[contentType] instanceof Array && !$scope.streamSourceBufferMimeCodecs[contentType][i])) {
-                if ($scope.mode == "VR") {
+                if ($scope.mode == "CMP") {
                     if (!$scope.streamSourceBufferMimeCodecs[contentType]) {
                         $scope.streamSourceBufferMimeCodecs[contentType] = [];
                     }
@@ -2046,7 +2051,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
 
             // Initialize settings and parameters
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 if (!($scope.streamInfo[contentType] instanceof Array)) {
                     $scope.streamInfo[contentType] = [];
                 }
@@ -2056,7 +2061,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
             if (!$scope.streamDuration && manifest.mediaPresentationDuration) {
                 $scope.streamDuration = manifest.mediaPresentationDuration;
-                if ($scope.mode == "VR") {
+                if ($scope.mode == "CMP") {
                     $scope.mediaSource[contentType][i].duration = manifest.mediaPresentationDuration;
                 } else {
                     $scope.mediaSource.duration = manifest.mediaPresentationDuration;
@@ -2068,7 +2073,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 nowMs = nowMs < 10 ? '00' + nowMs : nowMs < 100 ? '0' + nowMs : '' + nowMs;
                 $scope.streamStartTimeFormatted = $scope.streamStartTime.toLocaleString() + '.' + nowMs;
                 $scope.streamTimeShiftDepth = manifest.timeShiftBufferDepth;
-                if ($scope.mode == "VR") {
+                if ($scope.mode == "CMP") {
                     $scope.mediaSource[contentType][i].duration = Infinity;
                 } else {
                     $scope.mediaSource.duration = Infinity;
@@ -2080,7 +2085,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.autoSwitchTrack[contentType] = true;  // Use path switching as default
             $scope.autoSwitchBitrate[contentType] = true;  // Use ABR rules as default
             $scope.isStartup = false;
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 if (!($scope.isFetchingSegment[contentType] instanceof Array)) {
                     $scope.isFetchingSegment[contentType] = [];
                 }
@@ -2106,7 +2111,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.startupTimeFormatted = now.toLocaleString() + '.' + nowMs;
 
             // Initialize charts
-            if ($scope.mode != "VR") {
+            if ($scope.mode != "CMP") {
                 $scope.chartState["bufferLevel"][contentType] = {
                     data: [],
                     color: $scope.chartColor[contentType == $scope.CONTENT_TYPE[0] ? 0 : 1],
@@ -2137,24 +2142,24 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Run when the segment need to be fetched from servers
     $scope.fetchSegment = function(contentType, urlType, pathIndex) {
 
-        if (($scope.mode != "VR" && $scope.isFetchingSegment[contentType]) || ($scope.mode == "VR" && $scope.isFetchingSegment[contentType][pathIndex])) {
+        if (($scope.mode != "CMP" && $scope.isFetchingSegment[contentType]) || ($scope.mode == "CMP" && $scope.isFetchingSegment[contentType][pathIndex])) {
             return;
         }
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             $scope.isFetchingSegment[contentType][pathIndex] = true;
         } else {
             $scope.isFetchingSegment[contentType] = true;
         }
 
         var curStreamInfo = {
-            pathIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].pathIndex : $scope.streamInfo[contentType][pathIndex].pathIndex,
-            periodIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].periodIndex : $scope.streamInfo[contentType][pathIndex].periodIndex,
-            adaptationSetIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].adaptationSetIndex : $scope.streamInfo[contentType][pathIndex].adaptationSetIndex,
-            representationIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].representationIndex : $scope.streamInfo[contentType][pathIndex].representationIndex,
-            segmentIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].segmentIndex : $scope.streamInfo[contentType][pathIndex].segmentIndex,
-            baseUrl: $scope.mode != "VR" ? $scope.streamInfo[contentType].baseUrl : $scope.streamInfo[contentType][pathIndex].baseUrl,
-            mimeCodecs: $scope.mode != "VR" ? $scope.streamInfo[contentType].mimeCodecs : $scope.streamInfo[contentType][pathIndex].mimeCodecs,
-            lastSegmentIndex: $scope.mode != "VR" ? $scope.streamInfo[contentType].lastSegmentIndex : $scope.streamInfo[contentType][pathIndex].lastSegmentIndex
+            pathIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].pathIndex : $scope.streamInfo[contentType][pathIndex].pathIndex,
+            periodIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].periodIndex : $scope.streamInfo[contentType][pathIndex].periodIndex,
+            adaptationSetIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].adaptationSetIndex : $scope.streamInfo[contentType][pathIndex].adaptationSetIndex,
+            representationIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].representationIndex : $scope.streamInfo[contentType][pathIndex].representationIndex,
+            segmentIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].segmentIndex : $scope.streamInfo[contentType][pathIndex].segmentIndex,
+            baseUrl: $scope.mode != "CMP" ? $scope.streamInfo[contentType].baseUrl : $scope.streamInfo[contentType][pathIndex].baseUrl,
+            mimeCodecs: $scope.mode != "CMP" ? $scope.streamInfo[contentType].mimeCodecs : $scope.streamInfo[contentType][pathIndex].mimeCodecs,
+            lastSegmentIndex: $scope.mode != "CMP" ? $scope.streamInfo[contentType].lastSegmentIndex : $scope.streamInfo[contentType][pathIndex].lastSegmentIndex
         };
         $scope.availabilityTimeOffset = $scope.streamBitrateList[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex].availabilityTimeOffset || 0;
         if (urlType == $scope.TYPE_OF_INIT_SEGMENT && $scope.initCache[contentType][curStreamInfo.pathIndex][curStreamInfo.periodIndex][curStreamInfo.adaptationSetIndex][curStreamInfo.representationIndex]) {
@@ -2173,7 +2178,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         var urlResolved = $scope.resolveUrl(urlType, url, urlExtend, paramForResolveUrl);
                 
         console.log("Fetching " + urlType + ": Type " + contentType + ", Path " + curStreamInfo.pathIndex + ", Period " + curStreamInfo.periodIndex + ", AdaptationSet " + curStreamInfo.adaptationSetIndex + ", Representation " + curStreamInfo.representationIndex + (urlType == $scope.TYPE_OF_MEDIA_SEGMENT ? ", Segment " + curStreamInfo.segmentIndex + "." : "."));
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             if (!$scope.monitorDownloadingQuality[contentType]) {
                 $scope.monitorDownloadingQuality[contentType] = [];
             }
@@ -2217,7 +2222,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.requestList.pop();
                     }
                     $scope.loadSegment(buffer, contentType, curStreamInfo, urlType, pathIndex);
-                    if ($scope.mode == "VR") {
+                    if ($scope.mode == "CMP") {
                         $scope.isFetchingSegment[contentType][pathIndex] = false;
                     } else {
                         $scope.isFetchingSegment[contentType] = false;
@@ -2227,7 +2232,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 (status) => {
                     if (status == 404) {
                         console.log("No file(" + status + "): " + urlResolved);
-                        if ($scope.mode == "VR") {
+                        if ($scope.mode == "CMP") {
                             $scope.isFetchingSegment[contentType][pathIndex] = false;
                         } else {
                             $scope.isFetchingSegment[contentType] = false;
@@ -2267,7 +2272,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     if ($scope.requestList.length > $scope.REQUEST_LIST_LENGTH) {
                         $scope.requestList.pop();
                     }
-                    if ($scope.mode == "VR") {
+                    if ($scope.mode == "CMP") {
                         if (!$scope.streamBufferToAppend[contentType][pathIndex]) {
                             $scope.streamBufferToAppend[contentType][pathIndex] = [];
                         }
@@ -2316,7 +2321,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.requestList.pop();
                     }
                     $scope.loadSegment(null, contentType, curStreamInfo, urlType, pathIndex);
-                    if ($scope.mode == "VR") {
+                    if ($scope.mode == "CMP") {
                         $scope.isFetchingSegment[contentType][pathIndex] = false;
                     } else {
                         $scope.isFetchingSegment[contentType] = false;
@@ -2332,7 +2337,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.loadSegment = function(buffer, contentType, curStreamInfo, urlType, pathIndex) {
 
         if (buffer) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 if (!$scope.streamBufferToAppend[contentType][pathIndex]) {
                     $scope.streamBufferToAppend[contentType][pathIndex] = [];
                 }
@@ -2353,7 +2358,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 mimeCodecs: curStreamInfo.mimeCodecs
             };
         } else if (urlType == $scope.TYPE_OF_MEDIA_SEGMENT) {    // Add buffered time if MediaSegment
-            let streamInfo = $scope.mode == "VR" ? $scope.streamInfo[contentType][pathIndex] : $scope.streamInfo[contentType];
+            let streamInfo = $scope.mode == "CMP" ? $scope.streamInfo[contentType][pathIndex] : $scope.streamInfo[contentType];
             streamInfo.lastSegmentIndex = streamInfo.segmentIndex;
             streamInfo.segmentIndex++;
             // Judge if continue, jump into the next period or end the stream
@@ -2379,7 +2384,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
             }
         }
-        $scope.scheduleFetcher(contentType, $scope.mode == "VR" ? pathIndex : undefined);
+        $scope.scheduleFetcher(contentType, $scope.mode == "CMP" ? pathIndex : undefined);
 
     };
 
@@ -2482,7 +2487,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         requestInfo.trequest = performance.now();
         requestInfo.bufferLevel = $scope.getBufferLevel(contentType, pathIndex);
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             if (!$scope.abortController[contentType]) {
                 $scope.abortController[contentType] = [];
             }
@@ -2933,7 +2938,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.appendBuffer = function() {
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j] && !$scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j].updating && $scope.streamBufferToAppend[$scope.CONTENT_TYPE[i]][j] && $scope.streamBufferToAppend[$scope.CONTENT_TYPE[i]][j].length > 0) {
                         // let elementBuffered = $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]].buffered;
@@ -3031,7 +3036,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.removeBuffer = function() {
 
         for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-            if ($scope.mode == "VR") {
+            if ($scope.mode == "CMP") {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                     if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j] && !$scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j].updating && $scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime - $scope.maximalBuffer > 0) {
                         $scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]][j].remove(0, $scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime - $scope.maximalBuffer);
@@ -3049,6 +3054,10 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Fetch life signals intervally
     $scope.lifeSignalFetcher = function(contentType, pathIndex) {
         
+        if (!$scope.lifeSignalEnabled) {
+            return;
+        }
+
         if ($scope.monitorRttForLifeSignal[contentType][pathIndex] == $scope.monitorRtt[contentType][pathIndex]) {
             $scope.xmlLoader(contentType, $scope.streamURLsForLifeSignals[contentType][pathIndex], $scope.RESPONSE_TYPE_OF_LIFE_SIGNAL,
                 (buffer, requestInfo) => {
@@ -3080,7 +3089,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 (status) => {
                     console.log("No life signal(" + status + "): " + $scope.streamURLs[contentType][pathIndex]);
                 },
-                $scope.mode == "VR" ? pathIndex : undefined
+                $scope.mode == "CMP" ? pathIndex : undefined
             );
         } else {
             $scope.monitorRttForLifeSignal[contentType][pathIndex] = $scope.monitorRtt[contentType][pathIndex];
@@ -3093,7 +3102,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
         // Autoplay
         if ($scope.isStartup === false) {
-            if ($scope.mode == "VR") {  /////////////////////////////
+            if ($scope.mode == "CMP") {  /////////////////////////////
                 let flag = true;
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
@@ -3137,23 +3146,23 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
         let bufferLevel = $scope.getBufferLevel(contentType, pathIndex);
         let bufferToAppend = 0;
-        let streamBufferToAppend = ($scope.mode != "VR" ? $scope.streamBufferToAppend[contentType] : $scope.streamBufferToAppend[contentType][pathIndex]) || [];
-        let streamInfo = $scope.mode != "VR" ? $scope.streamInfo[contentType] : $scope.streamInfo[contentType][pathIndex];
+        let streamBufferToAppend = ($scope.mode != "CMP" ? $scope.streamBufferToAppend[contentType] : $scope.streamBufferToAppend[contentType][pathIndex]) || [];
+        let streamInfo = $scope.mode != "CMP" ? $scope.streamInfo[contentType] : $scope.streamInfo[contentType][pathIndex];
         for (let i = 0; i < streamBufferToAppend.length; i++) {
             let buffer = streamBufferToAppend[i];
             bufferToAppend += ($scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].duration
                 || $scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].d)
                 / $scope.streamBitrateList[contentType][buffer.curStreamInfo.pathIndex][buffer.curStreamInfo.periodIndex][buffer.curStreamInfo.adaptationSetIndex][buffer.curStreamInfo.representationIndex].timescale;
         }
-        if (($scope.mode != "VR" ? $scope.streamSourceBuffer[contentType] : $scope.streamSourceBuffer[contentType][pathIndex])
+        if (($scope.mode != "CMP" ? $scope.streamSourceBuffer[contentType] : $scope.streamSourceBuffer[contentType][pathIndex])
                 && !$scope.isSeeking
-                && ($scope.mode != "VR" ? !$scope.isFetchingSegment[contentType] : !$scope.isFetchingSegment[contentType][pathIndex])
+                && ($scope.mode != "CMP" ? !$scope.isFetchingSegment[contentType] : !$scope.isFetchingSegment[contentType][pathIndex])
                 && !isNaN(bufferLevel) && (bufferLevel + bufferToAppend) < $scope.targetBuffer
                 && !isNaN($scope.streamBitrateList[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].segmentNum) 
                 && streamInfo.segmentIndex <= $scope.streamBitrateList[contentType][streamInfo.pathIndex][streamInfo.periodIndex][streamInfo.adaptationSetIndex][streamInfo.representationIndex].segmentNum) {
             // Adjust the streamInfo by ABR rules
             if ($scope.autoSwitchBitrate[contentType] && $scope.autoSwitchTrack[contentType] && $scope.abrRules.hasOwnProperty($scope.selectedRule)) {
-                if ($scope.mode != "VR") {
+                if ($scope.mode != "CMP") {
                     $scope.streamInfo[contentType] = $scope.abrRules[$scope.selectedRule].setStreamInfo(streamInfo, contentType);
                 } else {
                     $scope.streamInfo[contentType][pathIndex] = $scope.abrRules[$scope.selectedRule].setStreamInfo(streamInfo, contentType);
@@ -3172,16 +3181,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Observe latency and adjust playback rate to catch up
     $scope.setPlaybackRate = function () {
 
-        if ((!$scope.streamIsDynamic && $scope.mode != "VR") || !$scope.catchupEnabled) {
+        if ((!$scope.streamIsDynamic && $scope.mode != "CMP") || !$scope.catchupEnabled) {
             return;
         }
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
-                    if ($scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime < $scope.baselineTime - ($scope.streamIsDynamic ? $scope.targetLatency : 0) - $scope.minDrift) {
+                    if ($scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime < $scope.baselineTime - ($scope.streamIsDynamic ? $scope.targetLatencyBias : 0) - $scope.minDrift) {
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].playbackRate = 1 + $scope.catchupPlaybackRate;
-                    } else if ($scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime > $scope.baselineTime - ($scope.streamIsDynamic ? $scope.targetLatency : 0) + $scope.minDrift) {
+                    } else if ($scope.streamElement[$scope.CONTENT_TYPE[i]][j].currentTime > $scope.baselineTime - ($scope.streamIsDynamic ? $scope.targetLatencyBias : 0) + $scope.minDrift) {
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].playbackRate = 1 - $scope.catchupPlaybackRate;
                     } else {
                         $scope.streamElement[$scope.CONTENT_TYPE[i]][j].playbackRate = 1;
@@ -3189,13 +3198,44 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
             }
         } else {
-            if ($scope.streamElement.currentTime < $scope.baselineTime - $scope.targetLatency - $scope.minDrift) {
+            if ($scope.streamElement.currentTime < $scope.baselineTime - $scope.targetLatencyBias - $scope.minDrift) {
                 $scope.streamElement.playbackRate = 1 + $scope.catchupPlaybackRate;
-            } else if ($scope.streamElement.currentTime > $scope.baselineTime - $scope.targetLatency + $scope.minDrift) {
+            } else if ($scope.streamElement.currentTime > $scope.baselineTime - $scope.targetLatencyBias + $scope.minDrift) {
                 $scope.streamElement.playbackRate = 1 - $scope.catchupPlaybackRate;
             } else {
                 $scope.streamElement.playbackRate = 1;
             }
+        }
+
+    };
+
+    // Adjust target latency bias automatically to decrease buffer level
+    $scope.setTargetLatencyBias = function () {
+
+        if ((!$scope.streamIsDynamic && $scope.mode != "CMP") || !$scope.autoAdjustingLatencyBias) {
+            return;
+        }
+
+        var buffer = Infinity;
+        if ($scope.mode == "CMP") {
+            for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+                for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
+                    let buffertemp = $scope.getBufferLevel($scope.CONTENT_TYPE[i], j);
+                    if (buffertemp < buffer) {
+                        buffer = buffertemp;
+                    }
+                }
+            }
+        } else {
+            buffer = $scope.getBufferLevel();
+        }
+
+        if (buffer > 1) {
+            $scope.targetLatencyBias -= 1;
+        } else if (buffer > $scope.minDrift * 2) {
+            $scope.targetLatencyBias -= 0.1;
+        } else if (buffer < $scope.minDrift) {
+            $scope.targetLatencyBias += 0.1;
         }
 
     };
@@ -3211,7 +3251,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             return;
         }
 
-        if ($scope.mode == "VR") {
+        if ($scope.mode == "CMP") {
             let flag = true;
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
@@ -3277,13 +3317,13 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             return;
         }
         $scope.stallFlag = new Date().getTime();
-        if ($scope.mode == "VR") {
-            for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
-                for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
-                    $scope.streamElement[$scope.CONTENT_TYPE[i]][j].pause();
-                }
-            }
-        }
+        // if ($scope.mode == "CMP") {
+        //     for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
+        //         for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
+        //             $scope.streamElement[$scope.CONTENT_TYPE[i]][j].pause();
+        //         }
+        //     }
+        // }
         if ($scope.controllBar && $scope.controllBar.setPlayBtn) {
             $scope.controllBar.setPlayBtn();
         }
@@ -3307,7 +3347,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         $scope.utcTime = now.getTime();
         $scope.utcTimeFormatted = now.toLocaleString() + '.' + nowMs;
         $scope.baselineTime = $scope.streamStartTime ? (new Date().getTime() - $scope.streamStartTime.getTime()) / 1000 + ($scope.availabilityTimeOffset || 0)
-            : $scope.mode == "VR" && $scope.streamElement && $scope.streamElement[$scope.CONTENT_TYPE[0]] && $scope.streamElement[$scope.CONTENT_TYPE[0]][0]? $scope.streamElement[$scope.CONTENT_TYPE[0]][0].currentTime : null;
+            : $scope.mode == "CMP" && $scope.streamElement && $scope.streamElement[$scope.CONTENT_TYPE[0]] && $scope.streamElement[$scope.CONTENT_TYPE[0]][0]? $scope.streamElement[$scope.CONTENT_TYPE[0]][0].currentTime : null;
 
         // For testing
         // if (($scope.startupTime ? ($scope.utcTime - $scope.startupTime) / 1000 : 0) > 310) {

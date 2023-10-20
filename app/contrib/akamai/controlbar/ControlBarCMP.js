@@ -1,4 +1,4 @@
-var ControlBarVR = function (displayUTCTimeCodes = false) {
+var ControlBarCMP = function (displayUTCTimeCodes = false) {
 
     var appElement = document.querySelector('[ng-controller=DashController]');
     var $scope = window.angular ? window.angular.element(appElement).scope() : undefined;
@@ -120,8 +120,8 @@ var ControlBarVR = function (displayUTCTimeCodes = false) {
             } else {
                 $scope.forcedPause = false;
                 let availabilityStartTime = $scope.streamStartTime.getTime();
-                let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
-                let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                let targetLatencyBias = $scope.targetLatencyBias > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatencyBias;
+                let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatencyBias * 1000));
                 for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
                         let array = $scope.getBufferLevelAsArray($scope.CONTENT_TYPE[i], j);
@@ -402,8 +402,8 @@ var ControlBarVR = function (displayUTCTimeCodes = false) {
     };
 
     var seekLive = function () {
-        let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
-        seek(playerDuration() - targetLatency);
+        let targetLatencyBias = $scope.targetLatencyBias > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatencyBias;
+        seek(playerDuration() - targetLatencyBias);
     }
 
     var updateDuration = function () {

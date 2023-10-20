@@ -108,8 +108,8 @@ var ControlBar = function (displayUTCTimeCodes = false) {
             } else {
                 $scope.forcedPause = false;
                 let availabilityStartTime = $scope.streamStartTime.getTime();
-                let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
-                let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatency * 1000));
+                let targetLatencyBias = $scope.targetLatencyBias > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatencyBias;
+                let targetTime = Math.max(0, (new Date().getTime()) - availabilityStartTime - (targetLatencyBias * 1000));
                 let array = $scope.getBufferLevelAsArray();
                 for (let i = 0; i < array.length; i++) {
                     if (targetTime >= array[i].start && targetTime < array[i].end) {
@@ -394,8 +394,8 @@ var ControlBar = function (displayUTCTimeCodes = false) {
     };
 
     var seekLive = function () {
-        let targetLatency = $scope.targetLatency > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatency;
-        seek(playerDuration() - targetLatency);
+        let targetLatencyBias = $scope.targetLatencyBias > $scope.streamTimeShiftDepth ? $scope.streamTimeShiftDepth : $scope.targetLatencyBias;
+        seek(playerDuration() - targetLatencyBias);
     }
 
     var updateDuration = function () {
