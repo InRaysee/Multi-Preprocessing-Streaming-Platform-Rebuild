@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+		<title>VR mode</title>
+		
+		<script src="app/contrib/aframe/dist/aframe-master.js"></script>
+        <script src="app/contrib/aframe/js/play-on-click.js"></script>
+        <script src="app/contrib/aframe/js/hide-on-play.js"></script>
+
+		<style>
+			body {
+				background-color: #000000;
+			}
+		</style>
+		
+	</head>
+	
+    <body>
+
+		<a-scene>
+
+			<a-assets>
+			  	<video id="video" preload="auto" autoplay loop="false" crossOrigin="anonymous"></video>
+			</a-assets>
+
+            <a-videosphere rotation="0 -90 0" src="#video"></a-videosphere>
+
+			<a-entity camera position wasd-controls rotation look-controls aframe-injected rotation-reader-camera></a-entity>
+
+		</a-scene>
+
+		<script>
+			AFRAME.registerComponent('rotation-reader-camera', {
+				tick: function () {
+					// `this.el` is the element.
+					// `object3D` is the three.js object.
+
+					// `rotation` is a three.js Euler using radians. `quaternion` also available.
+					// console.log(this.el.object3D.rotation);
+
+					let appElement = window.parent.document.querySelector('[ng-controller=DashController]');
+                    let $scope = window.parent.angular ? window.parent.angular.element(appElement).scope() : undefined;
+					if ($scope && $scope.lon != undefined && $scope.lat != undefined) {
+						$scope.lat = (this.el.object3D.rotation._x / Math.PI) * 180;
+						$scope.lon = ((this.el.object3D.rotation._y % (Math.PI * 2)) / Math.PI) * 180;
+						$scope.lon = $scope.lon < 0 ? 360 + $scope.lon : $scope.lon;
+						// console.log("lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
+					}
+
+					// `position` is a three.js Vector3.
+					// console.log(this.el.object3D.position);
+				}
+			});
+		</script>
+        
+	</body>
+	
+</html>

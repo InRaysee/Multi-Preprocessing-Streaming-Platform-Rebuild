@@ -734,6 +734,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         switch (mode) {
             case 'Multi-Path':
             case 'Chat':
+            case 'ERP':
                 document.getElementById( "comparisonSource" ).style.display = "none";
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
@@ -783,6 +784,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 document.getElementById( "comparisonContainer" ).style.position = "absolute";
                 break;
             case 'VR':
+                document.getElementById( "video" ).style.display = "none";
+                document.getElementById( "vr" ).style.display = "flex";
+                document.getElementById( "cameraContainer" ).style.display = "none";
+                document.getElementById( "comparisonContainer" ).style.display = "none";
+                break;
+            case 'ERP':
                 document.getElementById( "video" ).style.display = "none";
                 document.getElementById( "vr" ).style.display = "flex";
                 document.getElementById( "cameraContainer" ).style.display = "none";
@@ -1131,6 +1138,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 $scope.videoInit();
                 break;
             case 'VR':
+            case 'ERP':
                 $scope.aframeInit();
                 break;
             default:
@@ -1142,7 +1150,16 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // Initializing the aframe page
     $scope.aframeInit = function() {
 
-        document.getElementById('vr').src = "./6_1_1.html";
+        switch ($scope.mode) {
+            case 'VR':
+                document.getElementById('vr').src = "./6_1_1.html";
+                break;
+            case 'ERP':
+                document.getElementById('vr').src = "./erp.html";
+                break;
+            default:
+                break;
+        }
         $scope.lon = 0;
         $scope.lat = 0;
 
@@ -1419,7 +1436,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
         if (!$scope.streamElement) {
             if ($scope.mode != "VR") {
-                $scope.streamElement = document.getElementById('video');
+                $scope.streamElement = $scope.mode == "ERP" ? document.getElementById('vr').contentWindow.document.getElementById('video') : document.getElementById('video');
                 $scope.streamElement.src = URL.createObjectURL($scope.mediaSource);
             } else {
                 $scope.streamElement = {
