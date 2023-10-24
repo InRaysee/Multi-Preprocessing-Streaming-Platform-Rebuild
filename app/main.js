@@ -309,20 +309,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.109:7001/dash/stream.mpd",
-            "http://222.20.126.109:7003/dash/stream.mpd",
-            "http://222.20.126.109:7005/dash/stream.mpd",
-            "http://222.20.126.109:7007/dash/stream.mpd",
-            "http://222.20.126.109:7009/dash/stream.mpd",
-            "http://222.20.126.109:7011/dash/stream.mpd"
+            "http://222.20.126.108:8080/dash/nccvr/face0/stream.mpd",
+            "http://222.20.126.108:8080/dash/nccvr/face1/stream.mpd",
+            "http://222.20.126.108:8080/dash/nccvr/face2/stream.mpd",
+            "http://222.20.126.108:8080/dash/nccvr/face3/stream.mpd",
+            "http://222.20.126.108:8080/dash/nccvr/face4/stream.mpd",
+            "http://222.20.126.108:8080/dash/nccvr/face5/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.109:7001/dash/stream.mpd",
-            // "http://222.20.126.109:7003/dash/stream.mpd",
-            // "http://222.20.126.109:7005/dash/stream.mpd",
-            // "http://222.20.126.109:7007/dash/stream.mpd",
-            // "http://222.20.126.109:7009/dash/stream.mpd",
-            // "http://222.20.126.109:7011/dash/stream.mpd"
+            "http://222.20.126.108:8080/dash/nccvr/face0/stream.mpd",
+            // "http://222.20.126.108:8080/dash/nccvr/face1/stream.mpd",
+            // "http://222.20.126.108:8080/dash/nccvr/face2/stream.mpd",
+            // "http://222.20.126.108:8080/dash/nccvr/face3/stream.mpd",
+            // "http://222.20.126.108:8080/dash/nccvr/face4/stream.mpd",
+            // "http://222.20.126.108:8080/dash/nccvr/face5/stream.mpd"
         ]
     };
 
@@ -740,11 +740,13 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 document.getElementById( "comparisonSource" ).style.display = "none";
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
+                document.getElementById( "globalSwitchRule" ).removeAttribute("disabled");
                 break;
             case 'Comparison':
                 document.getElementById( "comparisonSource" ).style.display = "block";
                 document.getElementById( "videoNumber" ).removeAttribute("disabled");
                 document.getElementById( "audioNumber" ).removeAttribute("disabled");
+                document.getElementById( "globalSwitchRule" ).removeAttribute("disabled");
                 break;
             case 'CMP':
                 document.getElementById( "comparisonSource" ).style.display = "none";
@@ -754,6 +756,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 $scope.streamNum.audio = $scope.AUDIO_NUMBER_OF_CMP_MODE;  // Assume one path for one audio
                 $scope.changeStreamNumber('audio');
                 document.getElementById( "audioNumber" ).disabled = true;
+                document.getElementById( "globalSwitchRule" ).disabled = true;
+                document.getElementById( "globalQualityVideo" ).disabled = true;
+                document.getElementById( "globalQualityAudio" ).disabled = true;
+                if (document.getElementById( "globalSwitchRule" ).checked) {
+                    document.getElementById( "highestBitrateRule" ).checked = true;
+                }
                 break;
             default:
                 break;

@@ -13,6 +13,11 @@ var GlobalSwitchRuleClass = function () {
     // Always manually select the bitrate
     function setStreamInfo(streamInfo, contentType) {
 
+        if ($scope.mode == "CMP") {
+            window.alert("Cannot use GlobalSwitchRule when playing CMP mode!");
+            return;
+        }
+        
         if (!$scope.streamBitrateList || !$scope.streamBitrateList[contentType]) {
             return streamInfo;
         }
