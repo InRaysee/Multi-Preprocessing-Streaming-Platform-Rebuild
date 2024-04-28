@@ -298,7 +298,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatencyBias = 1.9;  // The live delay allowed
+    $scope.targetLatencyBias = 3;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
@@ -309,20 +309,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:8080/dash/nccvr/face0/stream.mpd",
-            "http://222.20.126.108:8080/dash/nccvr/face1/stream.mpd",
-            "http://222.20.126.108:8080/dash/nccvr/face2/stream.mpd",
-            "http://222.20.126.108:8080/dash/nccvr/face3/stream.mpd",
-            "http://222.20.126.108:8080/dash/nccvr/face4/stream.mpd",
-            "http://222.20.126.108:8080/dash/nccvr/face5/stream.mpd"
+            "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
+            "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
+            "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
+            "http://222.20.126.108:7007/dash/rtsp/stream.mpd",
+            "http://222.20.126.108:7009/dash/rtsp/stream.mpd",
+            "http://222.20.126.108:7011/dash/rtsp/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.108:8080/dash/nccvr/face0/stream.mpd",
-            // "http://222.20.126.108:8080/dash/nccvr/face1/stream.mpd",
-            // "http://222.20.126.108:8080/dash/nccvr/face2/stream.mpd",
-            // "http://222.20.126.108:8080/dash/nccvr/face3/stream.mpd",
-            // "http://222.20.126.108:8080/dash/nccvr/face4/stream.mpd",
-            // "http://222.20.126.108:8080/dash/nccvr/face5/stream.mpd"
+            "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
+            // "http://222.20.126.108:7002/dash/rtsp/stream.mpd",
+            // "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
+            // "http://222.20.126.108:7004/dash/rtsp/stream.mpd",
+            // "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
+            // "http://222.20.126.108:7006/dash/rtsp/stream.mpd"
         ]
     };
 
