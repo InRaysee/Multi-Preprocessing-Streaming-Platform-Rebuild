@@ -204,7 +204,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     // $scope.clientServerTimeShift = 0;  // Time shift between client and server from TimelineConverter
     // $scope.normalizedTime = NaN;  // Set the fastest mediaplayer's timeline as the normalized time
     // $scope.totalThroughput = NaN;  // Compute the total throughput considering all players
-    // $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
+    $scope.totalQOE = NaN;  // Compute the QoE considering all players (TODO)
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -223,6 +223,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER = 1000;
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.INTERVAL_OF_SET_TARGET_LATENCY_BIAS = 1000;
+    $scope.INTERVAL_OF_COMPUTE_TOTAL_QOE = 50;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
     $scope.TIMEOUT_OF_RELOAD_STREAM = 1000;
@@ -291,7 +292,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.maximalBuffer = 15;  // The buffer level desired to be saved
     $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
 
-    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
+    $scope.selectedRule = "rttBufferRule";  // Save the selected ABR strategy
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
@@ -303,35 +304,41 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
     // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
-    $scope.catchupEnabled = true;  // Whether catch up when playback or not
-    $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
+    $scope.catchupEnabled = false;  // Whether catch up when playback or not
+    $scope.llDashEnabled = false;  // Whether enable low-latency DASH or not
     $scope.autoAdjustingLatencyBias = false;  // Whether auto adjusting latency bias or not
     
     $scope.streamURLs = {  // Save the selected media sources
         video: [
-            "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
-            "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
-            "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
-            "http://222.20.126.108:7007/dash/rtsp/stream.mpd",
-            "http://222.20.126.108:7009/dash/rtsp/stream.mpd",
-            "http://222.20.126.108:7011/dash/rtsp/stream.mpd"
+            "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
+            "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
+            "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
+            "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
+            "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
+            "http://222.20.126.108:7026/videos/apple/v11/stream.mpd"
         ],
         audio: [
-            "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
-            // "http://222.20.126.108:7002/dash/rtsp/stream.mpd",
-            // "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
-            // "http://222.20.126.108:7004/dash/rtsp/stream.mpd",
-            // "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
-            // "http://222.20.126.108:7006/dash/rtsp/stream.mpd"
+            "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
+            // "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
+            // "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
+            // "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
+            // "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
+            // "http://222.20.126.108:7026/videos/apple/v11/stream.mpd",
         ]
     };
 
-    $scope.streamURLforComparison = "http://222.20.126.109:7001/dash/stream.mpd";  // Save the selected media source for comparison
+    $scope.streamURLforComparison = "http://222.20.126.108:8080/videos/apple/v11/stream.mpd";  // Save the selected media source for comparison
 
 
 /////////////////////////////////////////////////////////////////////////////////////
 /*                     Global variables (stat & chart related)                     */
 /////////////////////////////////////////////////////////////////////////////////////
+
+    $scope.monitorTotalQOE = {  // Monitor data: total QoE
+        video: NaN
+    };
+    $scope.maxTotalQOEBuffer = [];  // Buffer for maximal chart data
+    $scope.maxTotalQOE = 0;  // Maximal chart data
 
     $scope.monitorBufferLevel = {  // Monitor data: buffer level
         video: NaN,
@@ -402,6 +409,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         '#FF99CC', '#CC66CC', '#0099CC', '#FFFF33', '#669966'
     ];
     $scope.chartData = {  // Save the buffer level data needs to put on the charts
+        totalQOE: [],
         bufferLevel: [],
         downloadingQuality: [],
         playbackQuality: [],
@@ -409,6 +417,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         throughput: []
     };
     $scope.chartState = {  // Save the charts' states
+        totalQOE: {},
         bufferLevel: {},
         downloadingQuality: {},
         playbackQuality: {},
@@ -416,6 +425,55 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         throughput: {}
     };
     $scope.chartOptions = {  // Set up the style of the charts
+        totalQOE: {
+            legend: {
+                labelBoxBorderColor: '#ffffff',
+                placement: 'outsideGrid',
+                container: '#legendWrapper_totalQOE'
+            },
+            series: {
+                lines: {
+                    show: true,
+                    lineWidth: 2,
+                    shadowSize: 1,
+                    steps: false,
+                    fill: false
+                },
+                points: {
+                    radius: 4,
+                    fill: true,
+                    show: true
+                }
+            },
+            grid: {
+                clickable: false,
+                hoverable: false,
+                autoHighlight: true,
+                color: '#136bfb',
+                backgroundColor: '#ffffff'
+            },
+            axisLabels: {
+                position: 'left'
+            },
+            xaxis: {
+                tickFormatter: function tickFormatter(value) {
+                    return $scope.convertToTimeCode(value);
+                },
+                tickDecimals: 0,
+                color: '#136bfb',
+                alignTicksWithAxis: 1
+            },
+            yaxis: {
+                min: 0,
+                max: $scope.maxTotalQOE,
+                tickLength: 0,
+                tickDecimals: 0,
+                color: '#136bfb',
+                position: 'right',
+                axisLabelPadding: 10
+            },
+            yaxes: [{axisLabel: ""}]
+        },
         bufferLevel: {
             legend: {
                 labelBoxBorderColor: '#ffffff',
@@ -866,6 +924,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             type: type
         };
         switch(type) {
+            case "totalQOE":
+                $scope.chartData.totalQOE.push(data);
+                break;
             case "bufferLevel":
                 $scope.chartData.bufferLevel.push(data);
                 break;
@@ -890,6 +951,12 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
 
     $scope.clearchartData = function () {
+
+        $scope.monitorTotalQOE = {
+            video: NaN
+        };
+        $scope.maxTotalQOEBuffer = [];
+        $scope.maxTotalQOE = 0;
 
         $scope.monitorBufferLevel = {
             video: NaN,
@@ -986,6 +1053,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     }
                 }
             } else {
+                if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]] && $scope.CONTENT_TYPE[i] == "video") {
+                    $scope.monitorTotalQOE[$scope.CONTENT_TYPE[i]] = $scope.totalQOE;
+                }
                 if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
                     $scope.monitorBufferLevel[$scope.CONTENT_TYPE[i]] = $scope.getBufferLevel($scope.CONTENT_TYPE[i]);
                 }
@@ -1026,6 +1096,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             }
             $scope.maxPlaybackQualityBuffer.push(maxPlaybackQualityTemp / 1000);
         } else {
+            $scope.maxTotalQOEBuffer.push($scope.monitorTotalQOE[$scope.CONTENT_TYPE[0]] || 0);
             $scope.maxBufferLevelBuffer.push(($scope.monitorBufferLevel[$scope.CONTENT_TYPE[0]] > $scope.monitorBufferLevel[$scope.CONTENT_TYPE[1]] ? $scope.monitorBufferLevel[$scope.CONTENT_TYPE[0]] : $scope.monitorBufferLevel[$scope.CONTENT_TYPE[1]]) || $scope.monitorBufferLevel[$scope.CONTENT_TYPE[0]] || $scope.monitorBufferLevel[$scope.CONTENT_TYPE[1]] || 0);
             $scope.maxDownloadingQualityBuffer.push((($scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[0]] > $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[1]] ? $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[0]] : $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[1]]) || $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[0]] || $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[1]] || 0) / 1000);
             $scope.maxPlaybackQualityBuffer.push((($scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[0]] > $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[1]] ? $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[0]] : $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[1]]) || $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[0]] || $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[1]] || 0) / 1000);    
@@ -1047,6 +1118,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
         $scope.maxThroughputBuffer.push(maxThroughputTemp / 1000);
 
+        if ($scope.maxTotalQOEBuffer.length > $scope.maxPointsToChart) {
+            $scope.maxTotalQOEBuffer.shift();
+        }
         if ($scope.maxBufferLevelBuffer.length > $scope.maxPointsToChart) {
             $scope.maxBufferLevelBuffer.shift();
         }
@@ -1063,12 +1137,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.maxThroughputBuffer.shift();
         }
 
+        $scope.maxTotalQOE = $scope.maxTotalQOEBuffer.reduce((a, b) => a > b ? a : b);
         $scope.maxBufferLevel = $scope.maxBufferLevelBuffer.reduce((a, b) => a > b ? a : b);
         $scope.maxDownloadingQuality = $scope.maxDownloadingQualityBuffer.reduce((a, b) => a > b ? a : b);
         $scope.maxPlaybackQuality = $scope.maxPlaybackQualityBuffer.reduce((a, b) => a > b ? a : b);
         $scope.maxRtt = $scope.maxRttBuffer.reduce((a, b) => a > b ? a : b);
         $scope.maxThroughput = $scope.maxThroughputBuffer.reduce((a, b) => a > b ? a : b);
 
+        $scope.chartOptions.totalQOE.yaxis.max = $scope.maxTotalQOE;
         $scope.chartOptions.bufferLevel.yaxis.max = $scope.maxBufferLevel;
         $scope.chartOptions.downloadingQuality.yaxis.max = $scope.maxDownloadingQuality;
         $scope.chartOptions.playbackQuality.yaxis.max = $scope.maxPlaybackQuality;
@@ -1089,6 +1165,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
             } else {
                 if ($scope.streamSourceBuffer[$scope.CONTENT_TYPE[i]]) {
+                    if ($scope.CONTENT_TYPE[i] == "video") {
+                        $scope.plotPoint($scope.CONTENT_TYPE[i], 'totalQOE', $scope.monitorTotalQOE[$scope.CONTENT_TYPE[i]] || 0, time);
+                    }
                     $scope.plotPoint($scope.CONTENT_TYPE[i], 'bufferLevel', $scope.monitorBufferLevel[$scope.CONTENT_TYPE[i]] || 0, time);
                     $scope.plotPoint($scope.CONTENT_TYPE[i], 'downloadingQuality', $scope.monitorDownloadingQuality[$scope.CONTENT_TYPE[i]] / 1000 || 0, time);
                     $scope.plotPoint($scope.CONTENT_TYPE[i], 'playbackQuality', $scope.monitorPlaybackQuality[$scope.CONTENT_TYPE[i]] / 1000 || 0, time);
@@ -1334,6 +1413,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             $scope.lon = 0;
             $scope.lat = 0;
 
+            $scope.totalQOE = NaN;
+
             for (let i = 0; i < $scope.CONTENT_TYPE.length; i++) {
                 if ($scope.mode == "CMP") {
                     for (let j = 0; j < $scope.streamNum[$scope.CONTENT_TYPE[i]]; j++) {
@@ -1504,7 +1585,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         $scope.monitorThroughputBuffer[$scope.CONTENT_TYPE[i]][j] = [];
                         $scope.monitorThroughput[$scope.CONTENT_TYPE[i]][j] = 0;
                         $scope.monitorThroughputExpect[$scope.CONTENT_TYPE[i]][j] = Infinity;
-                        $scope.monitorRtt[$scope.CONTENT_TYPE[i]][j] = requestInfo.tresponse - requestInfo.trequest;
+                        $scope.monitorRtt[$scope.CONTENT_TYPE[i]][j] = (requestInfo.tresponse - requestInfo.trequest).toFixed(0);
                         $scope.requestList.unshift({
                             urlType: $scope.TYPE_OF_MPD,
                             contentType: $scope.CONTENT_TYPE[i],
@@ -1559,6 +1640,11 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             // Add interval function: set target latency bias
             $scope.intervalFunctions.push(setInterval($scope.setTargetLatencyBias, $scope.INTERVAL_OF_SET_TARGET_LATENCY_BIAS));
 
+            // Add interval function: compute total QoE
+            if ($scope.mode != "CMP") {
+                $scope.intervalFunctions.push(setInterval($scope.computeQoE, $scope.INTERVAL_OF_COMPUTE_TOTAL_QOE));
+            }
+
         }, $scope.TIMEOUT_OF_SOURCE_OPEN);
 
     };
@@ -1588,6 +1674,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         manifest = manifest.MPD;
 
         var baseUrl = manifest.BaseURL ? manifest.BaseURL[0].undefined[0] : $scope.resolveUrl($scope.TYPE_OF_MPD, $scope.streamURLs[contentType][i]);
+        if (baseUrl == "./") {
+            baseUrl = $scope.streamURLs[contentType][i].slice(0, $scope.streamURLs[contentType][i].lastIndexOf("/") + 1);
+        }
         manifest.baseUrl = baseUrl ? baseUrl.slice(0, baseUrl.lastIndexOf("/") + 1) : NaN;
         if (!manifest.baseUrl || manifest.baseUrl == "") {
             window.alert("Wrong manifest of " + contentType + "URLs[" + i + "]: No base URL available in the manifest!");
@@ -2120,6 +2209,14 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
             // Initialize charts
             if ($scope.mode != "CMP") {
+                if (contentType == "video") {
+                    $scope.chartState["totalQOE"][contentType] = {
+                        data: [],
+                        color: $scope.chartColor[contentType == $scope.CONTENT_TYPE[0] ? 0 : 1],
+                        label: contentType
+                    };
+                    $scope.initChartingByMediaType(contentType, "totalQOE");
+                }
                 $scope.chartState["bufferLevel"][contentType] = {
                     data: [],
                     color: $scope.chartColor[contentType == $scope.CONTENT_TYPE[0] ? 0 : 1],
@@ -2207,7 +2304,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
                     $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
                     $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex] = !isNaN(requestInfo.bufferLevel) ? (requestInfo.tsize / requestInfo.bufferLevel).toFixed(0) : Infinity;
-                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = (requestInfo.tresponse - requestInfo.trequest).toFixed(0);
                     clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
                     $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
                     $scope.requestList.unshift({
@@ -2258,7 +2355,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                         console.log("The response has been thrown.");
                         return;
                     }
-                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = (requestInfo.tresponse - requestInfo.trequest).toFixed(0);
                     clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
                     $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
                     $scope.requestList.unshift({
@@ -2306,7 +2403,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                     // $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = $scope.calculateAverageThroughput(contentType, curStreamInfo.pathIndex).toFixed(0);
                     $scope.monitorThroughput[contentType][curStreamInfo.pathIndex] = (requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0);
                     $scope.monitorThroughputExpect[contentType][curStreamInfo.pathIndex] = !isNaN(requestInfo.bufferLevel) ? (requestInfo.tsize / requestInfo.bufferLevel).toFixed(0) : Infinity;
-                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    $scope.monitorRtt[contentType][curStreamInfo.pathIndex] = (requestInfo.tresponse - requestInfo.trequest).toFixed(0);
                     clearInterval($scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex]);
                     $scope.intervalLifeSignalFunctions[contentType][curStreamInfo.pathIndex] = setInterval($scope.lifeSignalFetcher.bind(this, contentType, curStreamInfo.pathIndex), $scope.INTERVAL_OF_LIFE_SIGNAL_FETCHER);
                     $scope.requestList.unshift({
@@ -3071,7 +3168,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 (buffer, requestInfo) => {
                     // $scope.monitorThroughputBuffer[contentType][pathIndex].push((requestInfo.tsize / ((requestInfo.tfinish - requestInfo.trequest) / 1000)).toFixed(0));
                     // $scope.monitorThroughput[contentType][pathIndex] = $scope.calculateAverageThroughput(contentType, pathIndex);
-                    $scope.monitorRtt[contentType][pathIndex] = requestInfo.tresponse - requestInfo.trequest;
+                    $scope.monitorRtt[contentType][pathIndex] = (requestInfo.tresponse - requestInfo.trequest).toFixed(0);
                     $scope.monitorRttForLifeSignal[contentType][pathIndex] = $scope.monitorRtt[contentType][pathIndex];
                     $scope.requestList.unshift({
                         urlType: $scope.TYPE_OF_LIFE_SIGNAL,
@@ -3344,6 +3441,15 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     // Compute QoE
     $scope.computeQoE = function() {
+        let width = $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet[$scope.streamInfo.video.adaptationSetIndex].Representation[$scope.streamInfo.video.representationIndex].width;
+        let height = $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet[$scope.streamInfo.video.adaptationSetIndex].Representation[$scope.streamInfo.video.representationIndex].height;
+        let quality = $scope.monitorPlaybackQuality.video / 1000;
+        let framerate = eval($scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet[$scope.streamInfo.video.adaptationSetIndex].frameRate);
+        let quant = 11.998 - 3 * Math.log(41.248 + Math.log(quality) + Math.log(quality * (quality / (width * height * framerate)) + 0.1318));
+        let mos_q = 4.66 - 0.07 * Math.exp(4.06 * quant);
+        let D_q = 100 - mos_q * 20;
+        let D = Math.max(Math.min(D_q, 100), 0);
+        $scope.totalQOE = 100 - D;
     };
 
     // Other platform intervals

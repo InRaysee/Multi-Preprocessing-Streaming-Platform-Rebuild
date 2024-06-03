@@ -6,7 +6,7 @@
 
 		<meta charset="utf-8"/>
 
-		<title>Multi-Processing Streaming Platform Rebuild</title>
+		<title>视频传输场景下面向用户体验的资源优化</title>
 		<link rel="icon" type="image/jpg" href="../inraysee.jpg">
 
 		<!-- Import css files -->
@@ -67,7 +67,7 @@
 			<!-- Page title -->
 			<div class="row title-header">
 				<div class="branding">
-					<span>Multi-Processing Streaming Platform Rebuild</span>
+					<span>视频传输场景下面向用户体验的资源优化</span>
 				</div>
 			</div>
 
@@ -192,12 +192,12 @@
 										</label>
 										
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="rttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')">
+											<input name="abr-rules" id="rttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')" checked="true">
 											RttBufferRule
 										</label>
 
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="highestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')" checked="true">
+											<input name="abr-rules" id="highestBitrateRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('highestBitrateRule')">
 											HighestBitrateRule
 										</label>
 
@@ -536,6 +536,9 @@
 							<div class="text-success" ng-if="mode != 'CMP'">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Stream Info (audio): </label> {{streamInfo.audio.pathIndex}} - {{streamInfo.audio.periodIndex}} - {{streamInfo.audio.adaptationSetIndex}} - {{streamInfo.audio.representationIndex}} - {{streamInfo.audio.segmentIndex}}
 							</div>
+							<div class="text-success">
+								<label class="text-primary" data-toggle="tooltip" data-placement="top">Total QOE: </label> {{totalQOE.toFixed(2)}}
+							</div>
 							<!-- <div class="text-success">
 								<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} {{normalizedTime ? " s" : ""}}
 							</div>
@@ -566,6 +569,12 @@
 				<!-- Charts -->
 				<div id="chartWrapper">
 					<div class="chart-inventory" style="margin-bottom: 30px;">
+					</div>
+					<div id="legendWrapper_totalQOE" class="legend-wrapper">
+					</div>
+					<span style="display: block; margin-top: 20px; margin-bottom: 10px; margin-left: 20px; font: bold normal 16px sans-serif;" id="totalQOETitle">Total QOE</span>
+					<div class="chart-inventory" style="margin-bottom: 30px;">
+						<flot dataset="chartData.totalQOE" options="chartOptions.totalQOE"></flot>
 					</div>
 					<div id="legendWrapper_bufferLevel" class="legend-wrapper">
 					</div>
