@@ -280,8 +280,8 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.optionButton = "Show Options";  // Save the state of option button
 
-    $scope.selectedMode = 'Multi-Path';  // Save the selected mode
-    $scope.mode = 'Multi-Path';  // Save the mode
+    $scope.selectedMode = 'ERP';  // Save the selected mode
+    $scope.mode = 'ERP';  // Save the mode
 
     $scope.streamNum = {  // Number of paths for fetching streams
         video: 6,
@@ -299,31 +299,31 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatencyBias = 3;  // The live delay allowed
+    $scope.targetLatencyBias = -2;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
     // $scope.liveCatchupLatencyThreshold = 60;  // Maximal latency allowed to catch up
-    $scope.catchupEnabled = false;  // Whether catch up when playback or not
-    $scope.llDashEnabled = false;  // Whether enable low-latency DASH or not
+    $scope.catchupEnabled = true;  // Whether catch up when playback or not
+    $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
     $scope.autoAdjustingLatencyBias = false;  // Whether auto adjusting latency bias or not
     
     $scope.streamURLs = {  // Save the selected media sources
-        video: [
-            "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
-            "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
-            "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
-            "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
-            "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
-            "http://222.20.126.108:7026/videos/apple/v11/stream.mpd"
+        "video": [
+            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
         ],
-        audio: [
-            "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
-            // "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
-            // "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
-            // "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
-            // "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
-            // "http://222.20.126.108:7026/videos/apple/v11/stream.mpd",
+        "audio": [
+            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
         ]
     };
 

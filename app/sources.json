@@ -50,34 +50,34 @@
             },
             {
                 "name": "File BBB",
-                "url": "http://222.20.126.108:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "url": "http://222.20.126.108:8080/videos/akamai/bbb_30fps/bbb_30fps.mpd"
             },
             {
                 "name": "File tokyo",
-                "url": "http://222.20.126.108:8080/ffz/tokyo/v11/stream.mpd"
+                "url": "http://222.20.126.108:8080/videos/tokyo/v11/stream.mpd"
             },
             {
                 "name": "File apple",
-                "url": "http://222.20.126.108:8080/ffz/apple/v11/stream.mpd"
+                "url": "http://222.20.126.108:8080/videos/apple/v11/stream.mpd"
             },
             {
                 "name": "File Docker BBB",
                 "urls": {
                     "video": [
-                        "http://222.20.126.108:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://222.20.126.108:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.108:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.108:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://222.20.126.108:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.108:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ]
                 }
             },
@@ -85,20 +85,20 @@
                 "name": "File Docker tokyo",
                 "urls": {
                     "video": [
-                        "http://222.20.126.108:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://222.20.126.108:7021/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7022/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7023/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7024/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7025/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7026/videos/tokyo/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.108:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.108:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://222.20.126.108:7021/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7022/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7023/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7024/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7025/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.108:7026/videos/tokyo/v11/stream.mpd"
                     ]
                 }
             },
@@ -106,53 +106,53 @@
                 "name": "File Docker apple",
                 "urls": {
                     "video": [
-                        "http://222.20.126.108:7002/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7004/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7006/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7008/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7010/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7012/ffz/apple/v11/stream.mpd"
+                        "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7026/videos/apple/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.108:7002/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7004/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7006/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7008/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7010/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.108:7012/ffz/apple/v11/stream.mpd"
+                        "http://222.20.126.108:7021/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7022/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7023/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7024/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7025/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.108:7026/videos/apple/v11/stream.mpd"
                     ]
                 }
             },
             {
                 "name": "Edge BBB",
-                "url": "http://222.20.126.109:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "url": "http://222.20.126.109:8080/videos/akamai/bbb_30fps/bbb_30fps.mpd"
             },
             {
                 "name": "Edge tokyo",
-                "url": "http://222.20.126.109:8080/ffz/tokyo/v11/stream.mpd"
+                "url": "http://222.20.126.109:8080/videos/tokyo/v11/stream.mpd"
             },
             {
                 "name": "Edge apple",
-                "url": "http://222.20.126.109:8080/ffz/apple/v11/stream.mpd"
+                "url": "http://222.20.126.109:8080/videos/apple/v11/stream.mpd"
             },
             {
                 "name": "Edge Docker BBB",
                 "urls": {
                     "video": [
-                        "http://222.20.126.109:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://222.20.126.109:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.109:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://222.20.126.109:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://222.20.126.109:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://222.20.126.109:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ]
                 }
             },
@@ -160,20 +160,20 @@
                 "name": "Edge Docker tokyo",
                 "urls": {
                     "video": [
-                        "http://222.20.126.109:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://222.20.126.109:7021/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7022/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7023/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7024/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7025/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7026/videos/tokyo/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.109:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://222.20.126.109:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://222.20.126.109:7021/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7022/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7023/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7024/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7025/videos/tokyo/v11/stream.mpd",
+                        "http://222.20.126.109:7026/videos/tokyo/v11/stream.mpd"
                     ]
                 }
             },
@@ -181,53 +181,53 @@
                 "name": "Edge Docker apple",
                 "urls": {
                     "video": [
-                        "http://222.20.126.109:7002/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7004/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7006/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7008/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7010/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7012/ffz/apple/v11/stream.mpd"
+                        "http://222.20.126.109:7021/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7022/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7023/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7024/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7025/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7026/videos/apple/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.109:7002/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7004/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7006/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7008/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7010/ffz/apple/v11/stream.mpd",
-                        "http://222.20.126.109:7012/ffz/apple/v11/stream.mpd"
+                        "http://222.20.126.109:7021/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7022/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7023/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7024/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7025/videos/apple/v11/stream.mpd",
+                        "http://222.20.126.109:7026/videos/apple/v11/stream.mpd"
                     ]
                 }
             },
             {
                 "name": "Zerotier File BBB",
-                "url": "http://172.28.0.53:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "url": "http://172.28.0.53:8080/videos/akamai/bbb_30fps/bbb_30fps.mpd"
             },
             {
                 "name": "Zerotier File tokyo",
-                "url": "http://172.28.0.53:8080/ffz/tokyo/v11/stream.mpd"
+                "url": "http://172.28.0.53:8080/videos/tokyo/v11/stream.mpd"
             },
             {
                 "name": "Zerotier File apple",
-                "url": "http://172.28.0.53:8080/ffz/apple/v11/stream.mpd"
+                "url": "http://172.28.0.53:8080/videos/apple/v11/stream.mpd"
             },
             {
                 "name": "Zerotier File Docker BBB",
                 "urls": {
                     "video": [
-                        "http://172.28.0.53:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://172.28.0.53:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.53:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.53:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://172.28.0.53:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.53:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ]
                 }
             },
@@ -235,20 +235,20 @@
                 "name": "Zerotier File Docker tokyo",
                 "urls": {
                     "video": [
-                        "http://172.28.0.53:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://172.28.0.53:7021/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7022/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7023/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7024/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7025/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7026/videos/tokyo/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.53:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.53:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://172.28.0.53:7021/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7022/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7023/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7024/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7025/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.53:7026/videos/tokyo/v11/stream.mpd"
                     ]
                 }
             },
@@ -256,53 +256,53 @@
                 "name": "Zerotier File Docker apple",
                 "urls": {
                     "video": [
-                        "http://172.28.0.53:7002/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7004/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7006/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7008/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7010/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7012/ffz/apple/v11/stream.mpd"
+                        "http://172.28.0.53:7021/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7022/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7023/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7024/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7025/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7026/videos/apple/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.53:7002/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7004/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7006/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7008/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7010/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.53:7012/ffz/apple/v11/stream.mpd"
+                        "http://172.28.0.53:7021/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7022/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7023/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7024/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7025/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.53:7026/videos/apple/v11/stream.mpd"
                     ]
                 }
             },
             {
                 "name": "Zerotier Edge BBB",
-                "url": "http://172.28.0.54:8080/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                "url": "http://172.28.0.54:8080/videos/akamai/bbb_30fps/bbb_30fps.mpd"
             },
             {
                 "name": "Zerotier Edge tokyo",
-                "url": "http://172.28.0.54:8080/ffz/tokyo/v11/stream.mpd"
+                "url": "http://172.28.0.54:8080/videos/tokyo/v11/stream.mpd"
             },
             {
                 "name": "Zerotier Edge apple",
-                "url": "http://172.28.0.54:8080/ffz/apple/v11/stream.mpd"
+                "url": "http://172.28.0.54:8080/videos/apple/v11/stream.mpd"
             },
             {
                 "name": "Zerotier Edge Docker BBB",
                 "urls": {
                     "video": [
-                        "http://172.28.0.54:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://172.28.0.54:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.54:7002/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7004/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7006/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7008/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7010/ffz/akamai/bbb_30fps/bbb_30fps.mpd",
-                        "http://172.28.0.54:7012/ffz/akamai/bbb_30fps/bbb_30fps.mpd"
+                        "http://172.28.0.54:7021/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7022/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7023/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7024/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7025/videos/akamai/bbb_30fps/bbb_30fps.mpd",
+                        "http://172.28.0.54:7026/videos/akamai/bbb_30fps/bbb_30fps.mpd"
                     ]
                 }
             },
@@ -310,20 +310,20 @@
                 "name": "Zerotier Edge Docker tokyo",
                 "urls": {
                     "video": [
-                        "http://172.28.0.54:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://172.28.0.54:7021/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7022/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7023/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7024/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7025/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7026/videos/tokyo/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.54:7002/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7004/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7006/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7008/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7010/ffz/tokyo/v11/stream.mpd",
-                        "http://172.28.0.54:7012/ffz/tokyo/v11/stream.mpd"
+                        "http://172.28.0.54:7021/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7022/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7023/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7024/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7025/videos/tokyo/v11/stream.mpd",
+                        "http://172.28.0.54:7026/videos/tokyo/v11/stream.mpd"
                     ]
                 }
             },
@@ -331,20 +331,20 @@
                 "name": "Zerotier Edge Docker apple",
                 "urls": {
                     "video": [
-                        "http://172.28.0.54:7002/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7004/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7006/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7008/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7010/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7012/ffz/apple/v11/stream.mpd"
+                        "http://172.28.0.54:7021/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7022/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7023/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7024/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7025/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7026/videos/apple/v11/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.54:7002/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7004/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7006/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7008/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7010/ffz/apple/v11/stream.mpd",
-                        "http://172.28.0.54:7012/ffz/apple/v11/stream.mpd"
+                        "http://172.28.0.54:7021/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7022/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7023/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7024/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7025/videos/apple/v11/stream.mpd",
+                        "http://172.28.0.54:7026/videos/apple/v11/stream.mpd"
                     ]
                 }
             }
@@ -364,30 +364,30 @@
             },
             {
                 "name": "File Dash",
-                "url": "http://222.20.126.108:8000/dash/stream.mpd"
+                "url": "http://222.20.126.108:8000/dash/rtsp/stream.mpd"
             },
             {
                 "name": "Edge Dash",
-                "url": "http://222.20.126.109:8000/dash/stream.mpd"
+                "url": "http://222.20.126.109:8000/dash/rtsp/stream.mpd"
             },
             {
                 "name": "File Docker Dash",
                 "urls": {
                     "video": [
-                        "http://222.20.126.108:7001/dash/stream.mpd",
-                        "http://222.20.126.108:7003/dash/stream.mpd",
-                        "http://222.20.126.108:7005/dash/stream.mpd",
-                        "http://222.20.126.108:7007/dash/stream.mpd",
-                        "http://222.20.126.108:7009/dash/stream.mpd",
-                        "http://222.20.126.108:7011/dash/stream.mpd"
+                        "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7002/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7004/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7006/dash/rtsp/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.108:7001/dash/stream.mpd",
-                        "http://222.20.126.108:7003/dash/stream.mpd",
-                        "http://222.20.126.108:7005/dash/stream.mpd",
-                        "http://222.20.126.108:7007/dash/stream.mpd",
-                        "http://222.20.126.108:7009/dash/stream.mpd",
-                        "http://222.20.126.108:7011/dash/stream.mpd"
+                        "http://222.20.126.108:7001/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7002/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7003/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7004/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7005/dash/rtsp/stream.mpd",
+                        "http://222.20.126.108:7006/dash/rtsp/stream.mpd"
                     ]
                 }
             },
@@ -395,49 +395,49 @@
                 "name": "Edge Docker Dash",
                 "urls": {
                     "video": [
-                        "http://222.20.126.109:7001/dash/stream.mpd",
-                        "http://222.20.126.109:7003/dash/stream.mpd",
-                        "http://222.20.126.109:7005/dash/stream.mpd",
-                        "http://222.20.126.109:7007/dash/stream.mpd",
-                        "http://222.20.126.109:7009/dash/stream.mpd",
-                        "http://222.20.126.109:7011/dash/stream.mpd"
+                        "http://222.20.126.109:7001/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7002/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7003/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7004/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7005/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7006/dash/rtsp/stream.mpd"
                     ],
                     "audio": [
-                        "http://222.20.126.109:7001/dash/stream.mpd",
-                        "http://222.20.126.109:7003/dash/stream.mpd",
-                        "http://222.20.126.109:7005/dash/stream.mpd",
-                        "http://222.20.126.109:7007/dash/stream.mpd",
-                        "http://222.20.126.109:7009/dash/stream.mpd",
-                        "http://222.20.126.109:7011/dash/stream.mpd"
+                        "http://222.20.126.109:7001/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7002/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7003/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7004/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7005/dash/rtsp/stream.mpd",
+                        "http://222.20.126.109:7006/dash/rtsp/stream.mpd"
                     ]
                 }
             },
             {
                 "name": "Zerotier File Dash",
-                "url": "http://172.28.0.53:8000/dash/stream.mpd"
+                "url": "http://172.28.0.53:8000/dash/rtsp/stream.mpd"
             },
             {
                 "name": "Zerotier Edge Dash",
-                "url": "http://172.28.0.54:8000/dash/stream.mpd"
+                "url": "http://172.28.0.54:8000/dash/rtsp/stream.mpd"
             },
             {
                 "name": "Zerotier File Docker Dash",
                 "urls": {
                     "video": [
-                        "http://172.28.0.53:7001/dash/stream.mpd",
-                        "http://172.28.0.53:7003/dash/stream.mpd",
-                        "http://172.28.0.53:7005/dash/stream.mpd",
-                        "http://172.28.0.53:7007/dash/stream.mpd",
-                        "http://172.28.0.53:7009/dash/stream.mpd",
-                        "http://172.28.0.53:7011/dash/stream.mpd"
+                        "http://172.28.0.53:7001/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7002/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7003/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7004/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7005/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7006/dash/rtsp/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.53:7001/dash/stream.mpd",
-                        "http://172.28.0.53:7003/dash/stream.mpd",
-                        "http://172.28.0.53:7005/dash/stream.mpd",
-                        "http://172.28.0.53:7007/dash/stream.mpd",
-                        "http://172.28.0.53:7009/dash/stream.mpd",
-                        "http://172.28.0.53:7011/dash/stream.mpd"
+                        "http://172.28.0.53:7001/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7002/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7003/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7004/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7005/dash/rtsp/stream.mpd",
+                        "http://172.28.0.53:7006/dash/rtsp/stream.mpd"
                     ]
                 }
             },
@@ -445,20 +445,20 @@
                 "name": "Zerotier Edge Docker Dash",
                 "urls": {
                     "video": [
-                        "http://172.28.0.54:7001/dash/stream.mpd",
-                        "http://172.28.0.54:7003/dash/stream.mpd",
-                        "http://172.28.0.54:7005/dash/stream.mpd",
-                        "http://172.28.0.54:7007/dash/stream.mpd",
-                        "http://172.28.0.54:7009/dash/stream.mpd",
-                        "http://172.28.0.54:7011/dash/stream.mpd"
+                        "http://172.28.0.54:7001/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7002/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7003/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7004/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7005/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7006/dash/rtsp/stream.mpd"
                     ],
                     "audio": [
-                        "http://172.28.0.54:7001/dash/stream.mpd",
-                        "http://172.28.0.54:7003/dash/stream.mpd",
-                        "http://172.28.0.54:7005/dash/stream.mpd",
-                        "http://172.28.0.54:7007/dash/stream.mpd",
-                        "http://172.28.0.54:7009/dash/stream.mpd",
-                        "http://172.28.0.54:7011/dash/stream.mpd"
+                        "http://172.28.0.54:7001/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7002/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7003/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7004/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7005/dash/rtsp/stream.mpd",
+                        "http://172.28.0.54:7006/dash/rtsp/stream.mpd"
                     ]
                 }
             },
