@@ -112,7 +112,7 @@
 								<div class="options-item-body">
 									<form>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="multiPathMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('Multi-Path')">
+											<input name="modes" id="multi-pathMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('Multi-Path')">
 											Multi-Path
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
@@ -140,7 +140,7 @@
 											CMP
 										</label>
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="modes" id="erpMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('ERP')" checked="true">
+											<input name="modes" id="erpMode" type="radio" autocomplete="off" ng-click="changeSelectedMode('ERP')">
 											ERP
 										</label>
 									</form>
@@ -192,7 +192,7 @@
 										</label>
 										
 										<label data-toggle="tooltip" data-placement="right">
-											<input name="abr-rules" id="rttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')" checked="true">
+											<input name="abr-rules" id="rttBufferRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('rttBufferRule')">
 											RttBufferRule
 										</label>
 
@@ -213,11 +213,11 @@
 											<label data-toggle="tooltip" data-placement="right" id="labelPreferredQualitySelecetedVideo" style="margin-left: 10px;">
 												<div class="row">
 													<span style="line-height: 25px;">Video quality</span>
-													<input style="width: 40px;" step="1" min="0" max="100" type="number" id="globalQualityVideo" ng-model="globalQuality.video" disabled>	
+													<input style="width: 40px;" step="1" min="0" max="100" type="number" id="globalQualityVideo" ng-model="globalQuality.video">	
 												</div>
 												<div class="row">
 													<span style="line-height: 25px;">Audio quality</span>
-													<input style="width: 40px;" step="1" min="0" max="100" type="number" id="globalQualityAudio" ng-model="globalQuality.audio" disabled>	
+													<input style="width: 40px;" step="1" min="0" max="100" type="number" id="globalQualityAudio" ng-model="globalQuality.audio">	
 												</div>
 											</label>
 

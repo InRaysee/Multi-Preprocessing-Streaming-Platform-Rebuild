@@ -23,30 +23,114 @@
                 "name": "Local CMPVP907",
                 "urls": {
                     "video": [
-                        "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
+                        "http://222.20.126.108:8080/videos/CMPVP907/face0/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face1/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face2/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face3/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face4/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face5/output/stream.mpd"
                     ],
                     "audio": [
-                        "http://localhost:8080/datasets/CMPVP907/face0/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face1/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face2/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face3/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face4/output/stream.mpd",
-                        "http://localhost:8080/datasets/CMPVP907/face5/output/stream.mpd"
+                        "http://222.20.126.108:8080/videos/CMPVP907/face0/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face1/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face2/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face3/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face4/output/stream.mpd",
+                        "http://222.20.126.108:8080/videos/CMPVP907/face5/output/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Local CMP",
+                "urls": {
+                    "video": [
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face0/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face1/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face2/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face3/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face4/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face5/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face0/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face1/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face2/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face3/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face4/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/face5/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Local ERP",
+                "urls": {
+                    "video": [
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd"
+                    ],
+                    "audio": [
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd",
+                        "http://222.20.126.108:8080/videos/nccvr20231025/erp/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Local HTTPS CMP",
+                "urls": {
+                    "video": [
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face0/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face1/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face2/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face3/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face4/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face5/stream.mpd"
+                    ],
+                    "audio": [
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face0/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face1/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face2/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face3/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face4/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/face5/stream.mpd"
+                    ]
+                }
+            },
+            {
+                "name": "Local HTTPS ERP",
+                "urls": {
+                    "video": [
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd"
+                    ],
+                    "audio": [
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+                        "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd"
                     ]
                 }
             },
             {
                 "name": "Local tokyo",
-                "url": "http://localhost:8080/datasets/ffz/tokyo/v11/stream.mpd"
+                "url": "http://222.20.126.108:8080/videos/tokyo/v11/stream.mpd"
             },
             {
                 "name": "Local apple",
-                "url": "http://localhost:8080/datasets/ffz/apple/v11/stream.mpd"
+                "url": "http://222.20.126.108:8080/videos/apple/v11/stream.mpd"
             },
             {
                 "name": "File BBB",

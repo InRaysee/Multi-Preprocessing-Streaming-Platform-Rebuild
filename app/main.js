@@ -280,19 +280,47 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.optionButton = "Show Options";  // Save the state of option button
 
-    $scope.selectedMode = 'ERP';  // Save the selected mode
-    $scope.mode = 'ERP';  // Save the mode
+    $scope.selectedMode = 'CMP';  // Save the selected mode
+    $scope.mode = $scope.selectedMode;  // Save the mode
+    document.getElementById($scope.mode.toLowerCase() + "Mode").checked = true;
+
+    $scope.streamURLs = {  // Save the selected media sources
+        "video": [
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd"
+        ],
+        "audio": [
+            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
+            // "https://222.20.126.108:8081s/videos/nccvr20231025/erp/stream.mpd"
+        ]
+    };
 
     $scope.streamNum = {  // Number of paths for fetching streams
-        video: 6,
-        audio: 1
+        video: $scope.streamURLs.video.length,
+        audio: $scope.streamURLs.audio.length
     }
 
     $scope.targetBuffer = 4;  // The buffer level desired to be fetched
     $scope.maximalBuffer = 15;  // The buffer level desired to be saved
     $scope.INTERVAL_OF_SCHEDULE_FETCHER = 50;
 
-    $scope.selectedRule = "rttBufferRule";  // Save the selected ABR strategy
+    $scope.selectedRule = "highestBitrateRule";  // Save the selected ABR strategy
+    document.getElementById($scope.selectedRule).checked = true;
+    if ($scope.selectedRule == "globalSwitchRule") {
+        document.getElementById("globalQualityVideo").removeAttribute("disabled");
+        document.getElementById("globalQualityAudio").removeAttribute("disabled");
+    } else {
+        document.getElementById("globalQualityVideo").disabled = true;
+        document.getElementById("globalQualityAudio").disabled = true;
+    }
     $scope.globalQuality = {  // Switch the quality by global manual switching ABR strategy
         video: 0,
         audio: 0
@@ -307,25 +335,6 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.catchupEnabled = true;  // Whether catch up when playback or not
     $scope.llDashEnabled = true;  // Whether enable low-latency DASH or not
     $scope.autoAdjustingLatencyBias = false;  // Whether auto adjusting latency bias or not
-    
-    $scope.streamURLs = {  // Save the selected media sources
-        "video": [
-            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
-        ],
-        "audio": [
-            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
-        ]
-    };
 
     $scope.streamURLforComparison = "http://222.20.126.108:8080/videos/apple/v11/stream.mpd";  // Save the selected media source for comparison
 
@@ -787,6 +796,18 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     };
 
+    // Change the number of streams
+    $scope.changeStreamNumber = function (contentType) {
+
+        while ($scope.streamURLs[contentType].length < $scope.streamNum[contentType]) {
+            $scope.streamURLs[contentType].push($scope.streamURLs.video[0]);
+        }
+        while ($scope.streamURLs[contentType].length > $scope.streamNum[contentType]) {
+            $scope.streamURLs[contentType].pop();
+        }
+
+    };
+
     // Change the selected streaming mode option
     $scope.changeSelectedMode = function (mode) {
         
@@ -826,6 +847,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         }
 
     }
+    $scope.changeSelectedMode($scope.mode);
 
     // Change the streaming mode
     $scope.changeMode = function () {
@@ -865,18 +887,6 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 break;
             default:
                 break;
-        }
-
-    };
-
-    // Change the number of streams
-    $scope.changeStreamNumber = function (contentType) {
-
-        while ($scope.streamURLs[contentType].length < $scope.streamNum[contentType]) {
-            $scope.streamURLs[contentType].push($scope.streamURLs.video[0]);
-        }
-        while ($scope.streamURLs[contentType].length > $scope.streamNum[contentType]) {
-            $scope.streamURLs[contentType].pop();
         }
 
     };
