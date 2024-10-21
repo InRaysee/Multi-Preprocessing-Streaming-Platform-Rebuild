@@ -50,6 +50,9 @@
 		<script src="RttThroughputRule.js"></script>
 		<script src="GlobalSwitchRule.js"></script>
 
+		<!-- tesseract.js for OCR -->
+		<script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
 		<style>
 			body {
 				background-color: #ececec;
@@ -367,6 +370,7 @@
 
 						<!-- Both flat and VR -->
 						<div id="videoContainer" class="videoContainer" style="background-color:#3a3d42; width:100%; height:565px; float:left;">
+							<canvas id="canvas" style="display: none;"></canvas>
 							<video id="video" style="display: flex; width:100%; height:530px;" preload="none"></video>
 							<iframe frameborder="0" scrolling="no" id="vr" style="display: none; width:100%; height:530px; margin: 0;"></iframe>
 							<div id="videoController" class="video-controller unselectable" style="display: block;">

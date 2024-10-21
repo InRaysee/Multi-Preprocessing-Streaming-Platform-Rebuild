@@ -224,6 +224,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     $scope.INTERVAL_OF_SET_PLAYBACK_RATE = 100;
     $scope.INTERVAL_OF_SET_TARGET_LATENCY_BIAS = 1000;
     $scope.INTERVAL_OF_COMPUTE_TOTAL_QOE = 50;
+    $scope.INTERVAL_OF_EXTRACT_TIMESTAMP = 1000;
     $scope.TIMEOUT_OF_SOURCE_OPEN = 1;
     $scope.TIMEOUT_OF_ADD_SOURCEBUFFER = 1;
     $scope.TIMEOUT_OF_RELOAD_STREAM = 1000;
@@ -1654,6 +1655,9 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
             if ($scope.mode != "CMP") {
                 $scope.intervalFunctions.push(setInterval($scope.computeQoE, $scope.INTERVAL_OF_COMPUTE_TOTAL_QOE));
             }
+
+            // Add interval function: extract timestamp
+            // $scope.intervalFunctions.push(setInterval($scope.extractTimestamp, $scope.INTERVAL_OF_EXTRACT_TIMESTAMP));
 
         }, $scope.TIMEOUT_OF_SOURCE_OPEN);
 
@@ -3451,6 +3455,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     // Compute QoE
     $scope.computeQoE = function() {
+
         let width = $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet[$scope.streamInfo.video.adaptationSetIndex].Representation[$scope.streamInfo.video.representationIndex].width;
         let height = $scope.streamMpds.video[$scope.streamInfo.video.pathIndex].Period[$scope.streamInfo.video.periodIndex].AdaptationSet[$scope.streamInfo.video.adaptationSetIndex].Representation[$scope.streamInfo.video.representationIndex].height;
         let quality = $scope.monitorPlaybackQuality.video / 1000;
@@ -3460,7 +3465,76 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
         let D_q = 100 - mos_q * 20;
         let D = Math.max(Math.min(D_q, 100), 0);
         $scope.totalQOE = 100 - D;
+
     };
+
+    const videoExtTs = document.getElementById('video');
+    const canvasExtTs = document.getElementById('canvas');
+    const ctxExtTs = canvas.getContext('2d');
+
+    // Extract timestamp
+    $scope.extractTimestamp = function () {
+
+        if (videoExtTs.readyState == video.HAVE_ENOUGH_DATA) {
+            // Set the Canvas size to match the video
+            canvasExtTs.width = videoExtTs.videoWidth;
+            canvasExtTs.height = videoExtTs.videoHeight;
+
+            // Drawing video frames to the Canvas
+            ctxExtTs.drawImage(videoExtTs, 0, 0, canvasExtTs.width, canvasExtTs.height);
+
+            // Getting image data from Canvas and passing it to Tesseract.js for OCR recognition
+            Tesseract.recognize(canvas, 'eng', {
+                // logger: info => console.log(info) // Log output identifies progress
+                tessedit_char_whitelist: '0123456789:-' // Restricted character set (timestamp format)
+            }).then(({ data: { text } }) => {
+                console.log("Extracted text: ", text.trim());
+                // Display the extracted timestamp to the page
+                // extractedTextDiv.innerHTML = "Extracted Timestamp: " + text.trim();
+                console.log("Difference: ", findAndCompareTimestamps(text.trim()));
+            }).catch(error => {
+                console.error("Error during OCR processing: ", error);
+            });
+        }
+
+    };
+
+    function findAndCompareTimestamps(inputString) {
+        // Regular expression pattern defining timestamps (matches "YYYY-MM-DD HH:MM:SS" format)
+        const timestampPattern = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/;
+    
+        // Search for timestamps in the input string
+        const matchedTimestamp = inputString.match(timestampPattern);
+    
+        if (matchedTimestamp) {
+            // Converts the matched string to a date object
+            const foundTimestampString = matchedTimestamp[0];
+            const foundTimestamp = new Date(foundTimestampString.replace(' ', 'T'));
+    
+            // Get current system time
+            const currentTimestamp = new Date();
+    
+            // Calculation time difference (milliseconds)
+            const timeDifference = currentTimestamp - foundTimestamp;
+    
+            // Convert time differences to a more friendly format (e.g. seconds, minutes, hours, days)
+            const differenceInSeconds = Math.floor(timeDifference / 1000);
+            const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+            const differenceInHours = Math.floor(differenceInMinutes / 60);
+            const differenceInDays = Math.floor(differenceInHours / 24);
+    
+            // 输出时间差
+            console.log(`匹配的时间戳: ${foundTimestampString}`);
+            console.log(`当前时间: ${currentTimestamp}`);
+            console.log(`时间差（毫秒）: ${timeDifference}`);
+            console.log(`时间差（秒）: ${differenceInSeconds}`);
+            console.log(`时间差（分钟）: ${differenceInMinutes}`);
+            console.log(`时间差（小时）: ${differenceInHours}`);
+            console.log(`时间差（天）: ${differenceInDays}`);
+        } else {
+            console.log("未找到有效的时间戳");
+        }
+    }
 
     // Other platform intervals
     $scope.platformInterval = setInterval(() => {
