@@ -476,6 +476,27 @@
                 }
             },
             {
+                "name": "File Docker HTTPS Dash",
+                "urls": {
+                    "video": [
+                        "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
+                    ],
+                    "audio": [
+                        "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+                        "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
+                    ]
+                }
+            },
+            {
                 "name": "Edge Docker Dash",
                 "urls": {
                     "video": [

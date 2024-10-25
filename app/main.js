@@ -281,26 +281,26 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.optionButton = "Show Options";  // Save the state of option button
 
-    $scope.selectedMode = 'CMP';  // Save the selected mode
+    $scope.selectedMode = 'ERP';  // Save the selected mode
     $scope.mode = $scope.selectedMode;  // Save the mode
     document.getElementById($scope.mode.toLowerCase() + "Mode").checked = true;
 
     $scope.streamURLs = {  // Save the selected media sources
         "video": [
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd"
+            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+            "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
         ],
         "audio": [
-            "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            // "https://222.20.126.108:8081/videos/nccvr20231025/erp/stream.mpd",
-            // "https://222.20.126.108:8081s/videos/nccvr20231025/erp/stream.mpd"
+            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
+            // "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
         ]
     };
 
@@ -328,7 +328,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
     };
     $scope.lifeSignalEnabled = true;  // Whether send life signals or not
 
-    $scope.targetLatencyBias = -2;  // The live delay allowed
+    $scope.targetLatencyBias = 0;  // The live delay allowed
     $scope.catchupPlaybackRate = 0.5;  // Catchup playback rate
     $scope.minDrift = 0.1;  // The minimal latency deviation allowed
     // $scope.maxDrift = 3;  // The maximal latency deviation allowed
