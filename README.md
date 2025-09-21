@@ -119,7 +119,7 @@ Moreover, the ON-OFF switches of catchup mechanism and LL-DASH are provided.
         ```
         e.g.
         ```
-        ffmpeg -re -r 30 -i /dev/video0 -b:v 5000k -preset:v ultrafast -tune:v zerolatency -f rtsp -rtsp_transport tcp rtsp://222.20.126.108:8554/mystream
+        ffmpeg -r 30 -f v4l2 -i /dev/video0 -f pulse -i default -b:v 5000k -preset:v ultrafast -tune:v zerolatency -c:v libx264 -c:a aac -ar 44100 -b:a 128k -f rtsp -rtsp_transport tcp rtsp://222.20.126.228:8554/mystream
         ```
    - Windows
         ```
