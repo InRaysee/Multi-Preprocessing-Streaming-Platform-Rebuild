@@ -72,11 +72,7 @@ Moreover, the ON-OFF switches of catchup mechanism and LL-DASH are provided.
         ```
    - Ubuntu
         ```
-        ffprobe [device location]
-        ```
-        e.g.
-        ```
-        ffprobe /dev/video0
+        v4l2-ctl --list-devices
         ```
    - Windows
         ```
