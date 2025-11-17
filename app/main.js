@@ -280,6 +280,7 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 /////////////////////////////////////////////////////////////////////////////////////
 
     $scope.optionButton = "Show Options";  // Save the state of option button
+    $scope.urlButton = "Hide URLs";  // Save the state of URL button
 
     $scope.selectedMode = 'ERP';  // Save the selected mode
     $scope.mode = $scope.selectedMode;  // Save the mode
@@ -287,20 +288,20 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
 
     $scope.streamURLs = {  // Save the selected media sources
         "video": [
-            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
-            "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
+            "https://222.20.126.228:7011/dash/rtsp/stream.mpd",
+            "https://222.20.126.228:7012/dash/rtsp/stream.mpd",
+            "https://222.20.126.228:7013/dash/rtsp/stream.mpd",
+            "https://222.20.126.228:7014/dash/rtsp/stream.mpd",
+            "https://222.20.126.228:7015/dash/rtsp/stream.mpd",
+            "https://222.20.126.228:7016/dash/rtsp/stream.mpd"
         ],
         "audio": [
-            "https://222.20.126.108:7011/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7012/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7013/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7014/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7015/dash/rtsp/stream.mpd",
-            // "https://222.20.126.108:7016/dash/rtsp/stream.mpd"
+            "https://222.20.126.228:7011/dash/rtsp/stream.mpd",
+            // "https://222.20.126.228:7012/dash/rtsp/stream.mpd",
+            // "https://222.20.126.228:7013/dash/rtsp/stream.mpd",
+            // "https://222.20.126.228:7014/dash/rtsp/stream.mpd",
+            // "https://222.20.126.228:7015/dash/rtsp/stream.mpd",
+            // "https://222.20.126.228:7016/dash/rtsp/stream.mpd"
         ]
     };
 
@@ -780,6 +781,27 @@ app.controller('DashController', ['$scope', '$interval', 'sources', function ($s
                 }
                 $scope.streamURLforComparison = item.url ? item.url : item.urls[$scope.CONTENT_TYPE[0]][0];
             }
+        }
+
+    };
+
+    // Showing/hiding options
+    $scope.showurl = function () {
+
+        if($scope.urlButton == "Show URLs"){
+            document.getElementById('videoSource').style = "";
+            document.getElementById('audioSource').style = "";
+            if ($scope.selectedMode == "Comparison") {
+                document.getElementById('comparisonSource').style = "";
+            }
+            $scope.urlButton = "Hide URLs";
+        }else{
+            document.getElementById('videoSource').style = "display: none;";
+            document.getElementById('audioSource').style = "display: none;";
+            if ($scope.selectedMode == "Comparison") {
+                document.getElementById('comparisonSource').style = "display: none;";
+            }
+            $scope.urlButton = "Show URLs";
         }
 
     };
